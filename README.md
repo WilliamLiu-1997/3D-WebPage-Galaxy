@@ -10,4 +10,3 @@ In island and alien base, you can also click somewhere to move. If you want to g
 
 A RTX2060 or better GPU is highly recommended for this program!
 
-[![baidu]](http://baidu.com)
