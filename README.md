@@ -9,3 +9,5 @@ According to the tips on the top, there are two planets earth and Europa (smalle
 In island and alien base, you can also click somewhere to move. If you want to go back to the solar, just fly high enough and then you will be redirected to the solar (click the moon in the island or click the Jupiter in the alien base is also okay).
 
 A RTX2060 or better GPU is highly recommended for this program!
+
+[![baidu]](http://baidu.com)
