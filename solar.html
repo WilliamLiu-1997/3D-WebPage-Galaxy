@@ -58,7 +58,7 @@
     <div id="aiming1">
       <img src="img/aiming4.png" width="19px" height="19px" />
     </div>
-    <div id="secondBlocker" style="display: none">Water is the source of life.<br> So far, there are two planets in the solar are known to have liquid water.<br>They are Earth and Europa</div>
+    <div id="secondBlocker" style="display: none"></div>
     <div id="blocker">
       <div id="content">
         <h1>Explore the Solar</h1>
@@ -177,9 +177,18 @@
         window.location.href = "island.html";
       }, 3500);
     }
+    function go_lightning() {
+      document.getElementById("blocker").style.backgroundColor =
+        "rgba(0, 0, 0, 1)";
+      $("#blocker").fadeIn(2500);
+      setTimeout(function () {
+        window.location.href = "lightning.html";
+      }, 3500);
+    }
 
     var follow_frame1=0
     var follow_frame2=0
+    var follow_frame3=0
     var FPS = 60;
     var singleFrameTime = 1 / FPS;
     var timeStamp = 0;
@@ -2007,17 +2016,26 @@
         else{
           follow_frame1=0
         }
-        if(selected_object&&selected_object.object.name=="starlite6"){
+        if(selected_object&&selected_object.object.name=="star4"){
           follow_frame2+=1
         }
         else{
           follow_frame2=0
+        }
+        if(selected_object&&selected_object.object.name=="star6"){
+          follow_frame3+=1
+        }
+        else{
+          follow_frame3=0
         }
         if(follow_frame1>FPS*5){
 go_island()
         }
         else if(follow_frame2>FPS*5){
 go_alian_base()
+        }
+        else if(follow_frame3>FPS*5){
+go_lightning()
         }
         if (meteorites.length < 7) {
           var meteorite1 = generate_meteoriteObject3D(8);
@@ -2248,6 +2266,9 @@ go_alian_base()
     }
     function goIsland() {
       window.location.href = "island.html";
+    }
+    function goLightning() {
+      window.location.href = "lightning.html";
     }
   </script>
 </html>
