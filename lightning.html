@@ -135,7 +135,7 @@ import { Water } from './three.js/examples/jsm/objects/Water.js';
   var vec = new THREE.Vector3();
   var start_point = new THREE.Vector3(0, 0, 0);
   var last_position = start_point.clone().set(-131.66, -465, 1296.76);
-  var cameraPosition = vec.clone().set(100, 10, 200);
+  var cameraPosition = vec.clone().set(0, 10, 0);
   var cameraDirection = vec.clone().set(0, 0, 0);
   var hit_direction = vec.clone().set(0, 0, 0);
   var hit_frame = 0;
@@ -322,7 +322,7 @@ const storm = new LightningStorm({
   minHeight: 240,
   maxHeight: 250,
   maxSlope: 0.3,
-  maxLightnings: 10,
+  maxLightnings: 8,
 
   lightningParameters: scene.rayParams,
 
@@ -402,9 +402,9 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     //   }
     // }
     
-  scene.fog = new THREE.Fog(0x666666, 1, 1200);
-    var cloudx=75
-    var cloudy=75
+  scene.fog = new THREE.Fog(0x555555, 1, 1000);
+    var cloudx=70
+    var cloudy=70
     var clouds=30
     var i = 0;
     for (var ix = 0; ix < cloudx; ix++) {
@@ -420,8 +420,8 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
           star_s_speed[i] = Math.random() - 0.5;
            i++;
           particle.position.y = 202.5+ (Math.random())*50;
-          particle.position.x = ix * clouds - (cloudx * clouds) / 2 + ((Math.random() - 0.5) * clouds * 10);
-          particle.position.z = iy * clouds - (cloudy * clouds) / 2 + ((Math.random() - 0.5) * clouds * 10);
+          particle.position.x = ix * clouds - (cloudx * clouds) / 2 + ((Math.random() - 0.5) * clouds * 2);
+          particle.position.z = iy * clouds - (cloudy * clouds) / 2 + ((Math.random() - 0.5) * clouds * 2);
           particle.scale.set(scale_cloud,scale_cloud)}
           
           else{
@@ -433,8 +433,8 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
           star_s_speed[i] = Math.random() - 0.5;
            i++;
            particle.position.y = 202.5+ (Math.random())*50;
-          particle.position.x = ix * clouds - (cloudx * clouds) / 2 + ((Math.random() - 0.5) * clouds * 10);
-          particle.position.z = iy * clouds - (cloudy * clouds) / 2 + ((Math.random() - 0.5) * clouds * 10);
+          particle.position.x = ix * clouds - (cloudx * clouds) / 2 + ((Math.random() - 0.5) * clouds * 2);
+          particle.position.z = iy * clouds - (cloudy * clouds) / 2 + ((Math.random() - 0.5) * clouds * 2);
           particle.scale.set(scale_cloud,scale_cloud)}
           
 
@@ -577,7 +577,12 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     document.addEventListener("keyup", onKeyUp, false);
 
     scene.add(new THREE.AmbientLight(0x776644));
-     
+//     const directionalLight = new THREE.DirectionalLight( 0x776644, 1, 1000 );
+//     directionalLight.position.set( 0, 1000, 0 );
+//     directionalLight.castShadow=true
+// scene.add( directionalLight );
+// const helper = new THREE.DirectionalLightHelper( directionalLight, 5000 );
+// scene.add( helper );
 
     renderer = new THREE.WebGLRenderer({logarithmicDepthBuffer:true});
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -699,7 +704,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     scene.add(ufo);
     ufo.position.set(0, -1000, 0);
 
-    const village1 = terrain_loader("obj/terrain/terrain1", 2);
+    const village1 = terrain_loader("obj/terrain/terrain4", 2);
     village1.position.set(0,0,0);
     village1.name = "Village1";
     village1.rotation.x=-Math.PI/2
@@ -713,7 +718,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
 
     // cubeFolder.open()
 
-    all_obj2.scale.set(3,0.5,3);
+    all_obj2.scale.set(0.6,0.6,0.6);
     all_obj.add(all_obj1);
     all_obj.add(all_obj2);
     all_obj.add(all_obj3);
@@ -745,18 +750,17 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
   }
 
   function terrain_loader(url, scale, double = false) {
-    var texture = THREE.ImageUtils.loadTexture("texture/pattern8.png");
+    var texture = THREE.ImageUtils.loadTexture("texture/pattern9.png");
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(1000, 1000);
     var texture1 = THREE.ImageUtils.loadTexture("texture/ice_normal3.jpg");
     texture1.wrapS = THREE.RepeatWrapping;
     texture1.wrapT = THREE.RepeatWrapping;
-    texture1.repeat.set(100, 100);
+    texture1.repeat.set(500, 500);
     var materialGround = new THREE.MeshStandardMaterial({
       map: texture,
       normalMap:texture1,
-      side:THREE.DoubleSide
     });
     var newobj = obj3d.clone();
       var objLoader = new OBJLoader();
@@ -956,7 +960,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
       cameraPosition.z+=distance*dir.z
       cameraPosition.x+=distance*dir.x
     }
-    cameraPosition.y = Math.max(-4.2 + 0.55 * ufo_scale+52.5, Math.min(210, cameraPosition.y));
+    cameraPosition.y = Math.max(-4.2 + 0.55 * ufo_scale+32.5, Math.min(210, cameraPosition.y));
     if(cameraPosition.y>180){
       selected_object=false;
       document.getElementById("blocker1").style.backgroundColor="rgba(0, 0, 0, 1)";
@@ -1034,6 +1038,10 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
 
   function operation_method_1(delta) {
     bounder_detect()
+    if (hit_detect()) {
+      hit_frame = 500;
+      chaseing_frame = 0;
+    };
     if (hit_frame > 0) {
       moveForward = moveLeft = moveRight = moveBackward = false;
       currentSpeedForward = 0;
@@ -1399,9 +1407,9 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
         particle = particles[i];
         var d = star_d[i];
         var ds = star_d_speed[i];
-        particle.position.x += d.x * Math.cos(ds.x * count) / 6;
-        particle.position.y += d.y * Math.cos(ds.y * count) / 300;
-        particle.position.z += d.z * Math.cos(ds.z * count) / 6;
+        particle.position.x += d.x * Math.cos(ds.x * count*2) / 10;
+        particle.position.y += d.y * Math.cos(ds.y * count*2) / 300;
+        particle.position.z += d.z * Math.cos(ds.z * count*2) / 10;
       }
       count += 0.0005 * fps_speed;
 
