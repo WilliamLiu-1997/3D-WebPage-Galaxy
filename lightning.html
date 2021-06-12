@@ -576,13 +576,11 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     document.addEventListener("keydown", onKeyDown, false);
     document.addEventListener("keyup", onKeyUp, false);
 
-    scene.add(new THREE.AmbientLight(0x776644));
-//     const directionalLight = new THREE.DirectionalLight( 0x776644, 1, 1000 );
-//     directionalLight.position.set( 0, 1000, 0 );
-//     directionalLight.castShadow=true
-// scene.add( directionalLight );
-// const helper = new THREE.DirectionalLightHelper( directionalLight, 5000 );
-// scene.add( helper );
+    scene.add(new THREE.AmbientLight(0x888844));
+    // const directionalLight = new THREE.RectAreaLight( 0x777733, 2,1000,1000 );
+    // directionalLight.position.set( 0, 500, 0 );
+    // directionalLight.rotation.x=-Math.PI/2;
+    // scene.add( directionalLight );
 
     renderer = new THREE.WebGLRenderer({logarithmicDepthBuffer:true});
     renderer.setSize(window.innerWidth, window.innerHeight);
