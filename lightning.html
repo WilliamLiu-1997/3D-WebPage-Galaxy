@@ -100,7 +100,7 @@ import { RenderPass } from './three.js/examples/jsm/postprocessing/RenderPass.js
 import { OutlinePass } from './three.js/examples/jsm/postprocessing/OutlinePass.js';
 
 import { Water } from './three.js/examples/jsm/objects/Water.js';
-  var FPS = 45;
+  var FPS = 40;
   var singleFrameTime = (1 / FPS);
   var timeStamp = 0;
   var fps_speed = 120 / FPS;
@@ -180,6 +180,7 @@ import { Water } from './three.js/examples/jsm/objects/Water.js';
   var angleY = 0;
   var angleZX = 0;
   var angleZY = 0;
+    var scaling=false;
 
   var speed = 1;
   var obj3d=new THREE.Object3D();
@@ -223,7 +224,7 @@ let currentTime = 0;
  
   
   var cloudMap = new THREE.TextureLoader().load(
-    "img/cloud4.png"
+    "img/cloud5.png"
   );
   var cloudMap1 = new THREE.TextureLoader().load(
     "img/cloud1.png"
@@ -259,7 +260,7 @@ let currentTime = 0;
   var ufo = meteorite_Object3D.clone();
   var village = meteorite_Object3D.clone();
   scene = new THREE.Scene();
-  const GROUND_SIZE = 1000;
+  const GROUND_SIZE = 800;
 
 
 
@@ -322,7 +323,7 @@ const storm = new LightningStorm({
   minHeight: 240,
   maxHeight: 250,
   maxSlope: 0.3,
-  maxLightnings: 8,
+  maxLightnings: 10,
 
   lightningParameters: scene.rayParams,
 
@@ -403,8 +404,8 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     // }
     
   scene.fog = new THREE.Fog(0x555555, 1, 1000);
-    var cloudx=70
-    var cloudy=70
+    var cloudx=56
+    var cloudy=56
     var clouds=30
     var i = 0;
     for (var ix = 0; ix < cloudx; ix++) {
@@ -951,7 +952,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
 
 
   function bounder_detect() {
-    var distance=Math.sqrt(cameraPosition.x*cameraPosition.x+cameraPosition.z*cameraPosition.z)-500
+    var distance=Math.sqrt(cameraPosition.x*cameraPosition.x+cameraPosition.z*cameraPosition.z)-400
     var dir=vec.clone().set(0-cameraPosition.x,0,0-cameraPosition.z).normalize()
     if(distance>0){
       selected_object=false;
@@ -985,7 +986,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     var detect_obj=[all_obj1, all_obj2, all_obj3]
     raycaster.near = 0.1;
     raycaster.far = 0.5 * ufo_scale;
-    var local = vec.clone().set(ufo.position.x, ufo.position.y + 0.15* ufo_scale, ufo.position.z);
+    var local = vec.clone().set(ufo.position.x, ufo.position.y + 0.1* ufo_scale, ufo.position.z);
     var all_direct1 = [vec.clone().set(1, 0, 0), vec.clone().set(1, 0, 1), vec.clone().set(0, 0, 1), vec.clone().set(-1, 0, 0), vec.clone().set(-1, 0, -1), vec.clone().set(0, 0, -1), vec.clone().set(1, 0, -1), vec.clone().set(-1, 0, 1)];
     for (var i = 0; i < all_direct1.length; i++) {
       raycaster.set(local, all_direct1[i].normalize());
@@ -1185,25 +1186,18 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     }
 
     angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fps_speed;
-    cameraDirection.x -= Math.sin(angleX);
-    cameraDirection.z -= Math.cos(angleX);
+      cameraDirection.x -= Math.sin(angleX);
+      cameraDirection.z -= Math.cos(angleX);
 
-    if (cameraDirection.y < 0.85 * ufo_scale) {
-      angleY += up / 600 / Math.PI * fps_speed * ufo_scale;
-    }
-    if (cameraDirection.y > -0.8 * ufo_scale) {
-      angleY -= down / 500 / Math.PI * fps_speed * ufo_scale;
-    }
-    angleY = Math.max(-0.015 * ufo_scale, Math.min(0.018 * ufo_scale, angleY));
-    cameraDirection.y += Math.sin(angleY) * 20 / ufo_scale;
-    cameraDirection.y = Math.max(-0.8 * ufo_scale, Math.min(0.85 * ufo_scale, cameraDirection.y));
-    //console.log(cameraDirection.y)
-    cameraDirection.setLength(2.4 * ufo_scale);
-    //console.log(cameraDirection.y)
-
-
-
-
+      if (cameraDirection.y < 0.9 * ufo_scale&&!scaling) {
+        angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
+      }
+      if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
+        angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
+      }
+      //console.log(angleY)
+      cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
+      cameraDirection.setLength(2.4 * ufo_scale);
 
 
 

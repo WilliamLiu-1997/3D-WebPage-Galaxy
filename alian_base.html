@@ -206,6 +206,7 @@
   var angleY = 0;
   var angleZX = 0;
   var angleZY = 0;
+    var scaling=false;
 
   var speed = 1;
   var obj3d = new THREE.Object3D();
@@ -309,10 +310,10 @@
       }),
       sunDirection: new THREE.Vector3(),
       sunColor: 0xffffff,
-waterColor: 0x001e1f,
+      waterColor: 0x001e1f,
       distortionScale: 3,
       fog: scene.fog !== undefined
-    }
+    },0.6
   );
   const ju_map = new THREE.TextureLoader().load("./texture/ju.jpg");
     var jupiter_m=new THREE.MeshBasicMaterial({
@@ -1212,25 +1213,18 @@ waterColor: 0x001e1f,
     }
 
     angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fps_speed;
-    cameraDirection.x -= Math.sin(angleX);
-    cameraDirection.z -= Math.cos(angleX);
+      cameraDirection.x -= Math.sin(angleX);
+      cameraDirection.z -= Math.cos(angleX);
 
-    if (cameraDirection.y < 0.85 * ufo_scale) {
-      angleY += up / 600 / Math.PI * fps_speed * ufo_scale;
-    }
-    if (cameraDirection.y > -0.8 * ufo_scale) {
-      angleY -= down / 500 / Math.PI * fps_speed * ufo_scale;
-    }
-    angleY = Math.max(-0.015 * ufo_scale, Math.min(0.018 * ufo_scale, angleY));
-    cameraDirection.y += Math.sin(angleY) * 20 / ufo_scale;
-    cameraDirection.y = Math.max(-0.8 * ufo_scale, Math.min(0.85 * ufo_scale, cameraDirection.y));
-    cameraDirection.setLength(2.4 * ufo_scale);
-
-
-
-
-
-
+      if (cameraDirection.y < 0.9 * ufo_scale&&!scaling) {
+        angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
+      }
+      if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
+        angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
+      }
+      //console.log(angleY)
+      cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
+      cameraDirection.setLength(2.4 * ufo_scale);
 
 
 

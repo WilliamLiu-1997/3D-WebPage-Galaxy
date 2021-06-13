@@ -237,6 +237,7 @@
     var chaseing_frame = 50;
     var safe_dis = 2.25;
     var hit_open = false;
+    var scaling=false;
 
     var SEPARATION = 150,
       AMOUNTX = 20,
@@ -1689,28 +1690,21 @@
           currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
         }
       }
-
       angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fps_speed;
       cameraDirection.x -= Math.sin(angleX);
       cameraDirection.z -= Math.cos(angleX);
 
-      if (cameraDirection.y < 0.85 * ufo_scale) {
-        angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale;
+      if (cameraDirection.y < 0.9 * ufo_scale&&!scaling) {
+        angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
       }
-      if (cameraDirection.y > -0.8 * ufo_scale) {
-        angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale;
+      if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
+        angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
       }
-      angleY = Math.max(
-        -0.015 * ufo_scale,
-        Math.min(0.018 * ufo_scale, angleY)
-      );
-      cameraDirection.y += (Math.sin(angleY) * 20) / ufo_scale;
-      cameraDirection.y = Math.max(
-        -0.8 * ufo_scale,
-        Math.min(0.85 * ufo_scale, cameraDirection.y)
-      );
+      //console.log(angleY)
+      cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
       cameraDirection.setLength(2.4 * ufo_scale);
 
+      
       if (
         add_solar &&
         selected_object &&
@@ -2037,7 +2031,7 @@ go_alian_base()
         else if(follow_frame3>FPS*5){
 go_lightning()
         }
-        if (meteorites.length < 7) {
+        if (meteorites.length < 12) {
           var meteorite1 = generate_meteoriteObject3D(8);
           meteorites.push(meteorite1);
           scene.add(meteorite1[0]);
