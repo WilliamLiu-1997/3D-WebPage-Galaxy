@@ -1386,7 +1386,6 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     // MeshWater.material.uniforms[ 'time' ].value += 1.0 / 120.0;
     requestAnimationFrame(animate);
     timeStamp += delta;
-    console.log(ufo.position.y)
     if (timeStamp > singleFrameTime) {
       stats.update()
       
