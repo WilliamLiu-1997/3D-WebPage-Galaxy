@@ -404,8 +404,8 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     // }
     
   scene.fog = new THREE.Fog(0x555555, 1, 1000);
-    var cloudx=56
-    var cloudy=56
+    var cloudx=60
+    var cloudy=60
     var clouds=30
     var i = 0;
     for (var ix = 0; ix < cloudx; ix++) {
@@ -952,7 +952,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
 
 
   function bounder_detect() {
-    var distance=Math.sqrt(cameraPosition.x*cameraPosition.x+cameraPosition.z*cameraPosition.z)-400
+    var distance=Math.sqrt(cameraPosition.x*cameraPosition.x+cameraPosition.z*cameraPosition.z)-300
     var dir=vec.clone().set(0-cameraPosition.x,0,0-cameraPosition.z).normalize()
     if(distance>0){
       selected_object=false;
