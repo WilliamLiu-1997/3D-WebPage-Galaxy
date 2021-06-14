@@ -19,6 +19,7 @@
       left: 0;
       bottom: 0;
     }
+
     #blocker1 {
       position: absolute;
       text-align: center;
@@ -26,8 +27,9 @@
       height: 100%;
       padding-left: 10%;
       background-color: rgba(0, 0, 0, 0.5);
-      display:none;
+      display: none;
     }
+
     #blocker {
       position: absolute;
       text-align: center;
@@ -43,8 +45,8 @@
       width: 88%;
       height: 5%;
       margin: 5%;
-        margin-top: 0.5%;
-        font-size: 2.5vh;
+      margin-top: 0.5%;
+      font-size: 2.5vh;
       text-align: center;
       color: #ffffffcc;
       background-color: rgba(0, 0, 0, 0);
@@ -76,7 +78,7 @@
       </p>
       <a class="btn" onclick="hideMe()">START EXPLORATION</a><br>
       <!--<a class="btn1" onclick="goSolar()">Go Solar</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="btn1" onclick="goIsland()">Go Island</a>-->
-      
+
     </div>
   </div>
 </body>
@@ -206,7 +208,7 @@
   var angleY = 0;
   var angleZX = 0;
   var angleZY = 0;
-    var scaling=false;
+  var scaling = false;
 
   var speed = 1;
   var obj3d = new THREE.Object3D();
@@ -313,17 +315,17 @@
       waterColor: 0x001e1f,
       distortionScale: 3,
       fog: scene.fog !== undefined
-    },0.6
+    }, 0.6
   );
   const ju_map = new THREE.TextureLoader().load("./texture/ju.jpg");
-    var jupiter_m=new THREE.MeshBasicMaterial({
-      map:ju_map,
-      transparent:true,
-      opacity:0.75
-    }
-    )
-  var jupiter=new THREE.Mesh(new THREE.PlaneGeometry(2500,2500),jupiter_m)
-  jupiter.name="jupiter"
+  var jupiter_m = new THREE.MeshBasicMaterial({
+    map: ju_map,
+    transparent: true,
+    opacity: 0.75
+  }
+  )
+  var jupiter = new THREE.Mesh(new THREE.PlaneGeometry(2500, 2500), jupiter_m)
+  jupiter.name = "jupiter"
   const normalMap2 = new THREE.TextureLoader().load("./three.js/examples/textures/water/Water_1_M_Normal.jpg");
   const clearcoatNormaMap = new THREE.TextureLoader().load("./three.js/examples/textures/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png");
 
@@ -704,12 +706,12 @@
     var new_light10 = big_light.clone();
     new_light10.position.set(-82.5, -215.15, -47.75);
     new_light10.scale.set(2.5, 6.2, 2.5);
-    if(add_base)all_obj2.add(new_light10);
+    if (add_base) all_obj2.add(new_light10);
 
     var new_light11 = big_light.clone();
     new_light11.position.set(69.25, -215.15, -47.75);
     new_light11.scale.set(2.5, 6.2, 2.5);
-    if(add_base)all_obj2.add(new_light11);
+    if (add_base) all_obj2.add(new_light11);
 
     var new_light12 = big_light.clone();
     new_light12.position.set(82.1, -400.6, -196.4);
@@ -777,9 +779,9 @@
     // new_light7.position.set(-0.2, -143.45, -31.65);
     // new_light7.scale.set(1.2, 3.6, 1.2);
     // if(add_base)all_obj2.add(new_light7);
-    jupiter.position.set(0,4000,-6500)
+    jupiter.position.set(0, 4000, -6500)
     //jupiter.rotation.z=Math.PI/4
-    jupiter.rotation.x=Math.PI/7
+    jupiter.rotation.x = Math.PI / 7
     scene.add(jupiter)
 
 
@@ -894,8 +896,8 @@
       new THREE.SphereGeometry(size, 50, 50),
       new THREE.MeshStandardMaterial({
         map: startTexture,
-        transparent:true,
-        opacity:0.4
+        transparent: true,
+        opacity: 0.4
       })
     );
     star_radius[name] = size;
@@ -974,22 +976,22 @@
 
 
   function bounder_detect() {
-    var distance=Math.sqrt(cameraPosition.x*cameraPosition.x+cameraPosition.z*cameraPosition.z)-1500
-    var dir=vec.clone().set(0-cameraPosition.x,0,0-cameraPosition.z).normalize()
-    if(distance>0){
-      selected_object=false;
-      cameraPosition.z+=distance*dir.z
-      cameraPosition.x+=distance*dir.x
+    var distance = Math.sqrt(cameraPosition.x * cameraPosition.x + cameraPosition.z * cameraPosition.z) - 1500
+    var dir = vec.clone().set(0 - cameraPosition.x, 0, 0 - cameraPosition.z).normalize()
+    if (distance > 0) {
+      selected_object = false;
+      cameraPosition.z += distance * dir.z
+      cameraPosition.x += distance * dir.x
     }
     // cameraPosition.x = Math.max(-1500, Math.min(1500, cameraPosition.x));
     // cameraPosition.z = Math.max(-1500, Math.min(1500, cameraPosition.z));
     cameraPosition.y = Math.max(-508 + 0.55 * ufo_scale, Math.min(1200, cameraPosition.y));
-    if(cameraPosition.y>500){
-      selected_object=false;
-      document.getElementById("blocker1").style.backgroundColor="rgba(0, 0, 0, 1)";
+    if (cameraPosition.y > 500) {
+      selected_object = false;
+      document.getElementById("blocker1").style.backgroundColor = "rgba(0, 0, 0, 1)";
       $("#blocker1").fadeIn(2500);
-      setTimeout(function(){window.location.href="solar.html";},3500);
-      
+      setTimeout(function () { window.location.href = "solar.html"; }, 3500);
+
     }
     //  if (crash_detect(ufo, sun, "sun") && crash_detect(ufo, star1, "star1") && crash_detect(ufo, star2, "star2") && crash_detect(ufo, star3, "star3") && crash_detect(ufo, starlite3, "starlite3") && crash_detect(ufo, star4, "star4") && crash_detect(ufo, star5, "star5") && crash_detect(ufo, star6, "star6") && crash_detect(ufo, starlite6, "starlite6") && crash_detect(ufo, star7, "star7") && crash_detect(ufo, star8, "star8") && crash_detect(ufo, star9, "star9")) return false;
     //  else return true;
@@ -1213,18 +1215,18 @@
     }
 
     angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fps_speed;
-      cameraDirection.x -= Math.sin(angleX);
-      cameraDirection.z -= Math.cos(angleX);
+    cameraDirection.x -= Math.sin(angleX);
+    cameraDirection.z -= Math.cos(angleX);
 
-      if (cameraDirection.y < 0.85 * ufo_scale&&!scaling) {
-        angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
-      }
-      if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
-        angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
-      }
-      //console.log(angleY)
-      cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
-      cameraDirection.setLength(2.4 * ufo_scale);
+    if (cameraDirection.y < 0.85 * ufo_scale && !scaling) {
+      angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale * Math.sqrt(ufo_scale);
+    }
+    if (cameraDirection.y > -0.8 * ufo_scale && !scaling) {
+      angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale * Math.sqrt(ufo_scale);
+    }
+    //console.log(angleY)
+    cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
+    cameraDirection.setLength(2.4 * ufo_scale);
 
 
 
@@ -1238,15 +1240,15 @@
       catchspeed = Math.min(catchspeed + 0.01 * fps_speed, 1.2 * fps_speed)
 
 
-      var distance=Math.sqrt(selected_object.point.x*selected_object.point.x+selected_object.point.z*selected_object.point.z)-1500
-    var dir=vec.clone().set(0-selected_object.point.x,0,0-selected_object.point.z).normalize()
-    if(distance>0){
-      var z=selected_object.point.z+distance*dir.z
-      var x=selected_object.point.x+distance*dir.x
-    }else{
-      var z=selected_object.point.z
-      var x=selected_object.point.x
-    }
+      var distance = Math.sqrt(selected_object.point.x * selected_object.point.x + selected_object.point.z * selected_object.point.z) - 1500
+      var dir = vec.clone().set(0 - selected_object.point.x, 0, 0 - selected_object.point.z).normalize()
+      if (distance > 0) {
+        var z = selected_object.point.z + distance * dir.z
+        var x = selected_object.point.x + distance * dir.x
+      } else {
+        var z = selected_object.point.z
+        var x = selected_object.point.x
+      }
 
       var delx = x - cameraPosition.x;
       var dely = selected_object.point.y - cameraPosition.y;
@@ -1274,7 +1276,7 @@
         tranfer_speed = Math.max(tranfer_speed - 0.1 * fps_speed, 1);
         arrived -= 1;
       }
-      if(chasing.distanceTo(vec.clone().set(0,0,0))>500)chasing.setLength(500)
+      if (chasing.distanceTo(vec.clone().set(0, 0, 0)) > 500) chasing.setLength(500)
       cameraPosition.x += chasing.x * catchspeed / 50;
       cameraPosition.y += chasing.y * catchspeed / 50;
       cameraPosition.z += chasing.z * catchspeed / 50;
@@ -1458,8 +1460,8 @@
           all_obj2.children[i].children[0].color.r = 0.9
           all_obj2.children[i].children[0].color.g = 0.92
           all_obj2.children[i].children[0].color.b = 1
-          if(i==2||i==3){all_obj2.children[i].children[0].intensity = 0.3}
-            else{all_obj2.children[i].children[0].intensity = 0.6}
+          if (i == 2 || i == 3) { all_obj2.children[i].children[0].intensity = 0.3 }
+          else { all_obj2.children[i].children[0].intensity = 0.6 }
           all_obj2.children[i].children[1].material.color.r = 0.9
           all_obj2.children[i].children[1].material.color.g = 0.92
           all_obj2.children[i].children[1].material.color.b = 1
@@ -1472,17 +1474,17 @@
         city1.children[0].children[1].material.emissive.r = 0.33
         // city1.children[0].children[2].material.color.r = 0.3
         // city1.children[0].children[2].material.emissive.r = 0.3
-        env_light.color.r = 0.10/1.5
+        env_light.color.r = 0.10 / 1.5
         city1.children[0].children[1].material.color.g = 0.63
         city1.children[0].children[1].material.emissive.g = 0.63
         // city1.children[0].children[2].material.color.g = 0.6
         // city1.children[0].children[2].material.emissive.g = 0.6
-        env_light.color.g = 0.11/1.5
+        env_light.color.g = 0.11 / 1.5
         city1.children[0].children[1].material.color.b = 0.70
         city1.children[0].children[1].material.emissive.b = 0.70
         // city1.children[0].children[2].material.color.b = 0.65
         // city1.children[0].children[2].material.emissive.b = 0.65
-        env_light.color.b = 0.13/1.5
+        env_light.color.b = 0.13 / 1.5
         // for(var i=5;i<10;i++)
         // {
         //   all_obj2.children[i].material.emissive.r=0.475
@@ -1490,7 +1492,7 @@
         //   all_obj2.children[i].material.emissive.b=1
         // }
       }
-      else{
+      else {
         // all_obj3.children[0].material.color.r=1
         // all_obj3.children[0].material.color.g=0.3
         // all_obj3.children[0].material.color.b=0.3
@@ -1498,48 +1500,48 @@
         // all_obj3.children[0].material.specular.g=0
         // all_obj3.children[0].material.specular.b=0
         all_obj3.children[0].material.opacity = Math.abs(Math.sin(count * 4000)) * 0.36 + 0.64
-          all_obj3.children[0].material.color.r = 1
-          all_obj3.children[0].material.color.g = 0.3
-          all_obj3.children[0].material.color.b = 0.3
-          all_obj3.children[1].material.uniforms['glowColor'].value = shield_color_red
-          var loop_red = Math.abs(Math.sin(count * 50)) * 0.6 + 0.2
-          for (var i = 0; i < 5; i++) {
-            all_obj2.children[i].children[0].color.r = 1 * loop_red
-            all_obj2.children[i].children[0].color.g = 0.2 * loop_red
-            all_obj2.children[i].children[0].color.b = 0.2 * loop_red
-            if(i==2||i==3){all_obj2.children[i].children[0].intensity = 0.4}
-            else{all_obj2.children[i].children[0].intensity = 0.8}
-            
-            all_obj2.children[i].children[1].material.color.r = 1 * loop_red
-            all_obj2.children[i].children[1].material.color.g = 1 * loop_red
-            all_obj2.children[i].children[1].material.color.b = 1 * loop_red
+        all_obj3.children[0].material.color.r = 1
+        all_obj3.children[0].material.color.g = 0.3
+        all_obj3.children[0].material.color.b = 0.3
+        all_obj3.children[1].material.uniforms['glowColor'].value = shield_color_red
+        var loop_red = Math.abs(Math.sin(count * 50)) * 0.6 + 0.2
+        for (var i = 0; i < 5; i++) {
+          all_obj2.children[i].children[0].color.r = 1 * loop_red
+          all_obj2.children[i].children[0].color.g = 0.2 * loop_red
+          all_obj2.children[i].children[0].color.b = 0.2 * loop_red
+          if (i == 2 || i == 3) { all_obj2.children[i].children[0].intensity = 0.4 }
+          else { all_obj2.children[i].children[0].intensity = 0.8 }
 
-            all_obj2.children[i].children[1].material.emissive.r = 1 * loop_red
-            all_obj2.children[i].children[1].material.emissive.g = 0.2 * loop_red
-            all_obj2.children[i].children[1].material.emissive.b = 0.2 * loop_red
-          }
-          city1.children[0].children[1].material.color.r = 0.75 * loop_red
-          city1.children[0].children[1].material.emissive.r = 0.75 * loop_red
-          // city1.children[0].children[2].material.color.r = 0.4 * loop_red
-          // city1.children[0].children[2].material.emissive.r = 0.4 * loop_red
-          env_light.color.r = 0.1 * loop_red
-          city1.children[0].children[1].material.color.g = 0.15 * loop_red
-          city1.children[0].children[1].material.emissive.g = 0.15 * loop_red
-          // city1.children[0].children[2].material.color.g = 0.08 * loop_red
-          // city1.children[0].children[2].material.emissive.g = 0.08 * loop_red
-          env_light.color.g = 0.08 * loop_red
-          city1.children[0].children[1].material.color.b = 0.15 * loop_red
-          city1.children[0].children[1].material.emissive.b = 0.15 * loop_red
-          // city1.children[0].children[2].material.color.b = 0.08 * loop_red
-          // city1.children[0].children[2].material.emissive.b = 0.08 * loop_red
-          env_light.color.b = 0.08 * loop_red
-          // for(var i=5;i<10;i++)
-          // {
-          //   all_obj2.children[i].material.emissive.r=0
-          //   all_obj2.children[i].material.emissive.g=0
-          //   all_obj2.children[i].material.emissive.b=0
-          // }
-        
+          all_obj2.children[i].children[1].material.color.r = 1 * loop_red
+          all_obj2.children[i].children[1].material.color.g = 1 * loop_red
+          all_obj2.children[i].children[1].material.color.b = 1 * loop_red
+
+          all_obj2.children[i].children[1].material.emissive.r = 1 * loop_red
+          all_obj2.children[i].children[1].material.emissive.g = 0.2 * loop_red
+          all_obj2.children[i].children[1].material.emissive.b = 0.2 * loop_red
+        }
+        city1.children[0].children[1].material.color.r = 0.75 * loop_red
+        city1.children[0].children[1].material.emissive.r = 0.75 * loop_red
+        // city1.children[0].children[2].material.color.r = 0.4 * loop_red
+        // city1.children[0].children[2].material.emissive.r = 0.4 * loop_red
+        env_light.color.r = 0.1 * loop_red
+        city1.children[0].children[1].material.color.g = 0.15 * loop_red
+        city1.children[0].children[1].material.emissive.g = 0.15 * loop_red
+        // city1.children[0].children[2].material.color.g = 0.08 * loop_red
+        // city1.children[0].children[2].material.emissive.g = 0.08 * loop_red
+        env_light.color.g = 0.08 * loop_red
+        city1.children[0].children[1].material.color.b = 0.15 * loop_red
+        city1.children[0].children[1].material.emissive.b = 0.15 * loop_red
+        // city1.children[0].children[2].material.color.b = 0.08 * loop_red
+        // city1.children[0].children[2].material.emissive.b = 0.08 * loop_red
+        env_light.color.b = 0.08 * loop_red
+        // for(var i=5;i<10;i++)
+        // {
+        //   all_obj2.children[i].material.emissive.r=0
+        //   all_obj2.children[i].material.emissive.g=0
+        //   all_obj2.children[i].material.emissive.b=0
+        // }
+
       }
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
@@ -1574,11 +1576,11 @@
     $("#blocker").fadeOut(2000);
     $("#secondBlocker").delay(1200).fadeIn(1000);
   }
-  function goSolar(){
-    window.location.href="solar.html"
+  function goSolar() {
+    window.location.href = "solar.html"
   }
-  function goIsland(){
-    window.location.href="island.html"
+  function goIsland() {
+    window.location.href = "island.html"
   }
 </script>
 

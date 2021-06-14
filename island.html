@@ -67,7 +67,9 @@
     <div id="aiming1">
       <img src="img/aiming4.png" width="19px" height="19px" />
     </div>
-    <div id="secondBlocker" style="display: none">Press Q or E to change the size of UFO. Current size: 30%</div>
+    <div id="secondBlocker" style="display: none">
+      Press Q or E to change the size of UFO. Current size: 30%
+    </div>
     <div id="blocker1"></div>
     <div id="blocker">
       <div id="content">
@@ -144,7 +146,7 @@
     var chasing = vec.clone();
     var chaseing_frame = 50;
     var safe_dis = 2.25;
-    var scaling=false;
+    var scaling = false;
     var last_action;
 
     var SEPARATION = 250,
@@ -598,8 +600,8 @@
         2
       );
       village1.position.set(-900 + 1000, -505 + 500, -100 + 300);
-      village1.rotation.x=Math.PI/180
-      village1.rotation.z=Math.PI/2000
+      village1.rotation.x = Math.PI / 180;
+      village1.rotation.z = Math.PI / 2000;
       village1.name = "Village1";
       if (add_base) all_obj2.add(village1);
 
@@ -695,106 +697,119 @@
     init();
 
     var onKeyDown = function (e) {
-        switch (e.keyCode) {
-          case 87:
-          case 38:
-            moveForward = true;
-            selected_object = false;
-            break;
+      switch (e.keyCode) {
+        case 87:
+        case 38:
+          moveForward = true;
+          selected_object = false;
+          break;
 
-          case 83:
-          case 40:
-            moveBackward = true;
-            selected_object = false;
-            break;
+        case 83:
+        case 40:
+          moveBackward = true;
+          selected_object = false;
+          break;
 
-          case 65:
-          case 37:
-            moveLeft = true;
-            selected_object = false;
-            break;
+        case 65:
+        case 37:
+          moveLeft = true;
+          selected_object = false;
+          break;
 
-          case 68:
-          case 39:
-            moveRight = true;
-            selected_object = false;
-            break;
+        case 68:
+        case 39:
+          moveRight = true;
+          selected_object = false;
+          break;
 
-          case 16:
-            fast = true;
-            break;
+        case 16:
+          fast = true;
+          break;
 
-            case 27:
+        case 27:
           esc = true;
-            $("#blocker").fadeIn(1200);
-            $("#content").fadeIn(1200);
-            $("#secondBlocker").fadeOut(600);
-            break;
+          $("#blocker").fadeIn(1200);
+          $("#content").fadeIn(1200);
+          $("#secondBlocker").fadeOut(600);
+          break;
 
-          case 69:
-            ufo_scale+= 0.025;
-            if(ufo_scale<=10){angleY=angleY*0.995}
-            ufo_scale=Math.min(10,ufo_scale)
-            ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
-            scaling=true;
-            document.getElementById("secondBlocker").innerHTML ="Press Q or E to change the size of UFO. Current size: "+Math.floor(ufo_scale*10).toString()+"%"
-            break;
+        case 69:
+          ufo_scale += 0.025;
+          if (ufo_scale <= 10) {
+            angleY = angleY * 0.995;
+          }
+          ufo_scale = Math.min(10, ufo_scale);
+          ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
+          scaling = true;
+          document.getElementById("secondBlocker").innerHTML =
+            "Press Q or E to change the size of UFO. Current size: " +
+            Math.floor(ufo_scale * 10).toString() +
+            "%";
+          break;
 
-          case 81:
-            ufo_scale-= 0.025;
-          if(ufo_scale>=1){if(angleY>0.1||angleY<-0.1){angleY=angleY*0.985} else{angleY=angleY*0.96}}
-            ufo_scale=Math.max(1,ufo_scale)
-            ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
-            scaling=true;
-            document.getElementById("secondBlocker").innerHTML ="Press Q or E to change the size of UFO. Current size: "+Math.floor(ufo_scale*10).toString()+"%"
-            break;
-        }
-      };
+        case 81:
+          ufo_scale -= 0.025;
+          if (ufo_scale >= 1) {
+            if (angleY > 0.1 || angleY < -0.1) {
+              angleY = angleY * 0.985;
+            } else {
+              angleY = angleY * 0.96;
+            }
+          }
+          ufo_scale = Math.max(1, ufo_scale);
+          ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
+          scaling = true;
+          document.getElementById("secondBlocker").innerHTML =
+            "Press Q or E to change the size of UFO. Current size: " +
+            Math.floor(ufo_scale * 10).toString() +
+            "%";
+          break;
+      }
+    };
 
-      var onKeyUp = function (e) {
-        switch (e.keyCode) {
-          case 87:
-          case 38:
-            moveForward = false;
-            break;
+    var onKeyUp = function (e) {
+      switch (e.keyCode) {
+        case 87:
+        case 38:
+          moveForward = false;
+          break;
 
-          case 83:
-          case 40:
-            moveBackward = false;
-            break;
+        case 83:
+        case 40:
+          moveBackward = false;
+          break;
 
-          case 65:
-          case 37:
-            moveLeft = false;
-            break;
+        case 65:
+        case 37:
+          moveLeft = false;
+          break;
 
-          case 68:
-          case 39:
-            moveRight = false;
-            break;
+        case 68:
+        case 39:
+          moveRight = false;
+          break;
 
-          case 16:
-            fast = false;
-            break;
+        case 16:
+          fast = false;
+          break;
 
-          case 69:
-            speedup = false;
-            scaling=false;
-            break;
+        case 69:
+          speedup = false;
+          scaling = false;
+          break;
 
-          case 81:
-            speeddown = false;
-            scaling=false;
-            break;
-        }
-      };
+        case 81:
+          speeddown = false;
+          scaling = false;
+          break;
+      }
+    };
 
-      document.addEventListener("keydown", onKeyDown, false);
-      document.addEventListener("keyup", onKeyUp, false);
-
+    document.addEventListener("keydown", onKeyDown, false);
+    document.addEventListener("keyup", onKeyUp, false);
 
     let model,
-    head, // Our character
+      head, // Our character
       neck, // Reference to the neck bone in the skeleton
       waist, // Reference to the waist bone in the skeleton
       possibleAnims, // Animations found in our file
@@ -805,11 +820,8 @@
       //raycaster = new THREE.Raycaster(),  // Used to detect the click on our character
       loaderAnim = document.getElementById("js-loader");
 
-    const MODEL_PATH =
-      "./obj/model/model.glb";
-    let stacy_txt = new THREE.TextureLoader().load(
-      "./obj/model/model.jpg"
-    );
+    const MODEL_PATH = "./obj/model/model.glb";
+    let stacy_txt = new THREE.TextureLoader().load("./obj/model/model.jpg");
 
     stacy_txt.flipY = false; // we flip the texture so that its the right way up
 
@@ -843,7 +855,7 @@
         });
         model.scale.set(1, 1, 1);
         model.position.set(95.5, -3.85, 204);
-        model.rotation.x=Math.PI/50
+        model.rotation.x = Math.PI / 50;
         if (add_base) all_obj2.add(model);
         loaderAnim.remove();
         mixer = new THREE.AnimationMixer(model);
@@ -866,7 +878,7 @@
 
         idle = mixer.clipAction(idleAnim);
         idle.play();
-        last_action=idle;
+        last_action = idle;
       },
       undefined, // We don't need this function
       function (error) {
@@ -1109,9 +1121,9 @@
       }
       cameraPosition.y = Math.max(
         -4.2 + 0.55 * ufo_scale,
-        Math.min(1200, cameraPosition.y)
+        Math.min(1000, cameraPosition.y)
       );
-      if (cameraPosition.y > 900) {
+      if (cameraPosition.y > 500) {
         selected_object = false;
         document.getElementById("blocker1").style.backgroundColor =
           "rgba(0, 0, 0, 1)";
@@ -1417,11 +1429,13 @@
       cameraDirection.x -= Math.sin(angleX);
       cameraDirection.z -= Math.cos(angleX);
 
-      if (cameraDirection.y < 0.85 * ufo_scale&&!scaling) {
-        angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
+      if (cameraDirection.y < 0.85 * ufo_scale && !scaling) {
+        angleY +=
+          (up / 600 / Math.PI) * fps_speed * ufo_scale * Math.sqrt(ufo_scale);
       }
-      if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
-        angleY -= (down / 500 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
+      if (cameraDirection.y > -0.8 * ufo_scale && !scaling) {
+        angleY -=
+          (down / 500 / Math.PI) * fps_speed * ufo_scale * Math.sqrt(ufo_scale);
       }
       //console.log(angleY)
       cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
@@ -1550,7 +1564,11 @@
       ufo.rotation.y += (0.01 / Math.PI) * speed * tranfer_speed * fps_speed;
       ufo.position.y += Math.sin(count * 60) * 0.01 * speed * ufo_scale;
 
-      camera.position.set(cameraPosition.x - cameraDirection.x, cameraPosition.y - cameraDirection.y + 0.6 * ufo_scale, cameraPosition.z - cameraDirection.z);
+      camera.position.set(
+        cameraPosition.x - cameraDirection.x,
+        cameraPosition.y - cameraDirection.y + 0.6 * ufo_scale,
+        cameraPosition.z - cameraDirection.z
+      );
       // camera.position.set(
       //   (cameraPosition.x - cameraDirection.x - camera.position.x) / follow +
       //     camera.position.x,
@@ -1642,7 +1660,7 @@
       return false;
     }
 
-    var action=false;
+    var action = false;
     function playOnClick(anim) {
       if (action) {
         clearTimeout(action);
@@ -1664,18 +1682,20 @@
         );
       }
     }
-var head_turn=true
-    function playModifierAnimation(from, fSpeed, to, tSpeed, no_head=false) {
+    var head_turn = true;
+    function playModifierAnimation(from, fSpeed, to, tSpeed, no_head = false) {
       last_action = to;
       to.setLoop(THREE.LoopOnce);
       to.reset();
-      if(no_head){
-        head_turn=false
+      if (no_head) {
+        head_turn = false;
       }
       to.play();
       from.crossFadeTo(to, fSpeed, true);
       var a = setTimeout(function () {
-        if(no_head){head_turn=true}
+        if (no_head) {
+          head_turn = true;
+        }
         idle.enabled = true;
         to.crossFadeTo(idle, tSpeed, true);
         last_action = idle;
@@ -1689,19 +1709,31 @@ var head_turn=true
       x = x - 47.75;
       y = y + 1.12;
       z = z - 102;
-      var dz = ((90 - Math.abs(Math.atan2(x,y) * 180) / Math.PI) / 90) * degreeLimit/2;
-      if(x<0){dz=-dz}
-      z = Math.max(0,z);
+      var dz =
+        (((90 - Math.abs(Math.atan2(x, y) * 180) / Math.PI) / 90) *
+          degreeLimit) /
+        2;
+      if (x < 0) {
+        dz = -dz;
+      }
+      z = Math.max(0, z);
       var dy = ((90 - (Math.atan2(z, x) * 180) / Math.PI) / 90) * degreeLimit;
-      z = Math.max(0.1,z);
-      var dx = -((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) * degreeLimit/2;
-      return { x: dx, y: dy, z:dz};
+      z = Math.max(0.1, z);
+      var dx =
+        (-((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) * degreeLimit) / 2;
+      return { x: dx, y: dy, z: dz };
     }
     function moveJoint(mouse, joint, degreeLimit) {
       let degrees = getMouseDegrees(mouse.x, mouse.y, mouse.z, degreeLimit);
-      joint.rotation.x = (THREE.Math.degToRad(degrees.x)-joint.rotation.x)/10+joint.rotation.x;
-      joint.rotation.y = (THREE.Math.degToRad(degrees.y)-joint.rotation.y)/10+joint.rotation.y;
-      joint.rotation.z = (THREE.Math.degToRad(degrees.z)-joint.rotation.z)/10+joint.rotation.z;
+      joint.rotation.x =
+        (THREE.Math.degToRad(degrees.x) - joint.rotation.x) / 10 +
+        joint.rotation.x;
+      joint.rotation.y =
+        (THREE.Math.degToRad(degrees.y) - joint.rotation.y) / 10 +
+        joint.rotation.y;
+      joint.rotation.z =
+        (THREE.Math.degToRad(degrees.z) - joint.rotation.z) / 10 +
+        joint.rotation.z;
     }
     var wait_time = 0;
     var scare = false;
@@ -1748,7 +1780,7 @@ var head_turn=true
         count += 0.0005 * fps_speed;
 
         operation_method_1(delta);
-        
+
         if (mixer) {
           mixer.update(delta);
         }
@@ -1779,12 +1811,12 @@ var head_turn=true
             moveJoint(ufo.position, waist, 30);
           }
         } else {
-          neck.rotation.y = neck.rotation.y*0.9;
-          neck.rotation.x =  neck.rotation.x*0.9;
-          waist.rotation.y =  waist.rotation.y*0.9;
-          waist.rotation.x =  waist.rotation.x*0.9;
-          neck.rotation.z =  neck.rotation.z*0.9;
-          waist.rotation.z =  waist.rotation.z*0.9;
+          neck.rotation.y = neck.rotation.y * 0.9;
+          neck.rotation.x = neck.rotation.x * 0.9;
+          waist.rotation.y = waist.rotation.y * 0.9;
+          waist.rotation.x = waist.rotation.x * 0.9;
+          neck.rotation.z = neck.rotation.z * 0.9;
+          waist.rotation.z = waist.rotation.z * 0.9;
           if (!currentlyAnimating) {
             wait_time++;
             if (wait_time > 5 * FPS) {
@@ -1798,7 +1830,9 @@ var head_turn=true
           }
           scare = false;
         }
-        if(!head_turn){head.rotation.y=0;}
+        if (!head_turn) {
+          head.rotation.y = 0;
+        }
 
         all_obj4.children[1].position.y = -2.85 + 0.5 * Math.sin(count * 2);
 
