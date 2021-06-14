@@ -135,7 +135,7 @@ import { Water } from './three.js/examples/jsm/objects/Water.js';
   var vec = new THREE.Vector3();
   var start_point = new THREE.Vector3(0, 0, 0);
   var last_position = start_point.clone().set(-131.66, -465, 1296.76);
-  var cameraPosition = vec.clone().set(0, 10, 0);
+  var cameraPosition = vec.clone().set(0, 30, 0);
   var cameraDirection = vec.clone().set(0, 0, 0);
   var hit_direction = vec.clone().set(0, 0, 0);
   var hit_frame = 0;
@@ -959,7 +959,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
       cameraPosition.z+=distance*dir.z
       cameraPosition.x+=distance*dir.x
     }
-    cameraPosition.y = Math.max(-4.2 + 0.55 * ufo_scale+32.5, Math.min(210, cameraPosition.y));
+    cameraPosition.y = Math.max(0.55 * ufo_scale, Math.min(210, cameraPosition.y));
     if(cameraPosition.y>180){
       selected_object=false;
       document.getElementById("blocker1").style.backgroundColor="rgba(0, 0, 0, 1)";
@@ -1386,6 +1386,7 @@ var ufo_material = new THREE.MeshPhysicalMaterial( {
     // MeshWater.material.uniforms[ 'time' ].value += 1.0 / 120.0;
     requestAnimationFrame(animate);
     timeStamp += delta;
+    console.log(ufo.position.y)
     if (timeStamp > singleFrameTime) {
       stats.update()
       
