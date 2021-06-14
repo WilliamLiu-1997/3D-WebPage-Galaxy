@@ -67,7 +67,7 @@
     <div id="aiming1">
       <img src="img/aiming4.png" width="19px" height="19px" />
     </div>
-    <div id="secondBlocker" style="display: none">Press Q or E to change the size of UFO. Current size: 50%</div>
+    <div id="secondBlocker" style="display: none">Press Q or E to change the size of UFO. Current size: 30%</div>
     <div id="blocker1"></div>
     <div id="blocker">
       <div id="content">
@@ -126,7 +126,7 @@
     var meteorites = [];
     var gotoground = false;
     var arrived = 50;
-    var ufo_scale = 1;
+    var ufo_scale = 3;
 
     var color = new THREE.Color();
     var spotLight;
@@ -593,11 +593,13 @@
       ufo.position.set(0, -1000, 0);
 
       const village1 = obj_loader(
-        "obj/village1/village_new",
-        "obj/village1/village_new",
+        "obj/village1/village_final",
+        "obj/village1/village_final",
         2
       );
       village1.position.set(-900 + 1000, -505 + 500, -100 + 300);
+      village1.rotation.x=Math.PI/180
+      village1.rotation.z=Math.PI/2000
       village1.name = "Village1";
       if (add_base) all_obj2.add(village1);
 
@@ -612,7 +614,7 @@
         "obj/light3/light3",
         0.025
       );
-      citylight2.position.set(101, -3.7, 204.5);
+      citylight2.position.set(101, -3.9, 204.5);
       citylight2.rotation.y = Math.PI;
       citylight2.name = "citylight2";
       if (add_base) all_obj2.add(citylight2);
@@ -730,7 +732,7 @@
             break;
 
           case 69:
-            ufo_scale+= 0.02;
+            ufo_scale+= 0.025;
             if(ufo_scale<=10){angleY=angleY*0.995}
             ufo_scale=Math.min(10,ufo_scale)
             ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
@@ -739,8 +741,8 @@
             break;
 
           case 81:
-            ufo_scale-= 0.02;
-          if(ufo_scale>=1){if(angleY>0.1||angleY<-0.1){angleY=angleY*0.985} else{angleY=angleY*0.975}}
+            ufo_scale-= 0.025;
+          if(ufo_scale>=1){if(angleY>0.1||angleY<-0.1){angleY=angleY*0.985} else{angleY=angleY*0.96}}
             ufo_scale=Math.max(1,ufo_scale)
             ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
             scaling=true;
@@ -840,7 +842,8 @@
           }
         });
         model.scale.set(1, 1, 1);
-        model.position.set(95.5, -3.6, 204);
+        model.position.set(95.5, -3.85, 204);
+        model.rotation.x=Math.PI/50
         if (add_base) all_obj2.add(model);
         loaderAnim.remove();
         mixer = new THREE.AnimationMixer(model);
@@ -1684,12 +1687,13 @@ var head_turn=true
     function getMouseDegrees(x, y, z, degreeLimit) {
       //console.log(x,y,z)
       x = x - 47.75;
-      y = y + 1;
+      y = y + 1.12;
       z = z - 102;
-      z = Math.max(0.1,z);
       var dz = ((90 - Math.abs(Math.atan2(x,y) * 180) / Math.PI) / 90) * degreeLimit/2;
       if(x<0){dz=-dz}
+      z = Math.max(0,z);
       var dy = ((90 - (Math.atan2(z, x) * 180) / Math.PI) / 90) * degreeLimit;
+      z = Math.max(0.1,z);
       var dx = -((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) * degreeLimit/2;
       return { x: dx, y: dy, z:dz};
     }
@@ -1750,7 +1754,7 @@ var head_turn=true
         }
 
         var ufo_human_distance = ufo.position.distanceTo(
-          vec.clone().set(47.75, -1, 102)
+          vec.clone().set(47.75, -1.12, 102)
         );
         var ufo_human_z = ufo.position.z - 102;
         //console.log(ufo_human_z)
