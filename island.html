@@ -46,8 +46,8 @@
         width: 88%;
         height: 5%;
         margin: 5%;
-        margin-top: 2%;
-        font-size: 3vh;
+        margin-top: 0.5%;
+        font-size: 2.5vh;
         text-align: center;
         color: #ffffffcc;
         background-color: rgba(0, 0, 0, 0);
@@ -67,7 +67,7 @@
     <div id="aiming1">
       <img src="img/aiming4.png" width="19px" height="19px" />
     </div>
-    <div id="secondBlocker" style="display: none"></div>
+    <div id="secondBlocker" style="display: none">Press Q or E to change the size of UFO. Current size: 50%</div>
     <div id="blocker1"></div>
     <div id="blocker">
       <div id="content">
@@ -98,7 +98,7 @@
     import { GUI } from "./three.js/examples/jsm/libs/dat.gui.module.js";
     import { Water } from "./three.js/examples/jsm/objects/Water.js";
 
-    var FPS = 40;
+    var FPS = 48;
     var singleFrameTime = 1 / FPS;
     var timeStamp = 0;
     var fps_speed = 120 / FPS;
@@ -126,7 +126,7 @@
     var meteorites = [];
     var gotoground = false;
     var arrived = 50;
-    var ufo_scale = 5;
+    var ufo_scale = 1;
 
     var color = new THREE.Color();
     var spotLight;
@@ -722,10 +722,11 @@
             fast = true;
             break;
 
-          case 27:
-            esc = true;
-            $("#blocker").fadeIn(1000);
-            $("#content").fadeIn(1000);
+            case 27:
+          esc = true;
+            $("#blocker").fadeIn(1200);
+            $("#content").fadeIn(1200);
+            $("#secondBlocker").fadeOut(600);
             break;
 
           case 69:
@@ -734,6 +735,7 @@
             ufo_scale=Math.min(10,ufo_scale)
             ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
             scaling=true;
+            document.getElementById("secondBlocker").innerHTML ="Press Q or E to change the size of UFO. Current size: "+Math.floor(ufo_scale*10).toString()+"%"
             break;
 
           case 81:
@@ -742,6 +744,7 @@
             ufo_scale=Math.max(1,ufo_scale)
             ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
             scaling=true;
+            document.getElementById("secondBlocker").innerHTML ="Press Q or E to change the size of UFO. Current size: "+Math.floor(ufo_scale*10).toString()+"%"
             break;
         }
       };
@@ -788,7 +791,8 @@
       document.addEventListener("keyup", onKeyUp, false);
 
 
-    let model, // Our character
+    let model,
+    head, // Our character
       neck, // Reference to the neck bone in the skeleton
       waist, // Reference to the waist bone in the skeleton
       possibleAnims, // Animations found in our file
@@ -830,6 +834,9 @@
           }
           if (o.isBone && o.name === "mixamorigSpine") {
             waist = o;
+          }
+          if (o.isBone && o.name === "mixamorigHead") {
+            head = o;
           }
         });
         model.scale.set(1, 1, 1);
@@ -1407,7 +1414,7 @@
       cameraDirection.x -= Math.sin(angleX);
       cameraDirection.z -= Math.cos(angleX);
 
-      if (cameraDirection.y < 0.9 * ufo_scale&&!scaling) {
+      if (cameraDirection.y < 0.85 * ufo_scale&&!scaling) {
         angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
       }
       if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
@@ -1642,7 +1649,8 @@
           last_action,
           0.15,
           possibleAnims[anim],
-          0.25
+          0.25,
+          true
         );
       } else {
         action = playModifierAnimation(
@@ -1653,14 +1661,18 @@
         );
       }
     }
-
-    function playModifierAnimation(from, fSpeed, to, tSpeed) {
+var head_turn=true
+    function playModifierAnimation(from, fSpeed, to, tSpeed, no_head=false) {
       last_action = to;
       to.setLoop(THREE.LoopOnce);
       to.reset();
+      if(no_head){
+        head_turn=false
+      }
       to.play();
       from.crossFadeTo(to, fSpeed, true);
       var a = setTimeout(function () {
+        if(no_head){head_turn=true}
         idle.enabled = true;
         to.crossFadeTo(idle, tSpeed, true);
         last_action = idle;
@@ -1674,15 +1686,18 @@
       x = x - 47.75;
       y = y + 1;
       z = z - 102;
-      z = Math.abs(z);
-      var dx = ((90 - (Math.atan2(z, x) * 180) / Math.PI) / 90) * degreeLimit;
-      var dy = -((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) * degreeLimit*((1-Math.abs(dx)/degreeLimit)/2+0.5);
-      return { x: dx, y: dy };
+      z = Math.max(0.1,z);
+      var dz = ((90 - Math.abs(Math.atan2(x,y) * 180) / Math.PI) / 90) * degreeLimit/2;
+      if(x<0){dz=-dz}
+      var dy = ((90 - (Math.atan2(z, x) * 180) / Math.PI) / 90) * degreeLimit;
+      var dx = -((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) * degreeLimit/2;
+      return { x: dx, y: dy, z:dz};
     }
     function moveJoint(mouse, joint, degreeLimit) {
       let degrees = getMouseDegrees(mouse.x, mouse.y, mouse.z, degreeLimit);
-      joint.rotation.y = THREE.Math.degToRad(degrees.x);
-      joint.rotation.x = THREE.Math.degToRad(degrees.y);
+      joint.rotation.x = (THREE.Math.degToRad(degrees.x)-joint.rotation.x)/10+joint.rotation.x;
+      joint.rotation.y = (THREE.Math.degToRad(degrees.y)-joint.rotation.y)/10+joint.rotation.y;
+      joint.rotation.z = (THREE.Math.degToRad(degrees.z)-joint.rotation.z)/10+joint.rotation.z;
     }
     var wait_time = 0;
     var scare = false;
@@ -1756,7 +1771,7 @@
             }
           }
           if (neck && waist) {
-            moveJoint(ufo.position, neck, 45);
+            moveJoint(ufo.position, neck, 50);
             moveJoint(ufo.position, waist, 30);
           }
         } else {
@@ -1764,6 +1779,8 @@
           neck.rotation.x =  neck.rotation.x*0.9;
           waist.rotation.y =  waist.rotation.y*0.9;
           waist.rotation.x =  waist.rotation.x*0.9;
+          neck.rotation.z =  neck.rotation.z*0.9;
+          waist.rotation.z =  waist.rotation.z*0.9;
           if (!currentlyAnimating) {
             wait_time++;
             if (wait_time > 5 * FPS) {
@@ -1777,6 +1794,7 @@
           }
           scare = false;
         }
+        if(!head_turn){head.rotation.y=0;}
 
         all_obj4.children[1].position.y = -2.85 + 0.5 * Math.sin(count * 2);
 

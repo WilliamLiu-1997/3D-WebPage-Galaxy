@@ -43,8 +43,8 @@
       width: 88%;
       height: 5%;
       margin: 5%;
-      margin-top: 2%;
-      font-size: 3vh;
+        margin-top: 0.5%;
+        font-size: 2.5vh;
       text-align: center;
       color: #ffffffcc;
       background-color: rgba(0, 0, 0, 0);
@@ -1216,7 +1216,7 @@
       cameraDirection.x -= Math.sin(angleX);
       cameraDirection.z -= Math.cos(angleX);
 
-      if (cameraDirection.y < 0.9 * ufo_scale&&!scaling) {
+      if (cameraDirection.y < 0.85 * ufo_scale&&!scaling) {
         angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
       }
       if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {

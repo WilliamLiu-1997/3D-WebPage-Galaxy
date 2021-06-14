@@ -38,7 +38,7 @@
         height: 5%;
         margin: 5%;
         margin-top: 0.5%;
-        font-size: 3vh;
+        font-size: 2.5vh;
         text-align: center;
         color: #ffffffcc;
         background-color: rgba(0, 0, 0, 0);
@@ -218,7 +218,7 @@
     var meteorites = [];
     var gotoground = false;
     var arrived = 50;
-    var ufo_scale = 2;
+    var ufo_scale = 0.5;
 
     var color = new THREE.Color();
     var spotLight;
@@ -260,8 +260,8 @@
     var left = 0;
     var right = 0;
 
-    var maxSpeed = 0.15 * fps_speed;
-    var acc = 15 * fps_speed;
+    var maxSpeed = 0.3 * fps_speed;
+    var acc = 3 * fps_speed;
     var currentSpeedForward = 0;
     var currentSpeedRight = 0;
     var Forward = true;
@@ -1561,8 +1561,8 @@
       if (document.getElementById("content").style.display == "none") {
         esc = false;
       }
-      if (fast) maxSpeed = 0.3 * fps_speed;
-      else maxSpeed = Math.max(maxSpeed - 0.01 * fps_speed, 0.15 * fps_speed);
+      if (fast) maxSpeed = 0.6 * fps_speed;
+      else maxSpeed = Math.max(maxSpeed - 0.03 * fps_speed, 0.3 * fps_speed);
 
       if ((moveForward || moveBackward || moveRight || moveLeft) && !fast) {
         ufo.children[1].scale.y =
@@ -1694,7 +1694,7 @@
       cameraDirection.x -= Math.sin(angleX);
       cameraDirection.z -= Math.cos(angleX);
 
-      if (cameraDirection.y < 0.9 * ufo_scale&&!scaling) {
+      if (cameraDirection.y < 0.85 * ufo_scale&&!scaling) {
         angleY += (up / 600 / Math.PI) * fps_speed * ufo_scale* Math.sqrt(ufo_scale);
       }
       if (cameraDirection.y > -0.8 * ufo_scale&&!scaling) {
