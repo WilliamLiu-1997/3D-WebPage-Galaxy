@@ -1709,18 +1709,19 @@
       x = x - 47.75;
       y = y + 1.12;
       z = z - 102;
+      z = Math.max(0, z);
       var dz =
-        (((90 - Math.abs(Math.atan2(x, y) * 180) / Math.PI) / 90) *
-          degreeLimit) /
-        2;
+        ((90 - Math.abs(Math.atan2(x, y) * 180) / Math.PI) / 90) *
+        degreeLimit *
+        (1 - (Math.atan2(z, Math.abs(x)) / Math.PI) * 2);
       if (x < 0) {
         dz = -dz;
       }
-      z = Math.max(0, z);
       var dy = ((90 - (Math.atan2(z, x) * 180) / Math.PI) / 90) * degreeLimit;
-      z = Math.max(0.1, z);
       var dx =
-        (-((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) * degreeLimit) / 2;
+        -((90 - (Math.atan2(z, y) * 180) / Math.PI) / 90) *
+        degreeLimit *
+        ((Math.atan2(z, Math.abs(x)) / Math.PI) * 2);
       return { x: dx, y: dy, z: dz };
     }
     function moveJoint(mouse, joint, degreeLimit) {
