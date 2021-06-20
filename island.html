@@ -68,7 +68,7 @@
       <img src="img/aiming4.png" width="19px" height="19px" />
     </div>
     <div id="secondBlocker" style="display: none">
-      Press Q or E to change the size of UFO. Current size: 30%
+      Press Q or E to change the size of UFO. Current size: 50%
     </div>
     <div id="blocker1"></div>
     <div id="blocker">
@@ -100,7 +100,7 @@
     import { GUI } from "./three.js/examples/jsm/libs/dat.gui.module.js";
     import { Water } from "./three.js/examples/jsm/objects/Water.js";
 
-    var FPS = 48;
+    var FPS = 60;
     var singleFrameTime = 1 / FPS;
     var timeStamp = 0;
     var fps_speed = 120 / FPS;
@@ -170,7 +170,7 @@
     var left = 0;
     var right = 0;
 
-    var maxSpeed = 0.015 * fps_speed;
+    var maxSpeed = 0.01 * fps_speed;
     var acc = 0.15 * fps_speed;
     var currentSpeedForward = 0;
     var currentSpeedRight = 0;
@@ -612,8 +612,8 @@
       if (add_base) all_obj2.add(tower);
 
       var citylight2 = light_loader(
-        "obj/light3/light3",
-        "obj/light3/light3",
+        "obj/light3/light2",
+        "obj/light3/light2",
         0.025
       );
       citylight2.position.set(101, -3.95, 204.5);
@@ -735,15 +735,15 @@
 
         case 69:
           ufo_scale += 0.025;
-          if (ufo_scale <= 10) {
+          if (ufo_scale <= 5) {
             angleY = angleY * 0.995;
           }
-          ufo_scale = Math.min(10, ufo_scale);
+          ufo_scale = Math.min(5.5, ufo_scale);
           ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
           scaling = true;
           document.getElementById("secondBlocker").innerHTML =
             "Press Q or E to change the size of UFO. Current size: " +
-            Math.floor(ufo_scale * 10).toString() +
+            Math.floor(ufo_scale * 20 - 10).toString() +
             "%";
           break;
 
@@ -761,7 +761,7 @@
           scaling = true;
           document.getElementById("secondBlocker").innerHTML =
             "Press Q or E to change the size of UFO. Current size: " +
-            Math.floor(ufo_scale * 10).toString() +
+            Math.floor(ufo_scale * 20 - 10).toString() +
             "%";
           break;
       }
@@ -924,13 +924,13 @@
           }
 
           var Cylinder = new THREE.Mesh(
-            new THREE.CylinderGeometry(32, 32, 32, 3),
+            new THREE.CylinderGeometry(16, 12, 30, 30),
             new THREE.MeshPhongMaterial({
               color: 0xffddaa,
               specular: 0xffffff,
               emissive: 0xffddaa,
               transparent: true,
-              opacity: 0.95,
+              opacity: 0.98,
             })
           );
           Cylinder.rotation.y = Math.PI / 3;
@@ -1120,7 +1120,7 @@
         cameraPosition.x += distance * dir.x;
       }
       cameraPosition.y = Math.max(
-        -4.2 + 0.55 * ufo_scale,
+        all_obj4.children[1].position.y + 0.15 * ufo_scale,
         Math.min(1000, cameraPosition.y)
       );
       if (cameraPosition.y > 500) {
@@ -1151,13 +1151,12 @@
       }
     }
 
-    function hit_detect() {
-      if (hit_frame > 490) return false;
+    function hit_detect(count) {
+      if (hit_frame > 485) return false;
       var detect_obj = [
         all_obj1,
         all_obj2.children[0],
         all_obj2.children[1],
-        all_obj2.children[2],
         all_obj2.children[3],
         all_obj2.children[4],
         all_obj3,
@@ -1167,15 +1166,17 @@
       var local = vec
         .clone()
         .set(ufo.position.x, ufo.position.y + 0.1 * ufo_scale, ufo.position.z);
+      var detect_ang1 = count * 100;
+      var detect_ang2 = count * 100 + Math.PI * 0.4;
+      var detect_ang3 = count * 100 + Math.PI * 0.8;
+      var detect_ang4 = count * 100 + Math.PI * 1.2;
+      var detect_ang5 = count * 100 + Math.PI * 1.6;
       var all_direct1 = [
-        vec.clone().set(1, 0, 0),
-        vec.clone().set(1, 0, 1),
-        vec.clone().set(0, 0, 1),
-        vec.clone().set(-1, 0, 0),
-        vec.clone().set(-1, 0, -1),
-        vec.clone().set(0, 0, -1),
-        vec.clone().set(1, 0, -1),
-        vec.clone().set(-1, 0, 1),
+        vec.clone().set(Math.sin(detect_ang1), 0, Math.cos(detect_ang1)),
+        vec.clone().set(Math.sin(detect_ang2), 0, Math.cos(detect_ang2)),
+        vec.clone().set(Math.sin(detect_ang3), 0, Math.cos(detect_ang3)),
+        vec.clone().set(Math.sin(detect_ang4), 0, Math.cos(detect_ang4)),
+        vec.clone().set(Math.sin(detect_ang5), 0, Math.cos(detect_ang5)),
       ];
       for (var i = 0; i < all_direct1.length; i++) {
         raycaster.set(local, all_direct1[i].normalize());
@@ -1223,6 +1224,23 @@
           }
         }
       }
+      var all_direct4 = [
+        vec.clone().set(50.5 - ufo.position.x, 0, 102.25 - ufo.position.z),
+      ];
+      for (var i = 0; i < all_direct4.length; i++) {
+        raycaster.set(local, all_direct4[i].normalize());
+        var hit_face = raycaster.intersectObjects([all_obj2.children[2]], true);
+        if (hit_face.length > 0) {
+          if (hit_face[0].distance < 0.5 * ufo_scale) {
+            hit_direction.set(
+              local.x - hit_face[0].point.x,
+              local.y - hit_face[0].point.y,
+              local.z - hit_face[0].point.z
+            );
+            return true;
+          }
+        }
+      }
       return false;
     }
 
@@ -1254,9 +1272,9 @@
 
     window.addEventListener("mousedown", onMouseClick, false);
 
-    function operation_method_1(delta) {
+    function operation_method_1(delta, count) {
       bounder_detect();
-      if (hit_detect()) {
+      if (hit_detect(count)) {
         hit_frame = 500;
         chaseing_frame = 0;
       }
@@ -1295,8 +1313,8 @@
       if (document.getElementById("content").style.display == "none") {
         esc = false;
       }
-      if (fast) maxSpeed = 0.03 * fps_speed;
-      else maxSpeed = Math.max(maxSpeed - 0.001 * fps_speed, 0.015 * fps_speed);
+      if (fast) maxSpeed = 0.02 * fps_speed;
+      else maxSpeed = Math.max(maxSpeed - 0.001 * fps_speed, 0.01 * fps_speed);
 
       if ((moveForward || moveBackward || moveRight || moveLeft) && !fast) {
         ufo.children[1].scale.y =
@@ -1606,8 +1624,8 @@
         .normalize();
       while (
         (v1.y < 0 && y < 500) ||
-        vec.clone().set(-x, -y, -z).normalize().dot(v1) < 0.82 ||
-        vec.clone().set(-x, -y, -z).normalize().dot(v1) > 0.821 ||
+        vec.clone().set(-x, -y, -z).normalize().dot(v1) < 0.85 ||
+        vec.clone().set(-x, -y, -z).normalize().dot(v1) > 0.851 ||
         (z < 0 && v1.z < 0)
       ) {
         v1 = vec
@@ -1751,38 +1769,10 @@
       var delta = clock.getDelta();
 
       MeshWater.material.uniforms["time"].value += 1.0 / 120.0;
+
       requestAnimationFrame(animate);
-      timeStamp += delta;
-      if (timeStamp > singleFrameTime) {
-        stats.update();
-        if (meteorites.length < 3) {
-          var meteorite1 = generate_meteoriteObject3D(10);
-          meteorites.push(meteorite1);
-          scene.add(meteorite1[0]);
-        }
-        for (var met in meteorites) {
-          if (meteorite_move(meteorites[met])) meteorites.splice(met, 1);
-        }
 
-        var rotate = angle * Math.PI * rotatespeed;
-
-        angle += 0.0005;
-
-        for (var i = 0; i < particles.length; i++) {
-          particle = particles[i];
-          particle.scale.x = particle.scale.y =
-            Math.sin(star_s_speed[i] * count * 200) + 3;
-          var d = star_d[i];
-          var ds = star_d_speed[i];
-          particle.position.x += (d.x * Math.cos(ds.x * count)) / 6;
-          particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
-          particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
-        }
-        count += 0.0005 * fps_speed;
-
-        operation_method_1(delta);
-
-        if (mixer) {
+      if (mixer) {
           mixer.update(delta);
         }
 
@@ -1790,7 +1780,6 @@
           vec.clone().set(47.75, -1.12, 102)
         );
         var ufo_human_z = ufo.position.z - 102;
-        //console.log(ufo_human_z)
         if (ufo_human_distance <= 15 && ufo_human_z >= -2) {
           if (!scare) {
             playOnClick(4);
@@ -1833,7 +1822,41 @@
         }
         if (!head_turn) {
           head.rotation.y = 0;
+          head.rotation.x = -Math.PI/12;
         }
+
+        
+      timeStamp += delta;
+      if (timeStamp > singleFrameTime) {
+        stats.update();
+        if (meteorites.length < 5) {
+          var meteorite1 = generate_meteoriteObject3D(10);
+          meteorites.push(meteorite1);
+          scene.add(meteorite1[0]);
+        }
+        for (var met in meteorites) {
+          if (meteorite_move(meteorites[met])) meteorites.splice(met, 1);
+        }
+
+        var rotate = angle * Math.PI * rotatespeed;
+
+        angle += 0.0005;
+
+        for (var i = 0; i < particles.length; i++) {
+          particle = particles[i];
+          particle.scale.x = particle.scale.y =
+            Math.sin(star_s_speed[i] * count * 200) + 3;
+          var d = star_d[i];
+          var ds = star_d_speed[i];
+          particle.position.x += (d.x * Math.cos(ds.x * count)) / 6;
+          particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
+          particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
+        }
+        count += 0.0005 * fps_speed;
+
+        operation_method_1(delta, count);
+
+      
 
         all_obj4.children[1].position.y = -2.85 + 0.5 * Math.sin(count * 2);
 
