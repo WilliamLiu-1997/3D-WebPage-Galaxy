@@ -128,7 +128,7 @@
     var meteorites = [];
     var gotoground = false;
     var arrived = 50;
-    var ufo_scale = 3;
+    var ufo_scale = 3.5;
 
     var color = new THREE.Color();
     var spotLight;
@@ -738,12 +738,12 @@
           if (ufo_scale <= 5) {
             angleY = angleY * 0.995;
           }
-          ufo_scale = Math.min(5.5, ufo_scale);
+          ufo_scale = Math.min(6, ufo_scale);
           ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
           scaling = true;
           document.getElementById("secondBlocker").innerHTML =
             "Press Q or E to change the size of UFO. Current size: " +
-            Math.floor(ufo_scale * 20 - 10).toString() +
+            Math.floor(ufo_scale * 20 - 20).toString() +
             "%";
           break;
 
@@ -756,12 +756,12 @@
               angleY = angleY * 0.96;
             }
           }
-          ufo_scale = Math.max(1, ufo_scale);
+          ufo_scale = Math.max(1.05, ufo_scale);
           ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
           scaling = true;
           document.getElementById("secondBlocker").innerHTML =
             "Press Q or E to change the size of UFO. Current size: " +
-            Math.floor(ufo_scale * 20 - 10).toString() +
+            Math.floor(ufo_scale * 20 - 20).toString() +
             "%";
           break;
       }
@@ -1745,13 +1745,13 @@
     function moveJoint(mouse, joint, degreeLimit) {
       let degrees = getMouseDegrees(mouse.x, mouse.y, mouse.z, degreeLimit);
       joint.rotation.x =
-        (THREE.Math.degToRad(degrees.x) - joint.rotation.x) / 10 +
+        Math.max(-0.15,Math.min(0.15,(THREE.Math.degToRad(degrees.x) - joint.rotation.x))) / 5 +
         joint.rotation.x;
       joint.rotation.y =
-        (THREE.Math.degToRad(degrees.y) - joint.rotation.y) / 10 +
+      Math.max(-0.15,Math.min(0.15,(THREE.Math.degToRad(degrees.y) - joint.rotation.y))) / 5 +
         joint.rotation.y;
       joint.rotation.z =
-        (THREE.Math.degToRad(degrees.z) - joint.rotation.z) / 10 +
+      Math.max(-0.15,Math.min(0.15,(THREE.Math.degToRad(degrees.z) - joint.rotation.z))) / 5 +
         joint.rotation.z;
     }
     var wait_time = 0;
@@ -1801,12 +1801,12 @@
             moveJoint(ufo.position, waist, 30);
           }
         } else {
-          neck.rotation.y = neck.rotation.y * 0.9;
-          neck.rotation.x = neck.rotation.x * 0.9;
-          waist.rotation.y = waist.rotation.y * 0.9;
-          waist.rotation.x = waist.rotation.x * 0.9;
-          neck.rotation.z = neck.rotation.z * 0.9;
-          waist.rotation.z = waist.rotation.z * 0.9;
+          neck.rotation.y = neck.rotation.y * 0.95;
+          neck.rotation.x = neck.rotation.x * 0.95;
+          waist.rotation.y = waist.rotation.y * 0.95;
+          waist.rotation.x = waist.rotation.x * 0.95;
+          neck.rotation.z = neck.rotation.z * 0.95;
+          waist.rotation.z = waist.rotation.z * 0.95;
           if (!currentlyAnimating) {
             wait_time++;
             if (wait_time > 5 * FPS) {
