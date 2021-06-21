@@ -261,8 +261,8 @@
 var MeshWater = new Water(
   waterGeometry,
   {
-    textureWidth: 1024,
-    textureHeight: 1024,
+    textureWidth: 2048,
+    textureHeight: 2048,
     waterNormals: new THREE.TextureLoader().load(
       "./three.js/examples/textures/waternormals.jpg",
       function (texture) {
@@ -272,7 +272,7 @@ var MeshWater = new Water(
     sunDirection: new THREE.Vector3(),
     sunColor: 0xffffff,
     waterColor: 0x000000,
-    distortionScale: 5,
+    distortionScale: 8,
     fog: scene.fog !== undefined,
   },
   2.0
@@ -1682,9 +1682,9 @@ var MeshWater = new Water(
           particle = particles[i];
           var d = star_d[i];
           var ds = star_d_speed[i];
-          particle.position.x += (d.x * Math.cos(ds.x * count * 10)) / 10;
-          particle.position.y += (d.y * Math.cos(ds.y * count * 10)) / 300;
-          particle.position.z += (d.z * Math.cos(ds.z * count * 10)) / 10;
+          particle.position.x += (d.x * Math.cos(ds.x * count * 10)) / 2;
+          particle.position.y += (d.y * Math.cos(ds.y * count * 10)) / 200;
+          particle.position.z += (d.z * Math.cos(ds.z * count * 10)) / 2;
         }
 
         var positions = rainGeo.attributes.position.array
