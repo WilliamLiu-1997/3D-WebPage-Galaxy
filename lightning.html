@@ -253,7 +253,7 @@
     var ufo = meteorite_Object3D.clone();
     var village = meteorite_Object3D.clone();
     scene = new THREE.Scene();
-    const GROUND_SIZE = 1000;
+    const GROUND_SIZE = 900;
 
 
     const waterGeometry = new THREE.CircleGeometry(3500, 100);
@@ -295,7 +295,7 @@ var MeshWater = new Water(
       radius0: 0.5,
       radius1: 0.1,
       minRadius: 0.15,
-      maxIterations: 8,
+      maxIterations: 9,
 
       timeScale: 0.01,
       propagationTimeFactor: 0.3,
@@ -334,7 +334,7 @@ var MeshWater = new Water(
       minHeight: 240,
       maxHeight: 250,
       maxSlope: 0.3,
-      maxLightnings: 15,
+      maxLightnings: 9,
 
       lightningParameters: scene.rayParams,
 
