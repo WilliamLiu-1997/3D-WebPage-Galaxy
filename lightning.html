@@ -301,14 +301,14 @@ var MeshWater = new Water(
       propagationTimeFactor: 0.3,
       vanishingTimeFactor: 0.8,
       subrayPeriod: 3,
-      subrayDutyCycle: 1,
+      subrayDutyCycle: 3,
 
       maxSubrayRecursion: 3,
       ramification: 4,
       recursionProbability: 1,
 
       roughness: 1,
-      straightness: 0.75,
+      straightness: 0.7,
 
       onSubrayCreation: function (
         segment,
@@ -333,7 +333,7 @@ var MeshWater = new Water(
       size: GROUND_SIZE,
       minHeight: 240,
       maxHeight: 250,
-      maxSlope: 0.35,
+      maxSlope: 0.3,
       maxLightnings: 10,
 
       lightningParameters: scene.rayParams,
