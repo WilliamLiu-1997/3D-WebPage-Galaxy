@@ -156,7 +156,7 @@
       star_s_speed,
       count = 0;
     
-    var rain, rainGeo, rainCount=80000;
+    var rain, rainGeo, rainCount=100000;
     var all_drop,velocity;
     var angle = 0;
 
@@ -253,7 +253,7 @@
     var ufo = meteorite_Object3D.clone();
     var village = meteorite_Object3D.clone();
     scene = new THREE.Scene();
-    const GROUND_SIZE = 800;
+    const GROUND_SIZE = 1000;
 
 
     const waterGeometry = new THREE.CircleGeometry(3500, 100);
@@ -293,7 +293,7 @@ var MeshWater = new Water(
 
     scene.rayParams = {
       radius0: 0.5,
-      radius1: 0.2,
+      radius1: 0.1,
       minRadius: 0.15,
       maxIterations: 8,
 
@@ -334,7 +334,7 @@ var MeshWater = new Water(
       minHeight: 240,
       maxHeight: 250,
       maxSlope: 0.3,
-      maxLightnings: 10,
+      maxLightnings: 15,
 
       lightningParameters: scene.rayParams,
 
@@ -643,7 +643,7 @@ var MeshWater = new Water(
       document.addEventListener("keydown", onKeyDown, false);
       document.addEventListener("keyup", onKeyUp, false);
 
-      scene.add(new THREE.AmbientLight(0x888844));
+      scene.add(new THREE.AmbientLight(0x888888));
       // const directionalLight = new THREE.RectAreaLight( 0x777733, 2,1000,1000 );
       // directionalLight.position.set( 0, 500, 0 );
       // directionalLight.rotation.x=-Math.PI/2;
@@ -851,11 +851,11 @@ var MeshWater = new Water(
       scene.add(ufo);
       ufo.position.set(0, -1000, 0);
 
-      const village1 = terrain_loader("obj/terrain/terrain4", 2);
-      village1.position.set(0, -50, 0);
-      village1.name = "Village1";
-      village1.rotation.x = -Math.PI / 2;
-      if (add_base) all_obj2.add(village1);
+      // const village1 = terrain_loader("obj/terrain/terrain4", 2);
+      // village1.position.set(0, -50, 0);
+      // village1.name = "Village1";
+      // village1.rotation.x = -Math.PI / 2;
+      //if (add_base) all_obj2.add(village1);
 
       // const gui = new GUI()
       // const cubeFolder = gui.addFolder("ball_light")
@@ -1255,10 +1255,10 @@ var MeshWater = new Water(
 
     function operation_method_1(delta,count) {
       bounder_detect();
-      if (hit_detect(count)) {
-        hit_frame = 500;
-        chaseing_frame = 0;
-      }
+      // if (hit_detect(count)) {
+      //   hit_frame = 500;
+      //   chaseing_frame = 0;
+      // }
       if (hit_frame > 0) {
         moveForward = moveLeft = moveRight = moveBackward = false;
         currentSpeedForward = 0;
