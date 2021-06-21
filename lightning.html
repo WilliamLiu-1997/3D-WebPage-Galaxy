@@ -280,7 +280,7 @@ var MeshWater = new Water(
 
     // Storm
 
-    scene.lightningColor = new THREE.Color(0xfff1f1);
+    scene.lightningColor = new THREE.Color(0xffffff);
 
     scene.lightningMaterial = new THREE.MeshBasicMaterial({
       color: scene.lightningColor,
@@ -297,18 +297,18 @@ var MeshWater = new Water(
       minRadius: 0.15,
       maxIterations: 8,
 
-      timeScale: 0.015,
-      propagationTimeFactor: 0.2,
+      timeScale: 0.01,
+      propagationTimeFactor: 0.3,
       vanishingTimeFactor: 0.8,
-      subrayPeriod: 10,
+      subrayPeriod: 3,
       subrayDutyCycle: 1,
 
       maxSubrayRecursion: 3,
-      ramification: 3,
-      recursionProbability: 8,
+      ramification: 4,
+      recursionProbability: 1,
 
       roughness: 1,
-      straightness: 0.65,
+      straightness: 0.75,
 
       onSubrayCreation: function (
         segment,
