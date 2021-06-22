@@ -155,9 +155,11 @@
       star_d_speed,
       star_s_speed,
       count = 0;
-    
-    var rain, rainGeo, rainCount=100000;
-    var all_drop,velocity;
+
+    var rain,
+      rainGeo,
+      rainCount = 100000;
+    var all_drop, velocity;
     var angle = 0;
 
     // Mouse Move
@@ -212,9 +214,21 @@
     var textureFlare0a = new THREE.TextureLoader().load("img/lensflare0a.png");
     var textureFlare0b = new THREE.TextureLoader().load("img/lensflare0b.png");
 
-    var cloudMap = new THREE.TextureLoader().load("img/cloud5.png");
-    var cloudMap1 = new THREE.TextureLoader().load("img/cloud1.png");
-
+    var cloudMap = new THREE.TextureLoader().load("img/cloud55.png");
+    var cloudMap1 = new THREE.TextureLoader().load("img/cloud11.png");
+    var flash=new THREE.Color(0.11,0.11,0.11)
+    var cloudMaterial1 = new THREE.SpriteMaterial({
+      map: cloudMap,
+      color: flash,
+    });
+    var cloudMaterial2 = new THREE.SpriteMaterial({
+      map: cloudMap1,
+      color: flash,
+    });
+    var sky_plane = new THREE.MeshBasicMaterial({
+      map: cloudMap1,
+      color: flash,
+    });
     var material = new THREE.Sprite(
       new THREE.SpriteMaterial({
         transparent: true,
@@ -255,28 +269,27 @@
     scene = new THREE.Scene();
     const GROUND_SIZE = 900;
 
-
     const waterGeometry = new THREE.CircleGeometry(3500, 100);
 
-var MeshWater = new Water(
-  waterGeometry,
-  {
-    textureWidth: 2048,
-    textureHeight: 2048,
-    waterNormals: new THREE.TextureLoader().load(
-      "./three.js/examples/textures/waternormals.jpg",
-      function (texture) {
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      }
-    ),
-    sunDirection: new THREE.Vector3(),
-    sunColor: 0xffffff,
-    waterColor: 0x000000,
-    distortionScale: 8,
-    fog: scene.fog !== undefined,
-  },
-  2.0
-);
+    var MeshWater = new Water(
+      waterGeometry,
+      {
+        textureWidth: 2048,
+        textureHeight: 2048,
+        waterNormals: new THREE.TextureLoader().load(
+          "./three.js/examples/textures/waternormals.jpg",
+          function (texture) {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+          }
+        ),
+        sunDirection: new THREE.Vector3(),
+        sunColor: 0xffffff,
+        waterColor: 0x000000,
+        distortionScale: 8,
+        fog: scene.fog !== undefined,
+      },
+      2.0
+    );
 
     // Storm
 
@@ -418,13 +431,6 @@ var MeshWater = new Water(
       //     }
       //   }
       // }
-      var cloudMaterial1 = new THREE.SpriteMaterial({
-        map: cloudMap,
-      });
-
-      var cloudMaterial2 = new THREE.SpriteMaterial({
-        map: cloudMap1,
-      });
       scene.fog = new THREE.Fog(0x555555, 1, 1000);
       var cloudx = 46;
       var cloudy = 46;
@@ -433,7 +439,7 @@ var MeshWater = new Water(
       for (var ix = 0; ix < cloudx; ix++) {
         for (var iy = 0; iy < cloudy; iy++) {
           var scale_cloud = 100 + Math.random() * 20;
-          var rotate_cloud = (Math.random()-0.5)*0.5;
+          var rotate_cloud = (Math.random() - 0.5) * 0.5;
           if (Math.random() > 0.5) {
             var cloudMaterial = cloudMaterial1.clone();
             cloudMaterial.rotation = Math.PI * rotate_cloud;
@@ -502,22 +508,26 @@ var MeshWater = new Water(
         }
       }
 
-      rainGeo=new THREE.BufferGeometry();
-      all_drop=[]
-      velocity=[]
-      for(i=0;i<rainCount;i++){
-        var rainDrop=vec.clone();
-        rainDrop.set(Math.random()*1000-500,Math.random()*350,Math.random()*1000-500);
+      rainGeo = new THREE.BufferGeometry();
+      all_drop = [];
+      velocity = [];
+      for (i = 0; i < rainCount; i++) {
+        var rainDrop = vec.clone();
+        rainDrop.set(
+          Math.random() * 1000 - 500,
+          Math.random() * 350,
+          Math.random() * 1000 - 500
+        );
         velocity.push(0);
         all_drop.push(rainDrop);
       }
-      rainGeo.setFromPoints( all_drop );
-      var rainMaterial=new THREE.PointsMaterial({
-        color:0xaaaaaa,
-        size:0.2,
-        transparent:true,
-      })
-      rain=new THREE.Points(rainGeo,rainMaterial)
+      rainGeo.setFromPoints(all_drop);
+      var rainMaterial = new THREE.PointsMaterial({
+        color: 0xaaaaaa,
+        size: 0.2,
+        transparent: true,
+      });
+      rain = new THREE.Points(rainGeo, rainMaterial);
       scene.add(rain);
 
       MeshWater.rotation.x = -Math.PI / 2;
@@ -864,10 +874,7 @@ var MeshWater = new Water(
       // cubeFolder.add(moon.position, "z",0, 1000, 0.05)
 
       // cubeFolder.open()
-      var b = new THREE.Mesh(
-        new THREE.PlaneGeometry(8000, 8000),
-        new THREE.MeshBasicMaterial({ map: cloudMap1 })
-      );
+      var b = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000), sky_plane);
       b.rotation.x = Math.PI / 2;
       b.position.set(0, 380, 0);
       if (add_base) all_obj2.add(b);
@@ -1181,11 +1188,11 @@ var MeshWater = new Water(
       var local = vec
         .clone()
         .set(ufo.position.x, ufo.position.y + 0.1 * ufo_scale, ufo.position.z);
-      var detect_ang1=count*150;
-      var detect_ang2=count*150+Math.PI*0.4;
-      var detect_ang3=count*150+Math.PI*0.8;
-      var detect_ang4=count*150+Math.PI*1.2;
-      var detect_ang5=count*150+Math.PI*1.6;
+      var detect_ang1 = count * 150;
+      var detect_ang2 = count * 150 + Math.PI * 0.4;
+      var detect_ang3 = count * 150 + Math.PI * 0.8;
+      var detect_ang4 = count * 150 + Math.PI * 1.2;
+      var detect_ang5 = count * 150 + Math.PI * 1.6;
       var all_direct1 = [
         vec.clone().set(Math.sin(detect_ang1), 0, Math.cos(detect_ang1)),
         vec.clone().set(Math.sin(detect_ang2), 0, Math.cos(detect_ang2)),
@@ -1253,7 +1260,7 @@ var MeshWater = new Water(
 
     window.addEventListener("mousedown", onMouseClick, false);
 
-    function operation_method_1(delta,count) {
+    function operation_method_1(delta, count) {
       bounder_detect();
       // if (hit_detect(count)) {
       //   hit_frame = 500;
@@ -1667,7 +1674,7 @@ var MeshWater = new Water(
 
       var delta = clock.getDelta();
 
-      MeshWater.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+      MeshWater.material.uniforms["time"].value += 1.0 / 60.0;
       currentTime += scene.timeRate * delta;
       requestAnimationFrame(animate);
       timeStamp += delta;
@@ -1687,17 +1694,27 @@ var MeshWater = new Water(
           particle.position.z += (d.z * Math.cos(ds.z * count * 10)) / 2;
         }
 
-        var positions = rainGeo.attributes.position.array
+        var positions = rainGeo.attributes.position.array;
         for (let i = 0; i < positions.length; i += 3) {
-          if(ufo.position.distanceTo(vec.clone().set(positions[i],positions[i+1],positions[i+2]))>25){
-          velocity[Math.round(i/3)]-=0.02+Math.random()*0.02;
-          positions[i + 1]+=velocity[Math.round(i/3)];
-          if(positions[i + 1]<0){positions[i + 1]=350;velocity[Math.round(i/3)]=0;}}else{positions[i + 1]=-10}
+          if (
+            ufo.position.distanceTo(
+              vec.clone().set(positions[i], positions[i + 1], positions[i + 2])
+            ) > 25
+          ) {
+            velocity[Math.round(i / 3)] -= 0.02 + Math.random() * 0.02;
+            positions[i + 1] += velocity[Math.round(i / 3)];
+            if (positions[i + 1] < 0) {
+              positions[i + 1] = 350;
+              velocity[Math.round(i / 3)] = 0;
+            }
+          } else {
+            positions[i + 1] = -10;
+          }
         }
-        rainGeo.attributes.position.needsUpdate=true;
+        rainGeo.attributes.position.needsUpdate = true;
         count += 0.0005 * fps_speed;
 
-        operation_method_1(delta,count);
+        operation_method_1(delta, count);
 
         //all_obj4.children[1].position.y=-2.85+0.5*Math.sin(count*2)
 
