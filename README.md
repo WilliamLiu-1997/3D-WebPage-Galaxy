@@ -12,7 +12,7 @@ If you want to go back to the solar, just fly to the sky and then you will be re
 
 A RTX2060 or better GPU is highly recommended for this program!
 
-Footage
+Video
 -------
 
 **Youtube:** https://youtu.be/FjoukXWpkrU
