@@ -1,4 +1,4 @@
-# Solar Human Alien
+# Galaxy
 
 This is a 3D webpages made by Three.js that simulates planetary system and natural or unnatural landscapes on planets. You will drive an ufo to explore in the Solar system. During the exploration, you may fall into the secret scenes on some of the planets, such as Earth, Saturn and Jupiter. All the scenes are elaborated to provide you a nice exploring experience.
 
