@@ -1699,7 +1699,7 @@
           if (
             ufo.position.distanceTo(
               vec.clone().set(positions[i], positions[i + 1], positions[i + 2])
-            ) > 25
+            ) > 50
           ) {
             velocity[Math.round(i / 3)] -= 0.02 + Math.random() * 0.02;
             positions[i + 1] += velocity[Math.round(i / 3)];
