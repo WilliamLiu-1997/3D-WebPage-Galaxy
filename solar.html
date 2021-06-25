@@ -403,7 +403,7 @@
         "starlite3"
       );
       var star4 = obj("./texture/saturnmap.jpg", 11, 780, 0, 0, "star4");
-      var ring4 = ring1("./texture/ring1.gif", 15, 12, 780, 0, 0);
+      var ring4 = ring1("./texture/ring1.png", 14, 16, 780, 0, 0);
       var star5 = obj("./texture/j006.jpg", 6, 420, 0, 0, "star5");
       var star6 = obj(
         "./texture/TDVC_Jupiter_Texture_Map.jpg",
@@ -1303,11 +1303,12 @@
       }
       var starBall = new THREE.Mesh(
         r,
-        new THREE.MeshStandardMaterial({
+        new THREE.MeshBasicMaterial({
+          color:0xffeecc,
           map: startTexture,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.8,
+          opacity: 0.2,
         })
       );
       starBall.rotation.x = -Math.PI / 2;
@@ -1327,11 +1328,11 @@
       }
       var starBall = new THREE.Mesh(
         r,
-        new THREE.MeshStandardMaterial({
+        new THREE.MeshBasicMaterial({
           map: startTexture,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.8,
+          opacity: 0.1,
         })
       );
       starBall.rotation.x = -Math.PI / 2;
