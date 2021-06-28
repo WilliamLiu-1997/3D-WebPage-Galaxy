@@ -1443,19 +1443,19 @@
       }
 
       angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fps_speed;
-      cameraDirection.x -= Math.sin(angleX);
-      cameraDirection.z -= Math.cos(angleX);
+      cameraDirection.x -= Math.sin(angleX)*ufo_scale/2;
+      cameraDirection.z -= Math.cos(angleX)*ufo_scale/2;
 
       if (cameraDirection.y < 0.85 * ufo_scale && !scaling) {
         angleY +=
-          (up / 600 / Math.PI) * fps_speed * ufo_scale * Math.sqrt(ufo_scale);
+        (up / 600 / Math.PI) * fps_speed * ufo_scale;
       }
       if (cameraDirection.y > -0.8 * ufo_scale && !scaling) {
         angleY -=
-          (down / 500 / Math.PI) * fps_speed * ufo_scale * Math.sqrt(ufo_scale);
+          (down / 500 / Math.PI) * fps_speed * ufo_scale;
       }
       //console.log(angleY)
-      cameraDirection.y = (Math.sin(angleY) * 100) / ufo_scale;
+      cameraDirection.y = (Math.sin(angleY) * 50);
       cameraDirection.setLength(2.4 * ufo_scale);
 
       if (
