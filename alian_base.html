@@ -1066,7 +1066,7 @@
 
   function operation_method_1(delta) {
     bounder_detect()
-    if (hit_detect()) {
+    if (hit_detect()&&hit_frame<490) {
       hit_frame = 500;
       chaseing_frame = 0;
     };

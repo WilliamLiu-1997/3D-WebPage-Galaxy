@@ -1431,7 +1431,6 @@
       }
     }
     function crash_detect(a, b, i) {
-      if (hit_frame > 490) return true;
       if (star_radius[i] + 1 > a.position.distanceTo(b.position)) {
         hit_direction
           .set(
@@ -1448,7 +1447,6 @@
 
     function hit_detect() {
       if (!hit_open) return false;
-      if (hit_frame > 490) return false;
       var detect_obj = [all_obj3];
       raycaster.near = 0.1;
       raycaster.far = 0.5 * ufo_scale;
@@ -1526,7 +1524,7 @@
     window.addEventListener("mousedown", onMouseClick, false);
 
     function operation_method_1(delta) {
-      if (bounder_detect()) {
+      if (bounder_detect()&&hit_frame<490) {
         hit_frame = 500;
         chaseing_frame = 0;
       }

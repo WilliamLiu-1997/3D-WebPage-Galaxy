@@ -1152,7 +1152,6 @@
     }
 
     function hit_detect(count) {
-      if (hit_frame > 485) return false;
       var detect_obj = [
         all_obj1,
         all_obj2.children[0],
@@ -1274,7 +1273,7 @@
 
     function operation_method_1(delta, count) {
       bounder_detect();
-      if (hit_detect(count)) {
+      if (hit_detect(count)&&hit_frame<490) {
         hit_frame = 500;
         chaseing_frame = 0;
       }
