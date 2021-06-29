@@ -518,15 +518,15 @@
           var light_for_ufo = new THREE.PointLight(
             0xffffee,
             0.5,
-            (100 * ufo_scale) / 200,
+            (100 * ufo_scale) / 20,
             0.75
           );
           light_for_ufo.penumbra = 0.1;
           light_for_ufo.castShadow = true;
           light_for_ufo.shadow.mapSize.width = 512;
           light_for_ufo.shadow.mapSize.height = 512;
-          light_for_ufo.shadow.camera.far = (100 * ufo_scale) / 10;
-          light_for_ufo.shadow.camera.near = (0.1 * ufo_scale) / 10;
+          light_for_ufo.shadow.camera.far = (100 * ufo_scale) / 20;
+          light_for_ufo.shadow.camera.near = (0.1 * ufo_scale) / 20;
           light_for_ufo.shadow.radius = 3;
           // light_for_ufo.shadowBias = -0.001;
 
@@ -535,15 +535,15 @@
           var light_for_ufo1 = new THREE.PointLight(
             0xffffee,
             1.5,
-            (30 * ufo_scale) / 60,
+            (30 * ufo_scale) / 20,
             0.95
           );
           light_for_ufo1.penumbra = 0.1;
           light_for_ufo1.castShadow = true;
           light_for_ufo1.shadow.mapSize.width = 512;
           light_for_ufo1.shadow.mapSize.height = 512;
-          light_for_ufo1.shadow.camera.far = (30 * ufo_scale) / 10;
-          light_for_ufo1.shadow.camera.near = (0.1 * ufo_scale) / 10;
+          light_for_ufo1.shadow.camera.far = (30 * ufo_scale) / 20;
+          light_for_ufo1.shadow.camera.near = (0.1 * ufo_scale) / 20;
           light_for_ufo1.shadow.radius = 3;
           //light_for_ufo1.shadowBias = -0.001;
 
@@ -1830,7 +1830,7 @@
       if (timeStamp > singleFrameTime) {
         stats.update();
         if (meteorites.length < 5) {
-          var meteorite1 = generate_meteoriteObject3D(8);
+          var meteorite1 = generate_meteoriteObject3D(10);
           meteorites.push(meteorite1);
           scene.add(meteorite1[0]);
         }
