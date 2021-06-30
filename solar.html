@@ -310,7 +310,7 @@
     // multiplier for distortion speed
     var blendSpeed = 0.01;
     // adjust lightness/darkness of blended texture
-    var blendOffset = 0.75;
+    var blendOffset = 0.6;
 
     // texture to determine normal displacement
     var bumpTexture = noiseTexture;
@@ -824,7 +824,7 @@
       scene.add(new THREE.AmbientLight(0x111111));
       if (add_solar) {
         const light = new THREE.PointLight(
-          0xffeeaa,
+          0xffeecc,
           1.5,
           2500 * 1 /*ufo_scale/100*/,
           2
@@ -1169,7 +1169,7 @@
       var startTexture = THREE.ImageUtils.loadTexture(url);
       var starBall = new THREE.Mesh(
         new THREE.SphereGeometry(size, 100, 100),
-        new THREE.MeshStandardMaterial({
+        new THREE.MeshPhongMaterial({
           emissive: 0xffffff,
           emissiveMap: startTexture,
         })
@@ -1184,7 +1184,7 @@
       if (name == "star3") {
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/EarthNormal.png",
@@ -1200,7 +1200,7 @@
         startTexture.repeat.set(3, 3);
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/normal1.jpg",
@@ -1218,7 +1218,7 @@
         }
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/normal.jpg",
@@ -1232,7 +1232,7 @@
         //console.log(name)
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/normal1.jpg",
@@ -1248,7 +1248,7 @@
         startTexture.repeat.set(5, 5);
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/normal2.jpg",
@@ -1262,7 +1262,7 @@
       } else if (size < 18) {
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/normal3.jpg",
@@ -1275,7 +1275,7 @@
       } else {
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
-          new THREE.MeshStandardMaterial({
+          new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
               "./texture/normal4.jpg",
