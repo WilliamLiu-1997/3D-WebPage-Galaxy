@@ -10,7 +10,7 @@ Earth, Saturn and Jupiter are three magic planets. Find these three planets and 
 
 If you want to go back to the solar, just fly to the sky and then you will be redirected to the solar (click the moon in the island or click the Jupiter in the alien base is also okay).
 
-A RTX2060 or better GPU is highly recommended for this program!
+**A RTX2060 or better GPU is highly recommended for this program!**
 
 Video
 -------
