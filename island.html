@@ -911,16 +911,6 @@
       skinning: true,
     });
 
-                    load_items += 1;
-      let onProgress_obj = function (xhr) {
-        if (xhr.lengthComputable) {
-          let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
-          if (percentComplete == 100) {
-            loaded_items += 1;
-          }
-        }
-      };
     var people_loader = new GLTFLoader();
     people_loader.load(
       MODEL_PATH,
@@ -971,7 +961,7 @@
         idle.play();
         last_action = idle;
       },
-      onProgress_obj,
+      undefined,
       function (error) {
         console.error(error);
       }
@@ -1915,7 +1905,8 @@
         document.getElementById("aiming1").style.display = "block";
       }
 
-          requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
+
       if (loaded_items > 0 && loaded_items == load_items) hide_loading();
       else return
       var delta = clock.getDelta();
