@@ -57,11 +57,56 @@
         -webkit-user-select: none;
         pointer-events: none;
       }
+            .loading {
+        display: none;
+        position: absolute;
+        top: 48%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 99;
+        color: white;
+        font-size: 40px;
+        font-weight: 100;
+        font-family: Lato, sans-serif;
+        letter-spacing: 10px;
+        text-transform: uppercase;
+        cursor: wait;
+      }
+      .loading span {
+        animation: shrink 2s infinite;
+      }
+
+      @keyframes shrink {
+        50% {
+          transform: scale(0.2);
+        }
+      }
+      #loading_background {
+        position: absolute;
+        background-color: rgb(0, 0, 0);
+        z-index: 98;
+        height: 100%;
+        width: 100%;
+        cursor: wait;
+      }
     </style>
     <title>Storm World</title>
   </head>
 
   <body>
+        <div id="loading_background"></div>
+    <div id="loading" class="loading">
+      <span style="animation-delay: 0s">L</span
+      ><span style="animation-delay: 0.1s">o</span
+      ><span style="animation-delay: 0.2s">a</span
+      ><span style="animation-delay: 0.3s">d</span
+      ><span style="animation-delay: 0.4s">i</span
+      ><span style="animation-delay: 0.5s">n</span
+      ><span style="animation-delay: 0.6s">g</span
+      ><span style="animation-delay: 0.7s">·</span
+      ><span style="animation-delay: 0.8s">·</span
+      ><span style="animation-delay: 0.9s">·</span>
+    </div>
     <div id="container"></div>
     <div id="esc"></div>
 
@@ -89,6 +134,19 @@
 
   <script src="./three.js/build/three.js"></script>
   <script src="./JS/jquery.js"></script>
+    <script>
+    show_loading();
+
+    function show_loading() {
+      $("#loading").show();
+      $("#loading").css({ display: "flex", opacity: 0 });
+      $("#loading").animate({ opacity: 1 }, 500);
+    }
+    function hide_loading() {
+      $("#loading").fadeOut(800);
+      $("#loading_background").fadeOut(800);
+    }
+  </script>
   <script src="./JS/stats.min.js"></script>
 
   <script type="module">
@@ -107,6 +165,8 @@
     var timeStamp = 0;
     var fps_speed = 120 / FPS;
 
+    var load_items = 0;
+    var loaded_items = 0;
     var scene;
     var camera;
     var renderer;
@@ -666,6 +726,26 @@
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       document.getElementById("container").appendChild(renderer.domElement);
       document.body.appendChild(renderer.domElement);
+
+            load_items += 2;
+      let onProgress_obj = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
+      let onProgress_mtl = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
       const mtlLoader = new MTLLoader();
       mtlLoader.load("UFO2/UFO2.mtl", (mtl) => {
         mtl.preload();
@@ -855,8 +935,8 @@
 
           ufo.position.z -= 0.48 * 5;
           ufo.position.y -= 0.12 * 5;
-        });
-      });
+        },onProgress_obj);
+      },onProgress_mtl);
       ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
       scene.add(ufo);
       ufo.position.set(0, -1000, 0);
@@ -888,6 +968,25 @@
     init();
 
     function obj_loader(url, url1, scale, double = false) {
+            load_items += 2;
+      let onProgress_obj = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
+      let onProgress_mtl = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
       var newobj = obj3d.clone();
       var newmtl = new MTLLoader();
       if (double) {
@@ -905,8 +1004,8 @@
           root.position.set(0, 0, 0);
           root.scale.set(scale, scale, scale);
           newobj.add(root);
-        });
-      });
+        },onProgress_obj);
+      },onProgress_mtl);
       return newobj;
     }
 
@@ -924,6 +1023,16 @@
         normalMap: texture1,
       });
       var newobj = obj3d.clone();
+            load_items += 1;
+      let onProgress_obj = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
       var objLoader = new OBJLoader();
       objLoader.load(url + ".obj", (root) => {
         for (var k = 0; k < root.children.length; k++) {
@@ -934,13 +1043,32 @@
         root.position.set(0, 0, 0);
         root.scale.set(scale, scale, scale);
         newobj.add(root);
-      });
+      },onProgress_obj);
       return newobj;
     }
 
     function light_loader(url, url1, scale, double = false) {
       var newobj = obj3d.clone();
       var newmtl = new MTLLoader();
+            load_items += 2;
+      let onProgress_obj = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
+      let onProgress_mtl = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
       newmtl.load(url1 + ".mtl", (mtl) => {
         mtl.preload();
         const objLoader = new OBJLoader();
@@ -980,12 +1108,31 @@
           newobj.add(Cylinder);
           newobj.add(light_white);
           newobj.scale.set(scale, scale, scale);
-        });
-      });
+        },onProgress_obj);
+      },onProgress_mtl);
       return newobj;
     }
 
     function light_loader1(url, url1, scale, double = false) {
+            load_items += 2;
+      let onProgress_obj = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
+      let onProgress_mtl = function (xhr) {
+        if (xhr.lengthComputable) {
+          let percentComplete = (xhr.loaded / xhr.total) * 100;
+          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          if (percentComplete == 100) {
+            loaded_items += 1;
+          }
+        }
+      };
       var newobj = obj3d.clone();
       var newmtl = new MTLLoader();
       newmtl.load(url1 + ".mtl", (mtl) => {
@@ -1027,8 +1174,8 @@
           newobj.add(Cylinder);
           newobj.add(light_white);
           newobj.scale.set(scale, scale, scale);
-        });
-      });
+        },onProgress_obj);
+      },onProgress_mtl);
       return newobj;
     }
 
@@ -1260,6 +1407,7 @@
     window.addEventListener("mousedown", onMouseClick, false);
 
     function operation_method_1(delta, count) {
+      if (!ufo || !ufo.children || !ufo.children[10]) return;
       bounder_detect();
       // if (hit_detect(count)) {
       //   hit_frame = 500;
@@ -1672,10 +1820,11 @@
       }
 
       var delta = clock.getDelta();
-
+    requestAnimationFrame(animate);
+      if (loaded_items > 0 && loaded_items == load_items) hide_loading();
+      else return
       MeshWater.material.uniforms["time"].value += 1.0 / 60.0;
       currentTime += scene.timeRate * delta;
-      requestAnimationFrame(animate);
       timeStamp += delta;
       if (timeStamp > singleFrameTime) {
         stats.update();
