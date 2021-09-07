@@ -213,10 +213,6 @@
     }
   </script>
   <script type="module">
-    import {
-      Lensflare,
-      LensflareElement,
-    } from "./three.js/examples/jsm/objects/Lensflare.js";
     import { OBJLoader } from "./three.js/examples/jsm/loaders/OBJLoader.js";
     import { MTLLoader } from "./three.js/examples/jsm/loaders/MTLLoader.js";
     import { GUI } from "./three.js/examples/jsm/libs/dat.gui.module.js";
@@ -710,6 +706,13 @@
     });
 
     function init() {
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.getElementById("container").appendChild(renderer.domElement);
+      document.body.appendChild(renderer.domElement);
       scene = new THREE.Scene();
       var skyGeometry = new THREE.SphereGeometry(5000, 100, 100);
       var map = new THREE.TextureLoader().load("img/bg5.png");
@@ -923,14 +926,6 @@
         all_obj4.add(ring8);
         all_obj3.add(star9);
       }
-
-      renderer = new THREE.WebGLRenderer();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      document.getElementById("container").appendChild(renderer.domElement);
-      document.body.appendChild(renderer.domElement);
 
       load_items += 2;
       let onProgress_obj = function (xhr) {
