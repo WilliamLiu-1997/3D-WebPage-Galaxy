@@ -1,101 +1,157 @@
 * {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    background: #00000000;
-    color: #ffffffdd;
-    font-family: "Papyrus", Cursive;
-  }
-  
-  #content {
-    margin: 5% 10% 20% 10%;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    padding: 2% 2% 10% 2%;
-    background: #00000000;
-    transition: box-shadow 0.3s ease-in-out;
-    user-select: none;
-  }
-  #aiming1 {
-    margin: 0;
-    width: 19px;
-    height: 19px;
-    left:50%;
-    top:50%;
-    position: absolute;
-    user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    pointer-events:none;
-  }
-  #aiming2 {
-    margin: 0;
-    width: 29px;
-    height: 29px;
-    left:50%;
-    top:50%;
-    position: absolute;
-    user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    pointer-events:none;
-  }
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  background: #00000000;
+  color: #ffffffdd;
+  font-family: "Papyrus", Cursive;
+}
+
+::-webkit-scrollbar {
+  width: 2px;
+  height: 5px;
+  background-color: #f5f5f5;
+}
+
+::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  background-color: #555;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background-color: #f5f5f5;
+}
+
+#content {
+  margin: 5% 10% 20% 10%;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  padding: 2% 2% 10% 2%;
+  background: #00000000;
+  transition: box-shadow 0.3s ease-in-out;
+  user-select: none;
+}
+#aiming1 {
+  margin: 0;
+  width: 19px;
+  height: 19px;
+  left: 50%;
+  top: 50%;
+  position: absolute;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+#aiming2 {
+  margin: 0;
+  width: 29px;
+  height: 29px;
+  left: 50%;
+  top: 50%;
+  position: absolute;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+h1 {
+  font-size: 50px;
+  margin-bottom: 3%;
+  width: 60%;
+  text-align: center;
+}
+
+p {
+  margin-top: 1%;
+  font-size: 40px;
+  width: 60%;
+  text-align: center;
+}
+
+.btn {
+  font-size: 45px;
+  position: absolute;
+  color: #ffffffdd;
+  position: relative;
+  width: 60%;
+  right: 20%;
+  top: 10%;
+  transition: font-size 0.2s, color 0.3s, transform 0.3s;
+  -webkit-transition: font-size 0.2s, color 0.3s, -webkit-transform 0.3s;
+}
+
+.btn:hover {
+  font-size: 50px;
+  color: #aaaaaa;
+}
+
+.btn:active {
+  font-size: 40px;
+  color: #888888;
+}
+
+.btn1 {
+  font-size: 38px;
+  position: absolute;
+  color: #ffffffdd;
+  position: relative;
+  width: 60%;
+  right: 20%;
+  top: 10%;
+  transition: font-size 0.2s, color 0.3s, transform 0.3s;
+  -webkit-transition: font-size 0.2s, color 0.3s, -webkit-transform 0.3s;
+}
+
+.btn1:hover {
+  font-size: 40px;
+  color: #aaaaaa;
+}
+
+.btn1:active {
+  font-size: 36px;
+  color: #888888;
+}
+
+#para {
+  height: 55%;
+  overflow: auto;
+}
+
+@media screen and (max-width: 800px) {
   h1 {
-    font-size: 5.5vh;
-    margin-bottom: 3%;
-    width: 60%;
-    text-align: center;
+    font-size: 32px;
   }
-  
+
   p {
-    margin-top: 1%;
-    font-size: 4.5vh;
-    width: 60%;
-    text-align: center;
+    font-size: 20px;
   }
-  
+
   .btn {
-    font-size: 5vh;
-    position: absolute;
-    color: #ffffffdd;
-    position:relative;
-    width: 60%;
-    right:20%;
-    top:10%;
-    transition: font-size 0.2s, color 0.3s, transform 0.3s;
-    -webkit-transition: font-size 0.2s, color 0.3s, -webkit-transform 0.3s;
+    font-size: 28px;
   }
 
   .btn:hover {
-    font-size: 5.5vh;
-    color: #aaaaaa;
+    font-size: 30px;
   }
 
-  .btn:active{
-    font-size: 4.8vh;
-    color: #888888;
+  .btn:active {
+    font-size: 25px;
   }
-
 
   .btn1 {
-    font-size: 4vh;
-    position: absolute;
-    color: #ffffffdd;
-    position:relative;
-    width: 60%;
-    right:20%;
-    top:10%;
-    transition: font-size 0.2s, color 0.3s, transform 0.3s;
-    -webkit-transition: font-size 0.2s, color 0.3s, -webkit-transform 0.3s;
+    font-size: 28px;
   }
 
   .btn1:hover {
-    font-size: 4.2vh;
-    color: #aaaaaa;
+    font-size: 30px;
   }
 
-  .btn1:active{
-    font-size: 3.8vh;
-    color: #888888;
+  .btn1:active {
+    font-size: 25px;
   }
+}
