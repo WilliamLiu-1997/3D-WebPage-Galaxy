@@ -146,7 +146,7 @@
       $("#loading_background").fadeOut(800);
     }
   </script>
-  <script src="./JS/stats.min.js"></script>
+  <!-- <script src="./JS/stats.min.js"></script> -->
 
   <script id="vertexShader" type="x-shader/x-vertex">
     varying vec3 vNormal;
@@ -194,9 +194,9 @@
     var camera;
     var renderer;
     var rotatespeed = 5 * fps_speed;
-    var stats = new Stats();
-    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-    document.body.appendChild(stats.dom);
+    //var stats = new Stats();
+    //stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    //document.body.appendChild(stats.dom);
     var star_radius = new Array();
 
     var add_solar = false;
@@ -1801,7 +1801,7 @@
       MeshWater.material.uniforms["time"].value += 1.0 / 180.0;
       timeStamp += delta;
       if (timeStamp > singleFrameTime) {
-        stats.update();
+        //stats.update();
         if (meteorites.length < 5) {
           var meteorite1 = generate_meteoriteObject3D(10);
           meteorites.push(meteorite1);

@@ -148,7 +148,7 @@
       $("#loading_background").fadeOut(800);
     }
   </script>
-  <script src="./JS/stats.min.js"></script>
+  <!-- <script src="./JS/stats.min.js"></script> -->
 
   <script type="module">
     import { OBJLoader } from "./three.js/examples/jsm/loaders/OBJLoader.js";
@@ -172,9 +172,9 @@
     var camera;
     var renderer;
     var rotatespeed = 5 * fps_speed;
-    var stats = new Stats();
-    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-    document.body.appendChild(stats.dom);
+    //var stats = new Stats();
+    //stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    //document.body.appendChild(stats.dom);
     var star_radius = new Array();
 
     var add_solar = false;
@@ -1828,7 +1828,7 @@
       currentTime += scene.timeRate * delta;
       timeStamp += delta;
       if (timeStamp > singleFrameTime) {
-        stats.update();
+        //stats.update();
 
         var rotate = angle * Math.PI * rotatespeed;
 
