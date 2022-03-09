@@ -2121,9 +2121,9 @@
         scene.remove(meteorite1[0]);
         return true;
       }
-      meteorite1[0].position.x += meteorite1[1].x * 3 * fps_speed;
-      meteorite1[0].position.y += meteorite1[1].y * 3 * fps_speed;
-      meteorite1[0].position.z += meteorite1[1].z * 3 * fps_speed;
+      meteorite1[0].position.x += meteorite1[1].x * 9 * fps_speed;
+      meteorite1[0].position.y += meteorite1[1].y * 9 * fps_speed;
+      meteorite1[0].position.z += meteorite1[1].z * 9 * fps_speed;
       return false;
     }
     
@@ -2173,14 +2173,6 @@
           go_alian_base();
         } else if (follow_frame3 > FPS * 5) {
           go_lightning();
-        }
-        if (meteorites.length < 10) {
-          var meteorite1 = generate_meteoriteObject3D(8);
-          meteorites.push(meteorite1);
-          scene.add(meteorite1[0]);
-        }
-        for (var met in meteorites) {
-          if (meteorite_move(meteorites[met])) meteorites.splice(met, 1);
         }
 
         var rotate = angle * Math.PI * rotatespeed;
@@ -2360,9 +2352,17 @@
            particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
            particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
           }
+          if (meteorites.length < 10) {
+            var meteorite1 = generate_meteoriteObject3D(8);
+           meteorites.push(meteorite1);
+            scene.add(meteorite1[0]);
+          }
+          for (var met in meteorites) {
+            if (meteorite_move(meteorites[met])) meteorites.splice(met, 1);
+          }
           star_frame = 0;
         }
-         count += 0.0005 * fps_speed;
+        count += 0.0005 * fps_speed;
 
         operation_method_1(delta);
 
