@@ -2353,16 +2353,16 @@
           for (let i = 0; i < particles.length; i++) {
             particle = particles[i];
             particle.scale.x = particle.scale.y =
-             Math.sin(star_s_speed[i] * count * 200) + 3;
+             Math.sin(star_s_speed[i] * count * 600) + 3;
            const d = star_d[i];
            const ds = star_d_speed[i];
-           particle.position.x += (d.x * Math.cos(ds.x * count)) / 6;
-           particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
-           particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
+           particle.position.x += (d.x * Math.cos(ds.x * count * 3)) / 6;
+           particle.position.y += (d.y * Math.cos(ds.y * count * 3)) / 6;
+           particle.position.z += (d.z * Math.cos(ds.z * count * 3)) / 6;
           }
-          count += 0.0015 * fps_speed;
           star_frame = 0;
         }
+         count += 0.0005 * fps_speed;
 
         operation_method_1(delta);
 
