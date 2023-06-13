@@ -34,7 +34,7 @@
 
       #secondBlocker {
         position: absolute;
-        font-family: "Comic Sans MS", "Comic Sans", cursive;
+        font-family: 'Comic Sans MS', 'Comic Sans', cursive;
         width: 88%;
         height: 5%;
         margin: 5%;
@@ -113,7 +113,8 @@
           to it by gravity — the planets Mercury, Venus, Earth, Mars, Jupiter,
           Saturn, Uranus and Neptune, dwarf planets such as Pluto, dozens of
           moons and millions of asteroids, comets and meteoroids.
-        <br>Go to the solar system, and explore its secrets!</p>
+          <br />Go to the solar system, and explore its secrets!
+        </p>
         <a class="btn" onclick="hideMe()">START EXPLORATION</a><br />
         <!--<a class="btn1" onclick="goIsland()">Go Island</a
         >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a
@@ -129,13 +130,13 @@
     show_loading();
 
     function show_loading() {
-      $("#loading").show();
-      $("#loading").css({ display: "flex", opacity: 0 });
-      $("#loading").animate({ opacity: 1 }, 500);
+      $('#loading').show();
+      $('#loading').css({ display: 'flex', opacity: 0 });
+      $('#loading').animate({ opacity: 1 }, 500);
     }
     function hide_loading() {
-      $("#loading").fadeOut(800);
-      $("#loading_background").fadeOut(800);
+      $('#loading').fadeOut(800);
+      $('#loading_background').fadeOut(800);
     }
   </script>
   <script src="./three.js/build/three.js"></script>
@@ -213,32 +214,32 @@
     }
   </script>
   <script type="module">
-    import { OBJLoader } from "./three.js/examples/jsm/loaders/OBJLoader.js";
-    import { MTLLoader } from "./three.js/examples/jsm/loaders/MTLLoader.js";
-    import { GUI } from "./three.js/examples/jsm/libs/dat.gui.module.js";
+    import { OBJLoader } from './three.js/examples/jsm/loaders/OBJLoader.js';
+    import { MTLLoader } from './three.js/examples/jsm/loaders/MTLLoader.js';
+    import { GUI } from './three.js/examples/jsm/libs/dat.gui.module.js';
 
     function go_alian_base() {
-      document.getElementById("blocker").style.backgroundColor =
-        "rgba(0, 0, 0, 1)";
-      $("#blocker").fadeIn(2500);
+      document.getElementById('blocker').style.backgroundColor =
+        'rgba(0, 0, 0, 1)';
+      $('#blocker').fadeIn(2500);
       setTimeout(function () {
-        window.location.href = "alian_base.html";
+        window.location.href = 'alian_base.html';
       }, 3500);
     }
     function go_island() {
-      document.getElementById("blocker").style.backgroundColor =
-        "rgba(0, 0, 0, 1)";
-      $("#blocker").fadeIn(2500);
+      document.getElementById('blocker').style.backgroundColor =
+        'rgba(0, 0, 0, 1)';
+      $('#blocker').fadeIn(2500);
       setTimeout(function () {
-        window.location.href = "island.html";
+        window.location.href = 'island.html';
       }, 3500);
     }
     function go_lightning() {
-      document.getElementById("blocker").style.backgroundColor =
-        "rgba(0, 0, 0, 1)";
-      $("#blocker").fadeIn(2500);
+      document.getElementById('blocker').style.backgroundColor =
+        'rgba(0, 0, 0, 1)';
+      $('#blocker').fadeIn(2500);
       setTimeout(function () {
-        window.location.href = "lightning.html";
+        window.location.href = 'lightning.html';
       }, 3500);
     }
 
@@ -343,7 +344,7 @@
     const mouse = new THREE.Vector2();
     var selected_object = false;
 
-    var lavaTexture = new THREE.ImageUtils.loadTexture("./texture/sun.jpg");
+    var lavaTexture = new THREE.ImageUtils.loadTexture('./texture/sun.jpg');
     lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
     // multiplier for distortion speed
     var baseSpeed = 0.025;
@@ -352,14 +353,14 @@
     var repeatT = 1.0;
 
     // texture used to generate "randomness", distort all other textures
-    var noiseTexture = new THREE.ImageUtils.loadTexture("texture/cloud.png");
+    var noiseTexture = new THREE.ImageUtils.loadTexture('texture/cloud.png');
     noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
     // magnitude of noise effect
     var noiseScale = 0.0025;
 
     // texture to additively blend with base image texture
     var blendTexture = new THREE.ImageUtils.loadTexture(
-      "./texture/gstar-original.jpg"
+      './texture/gstar-original.jpg'
     );
     blendTexture.wrapS = blendTexture.wrapT = THREE.RepeatWrapping;
     // multiplier for distortion speed
@@ -379,36 +380,36 @@
 
     // use "this." to create global object
     var customUniforms = {
-      baseTexture: { type: "t", value: lavaTexture },
-      baseSpeed: { type: "f", value: baseSpeed },
-      repeatS: { type: "f", value: repeatS },
-      repeatT: { type: "f", value: repeatT },
-      noiseRepeat: { type: "f", value: noiseRepeat },
-      bumpRepeat: { type: "f", value: bumpRepeat },
-      repeatT: { type: "f", value: repeatT },
-      noiseTexture: { type: "t", value: noiseTexture },
-      noiseScale: { type: "f", value: noiseScale },
-      blendTexture: { type: "t", value: blendTexture },
-      blendSpeed: { type: "f", value: blendSpeed },
-      blendOffset: { type: "f", value: blendOffset },
-      bumpTexture: { type: "t", value: bumpTexture },
-      bumpSpeed: { type: "f", value: bumpSpeed },
-      bumpScale: { type: "f", value: bumpScale },
-      alpha: { type: "f", value: 1.0 },
-      time: { type: "f", value: 1.0 },
+      baseTexture: { type: 't', value: lavaTexture },
+      baseSpeed: { type: 'f', value: baseSpeed },
+      repeatS: { type: 'f', value: repeatS },
+      repeatT: { type: 'f', value: repeatT },
+      noiseRepeat: { type: 'f', value: noiseRepeat },
+      bumpRepeat: { type: 'f', value: bumpRepeat },
+      repeatT: { type: 'f', value: repeatT },
+      noiseTexture: { type: 't', value: noiseTexture },
+      noiseScale: { type: 'f', value: noiseScale },
+      blendTexture: { type: 't', value: blendTexture },
+      blendSpeed: { type: 'f', value: blendSpeed },
+      blendOffset: { type: 'f', value: blendOffset },
+      bumpTexture: { type: 't', value: bumpTexture },
+      bumpSpeed: { type: 'f', value: bumpSpeed },
+      bumpScale: { type: 'f', value: bumpScale },
+      alpha: { type: 'f', value: 1.0 },
+      time: { type: 'f', value: 1.0 },
     };
 
     // create custom material from the shader code above
     //   that is within specially labeled script tags
     var customMaterial = new THREE.ShaderMaterial({
       uniforms: customUniforms,
-      vertexShader: document.getElementById("vertexShader").textContent,
-      fragmentShader: document.getElementById("fragmentShader").textContent,
+      vertexShader: document.getElementById('vertexShader').textContent,
+      fragmentShader: document.getElementById('fragmentShader').textContent,
     });
 
-    const sunlight = new THREE.TextureLoader().load("img/lensflare2.png");
+    const sunlight = new THREE.TextureLoader().load('img/lensflare2.png');
 
-    const ufolight = new THREE.TextureLoader().load("img/ufo_light1.png");
+    const ufolight = new THREE.TextureLoader().load('img/ufo_light1.png');
 
     if (add_solar) {
       var sunmaterial = new THREE.SpriteMaterial({
@@ -420,7 +421,7 @@
       var sunbackground = new THREE.Sprite(sunmaterial);
       sunbackground.position.set(0, 0, 0);
       sunbackground.scale.set(500, 400, 1);
-      var sunlight1 = new THREE.TextureLoader().load("img/ball.png");
+      var sunlight1 = new THREE.TextureLoader().load('img/ball.png');
       var sunmaterial1 = new THREE.SpriteMaterial({
         blending: THREE.AdditiveBlending,
         map: sunlight1,
@@ -431,136 +432,136 @@
       sunbackground1.position.set(0, 0, 0);
       sunbackground1.scale.set(500, 400, 1);
       var sun = obj_lighting(
-        "./texture/fluid1-original.png",
+        './texture/fluid1-original.png',
         100,
         0,
         0,
         0,
-        "sun"
+        'sun'
       );
       sun.material = customMaterial;
-      var star1 = obj("./texture/j022.jpg", 4, 180, 0, 0, "star1");
-      var star2 = obj("./texture/j028.jpg", 8, 240, 0, 0, "star2");
+      var star1 = obj('./texture/j022.jpg', 4, 180, 0, 0, 'star1');
+      var star2 = obj('./texture/j028.jpg', 8, 240, 0, 0, 'star2');
       var star3 = obj(
-        "./three.js/examples/textures/land_ocean_ice_cloud_2048.jpg",
+        './three.js/examples/textures/land_ocean_ice_cloud_2048.jpg',
         10,
         320,
         0,
         0,
-        "star3"
+        'star3'
       );
       var starlite3 = obj(
-        "./texture/j029.jpg",
+        './texture/j029.jpg',
         1,
         349,
         200 + 21,
         0,
-        "starlite3"
+        'starlite3'
       );
-      var star4 = obj("./texture/saturnmap.jpg", 11, 780, 0, 0, "star4");
-      var ring4 = ring1("./texture/ring1.png", 14, 15, 780, 0, 0);
-      var star5 = obj("./texture/j006.jpg", 6, 420, 0, 0, "star5");
+      var star4 = obj('./texture/saturnmap.jpg', 11, 780, 0, 0, 'star4');
+      var ring4 = ring1('./texture/ring1.png', 14, 15, 780, 0, 0);
+      var star5 = obj('./texture/j006.jpg', 6, 420, 0, 0, 'star5');
       var star6 = obj(
-        "./texture/TDVC_Jupiter_Texture_Map.jpg",
+        './texture/TDVC_Jupiter_Texture_Map.jpg',
         25,
         600,
         0,
         0,
-        "star6"
+        'star6'
       );
       var starlite6 = obj(
-        "./texture/opura1.jpg",
+        './texture/opura1.jpg',
         0.8,
         650,
         200 + 40,
         0,
-        "starlite6"
+        'starlite6'
       );
       var starlite61 = obj(
-        "./texture/TDVC_Venus_Texture_Map.jpg",
+        './texture/TDVC_Venus_Texture_Map.jpg',
         1.2,
         640,
         200 + 35,
         0,
-        "starlite61"
+        'starlite61'
       );
       var starlite62 = obj(
-        "./texture/TDVC_Uranus_Moon_Texture_Map.jpg",
+        './texture/TDVC_Uranus_Moon_Texture_Map.jpg',
         1.3,
         655,
         200 + 45,
         0,
-        "starlite62"
+        'starlite62'
       );
       var starlite63 = obj(
-        "./texture/j029.jpg",
+        './texture/j029.jpg',
         1.2,
         660,
         200 + 50,
         0,
-        "starlite63"
+        'starlite63'
       );
       var starlite64 = obj(
-        "./texture/j019.jpg",
+        './texture/j019.jpg',
         1.5,
         665,
         200 + 55,
         0,
-        "starlite64"
+        'starlite64'
       );
       var starlite65 = obj(
-        "./texture/j008.jpg",
+        './texture/j008.jpg',
         1.4,
         670,
         200 + 60,
         0,
-        "starlite65"
+        'starlite65'
       );
-      var star7 = obj("./texture/uranus.JPG", 13, 900, 0, 0, "star7");
-      var star8 = obj("./texture/j030.jpg", 8, 1050, 0, 0, "star8");
-      var ring8 = ring2("./texture/ring2.png", 20, 2, 900, 0, 0);
-      var star9 = obj("./texture/j033.jpg", 3, 1200, 0, 0, "star9");
+      var star7 = obj('./texture/uranus.JPG', 13, 900, 0, 0, 'star7');
+      var star8 = obj('./texture/j030.jpg', 8, 1050, 0, 0, 'star8');
+      var ring8 = ring2('./texture/ring2.png', 20, 2, 900, 0, 0);
+      var star9 = obj('./texture/j033.jpg', 3, 1200, 0, 0, 'star9');
 
-      sun.name = "sun";
-      star1.name = "star1";
-      star2.name = "star2";
-      star3.name = "star3";
-      starlite3.name = "starlite3";
-      star4.name = "star4";
-      ring4.name = "ring";
-      star5.name = "star5";
-      star6.name = "star6";
+      sun.name = 'sun';
+      star1.name = 'star1';
+      star2.name = 'star2';
+      star3.name = 'star3';
+      starlite3.name = 'starlite3';
+      star4.name = 'star4';
+      ring4.name = 'ring';
+      star5.name = 'star5';
+      star6.name = 'star6';
 
-      starlite61.name = "starlite61";
-      starlite62.name = "starlite62";
-      starlite63.name = "starlite63";
-      starlite64.name = "starlite64";
-      starlite65.name = "starlite65";
-      starlite6.name = "starlite6";
+      starlite61.name = 'starlite61';
+      starlite62.name = 'starlite62';
+      starlite63.name = 'starlite63';
+      starlite64.name = 'starlite64';
+      starlite65.name = 'starlite65';
+      starlite6.name = 'starlite6';
 
-      star7.name = "star7";
-      star8.name = "star8";
-      ring8.name = "ring";
-      star9.name = "star9";
+      star7.name = 'star7';
+      star8.name = 'star8';
+      ring8.name = 'ring';
+      star9.name = 'star9';
 
       var plant_name = [
-        "sun",
-        "star1",
-        "star2",
-        "star3",
-        "starlite3",
-        "star4",
-        "star5",
-        "star6",
-        "starlite6",
-        "starlite61",
-        "starlite62",
-        "starlite63",
-        "starlite64",
-        "starlite65",
-        "star7",
-        "star8",
-        "star9",
+        'sun',
+        'star1',
+        'star2',
+        'star3',
+        'starlite3',
+        'star4',
+        'star5',
+        'star6',
+        'starlite6',
+        'starlite61',
+        'starlite62',
+        'starlite63',
+        'starlite64',
+        'starlite65',
+        'star7',
+        'star8',
+        'star9',
       ];
 
       star1.castShadow = true;
@@ -603,16 +604,16 @@
       star9.receiveShadow = true;
     }
 
-    const starball = new THREE.TextureLoader().load("img/ball.png");
-    var meteoriteball = new THREE.TextureLoader().load("img/star0.png");
-    var meteoritetail = new THREE.TextureLoader().load("img/start0.png");
+    const starball = new THREE.TextureLoader().load('img/ball.png');
+    var meteoriteball = new THREE.TextureLoader().load('img/star0.png');
+    var meteoritetail = new THREE.TextureLoader().load('img/start0.png');
 
-    var meteoriteballr = new THREE.TextureLoader().load("img/star00.png");
-    var meteoritetailr = new THREE.TextureLoader().load("img/start00.png");
+    var meteoriteballr = new THREE.TextureLoader().load('img/star00.png');
+    var meteoritetailr = new THREE.TextureLoader().load('img/start00.png');
 
-    var textureFlare0 = new THREE.TextureLoader().load("img/lensflare0.png");
-    var textureFlare0a = new THREE.TextureLoader().load("img/lensflare0a.png");
-    var textureFlare0b = new THREE.TextureLoader().load("img/lensflare0b.png");
+    var textureFlare0 = new THREE.TextureLoader().load('img/lensflare0.png');
+    var textureFlare0a = new THREE.TextureLoader().load('img/lensflare0a.png');
+    var textureFlare0b = new THREE.TextureLoader().load('img/lensflare0b.png');
     if (add_solar) {
       var sunmaterial2 = new THREE.SpriteMaterial({
         map: textureFlare0a,
@@ -687,10 +688,10 @@
     var village = meteorite_Object3D.clone();
 
     const normalMap2 = new THREE.TextureLoader().load(
-      "./three.js/examples/textures/water/Water_1_M_Normal.jpg"
+      './three.js/examples/textures/water/Water_1_M_Normal.jpg'
     );
     const clearcoatNormaMap = new THREE.TextureLoader().load(
-      "./three.js/examples/textures/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png"
+      './three.js/examples/textures/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png'
     );
 
     var ufo_material = new THREE.MeshPhysicalMaterial({
@@ -711,11 +712,11 @@
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      document.getElementById("container").appendChild(renderer.domElement);
+      document.getElementById('container').appendChild(renderer.domElement);
       document.body.appendChild(renderer.domElement);
       scene = new THREE.Scene();
       var skyGeometry = new THREE.SphereGeometry(5000, 100, 100);
-      var map = new THREE.TextureLoader().load("img/bg5.png");
+      var map = new THREE.TextureLoader().load('img/bg5.png');
       map.wrapS = THREE.RepeatWrapping;
       map.wrapT = THREE.RepeatWrapping;
       map.repeat.set(15, 15);
@@ -727,7 +728,7 @@
           side: THREE.BackSide,
         })
       );
-      skyBox.name = "Sky";
+      skyBox.name = 'Sky';
       scene.add(skyBox);
 
       camera = new THREE.PerspectiveCamera(
@@ -791,7 +792,7 @@
 
       scene.add(camera);
 
-      document.addEventListener("mousemove", mouseMove, false);
+      document.addEventListener('mousemove', mouseMove, false);
 
       var onKeyDown = function (e) {
         switch (e.keyCode) {
@@ -825,9 +826,9 @@
 
           case 27:
             esc = true;
-            $("#blocker").fadeIn(1200);
-            $("#content").fadeIn(1200);
-            $("#secondBlocker").fadeOut(600);
+            $('#blocker').fadeIn(1200);
+            $('#content').fadeIn(1200);
+            $('#secondBlocker').fadeOut(600);
             break;
 
           case 69:
@@ -880,8 +881,8 @@
         }
       };
 
-      document.addEventListener("keydown", onKeyDown, false);
-      document.addEventListener("keyup", onKeyUp, false);
+      document.addEventListener('keydown', onKeyDown, false);
+      document.addEventListener('keyup', onKeyUp, false);
 
       scene.add(new THREE.AmbientLight(0x111111));
       if (add_solar) {
@@ -931,7 +932,7 @@
       let onProgress_obj = function (xhr) {
         if (xhr.lengthComputable) {
           let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          console.log(Math.round(percentComplete, 2) + '% downloaded(obj)');
           if (percentComplete == 100) {
             loaded_items += 1;
           }
@@ -940,7 +941,7 @@
       let onProgress_mtl = function (xhr) {
         if (xhr.lengthComputable) {
           let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          console.log(Math.round(percentComplete, 2) + '% downloaded(mtl)');
           if (percentComplete == 100) {
             loaded_items += 1;
           }
@@ -949,13 +950,13 @@
 
       const mtlLoader = new MTLLoader();
       mtlLoader.load(
-        "UFO2/UFO2.mtl",
+        'UFO2/UFO2.mtl',
         (mtl) => {
           mtl.preload();
           const objLoader = new OBJLoader();
           objLoader.setMaterials(mtl);
           objLoader.load(
-            "UFO2/UFO2.obj",
+            'UFO2/UFO2.obj',
             (root) => {
               for (var k in root.children) {
                 root.children[k].castShadow = true;
@@ -1190,7 +1191,7 @@
       let onProgress_obj = function (xhr) {
         if (xhr.lengthComputable) {
           let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          console.log(Math.round(percentComplete, 2) + '% downloaded(obj)');
           if (percentComplete == 100) {
             loaded_items += 1;
           }
@@ -1199,7 +1200,7 @@
       let onProgress_mtl = function (xhr) {
         if (xhr.lengthComputable) {
           let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          console.log(Math.round(percentComplete, 2) + '% downloaded(mtl)');
           if (percentComplete == 100) {
             loaded_items += 1;
           }
@@ -1211,13 +1212,13 @@
         newmtl.setMaterialOptions({ side: THREE.DoubleSide });
       }
       newmtl.load(
-        url1 + ".mtl",
+        url1 + '.mtl',
         (mtl) => {
           mtl.preload();
           var objLoader = new OBJLoader();
           objLoader.setMaterials(mtl);
           objLoader.load(
-            url + ".obj",
+            url + '.obj',
             (root) => {
               for (var k = 0; k < root.children.length; k++) {
                 root.children[k].castShadow = true;
@@ -1240,7 +1241,7 @@
       let onProgress_obj = function (xhr) {
         if (xhr.lengthComputable) {
           let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(obj)");
+          console.log(Math.round(percentComplete, 2) + '% downloaded(obj)');
           if (percentComplete == 100) {
             loaded_items += 1;
           }
@@ -1249,7 +1250,7 @@
       let onProgress_mtl = function (xhr) {
         if (xhr.lengthComputable) {
           let percentComplete = (xhr.loaded / xhr.total) * 100;
-          console.log(Math.round(percentComplete, 2) + "% downloaded(mtl)");
+          console.log(Math.round(percentComplete, 2) + '% downloaded(mtl)');
           if (percentComplete == 100) {
             loaded_items += 1;
           }
@@ -1258,13 +1259,13 @@
       var newobj = obj3d.clone();
       var newmtl = new MTLLoader();
       newmtl.load(
-        url1 + ".mtl",
+        url1 + '.mtl',
         (mtl) => {
           mtl.preload();
           const objLoader = new OBJLoader();
           objLoader.setMaterials(mtl);
           objLoader.load(
-            url + ".obj",
+            url + '.obj',
             (root) => {
               var object = root;
               for (var k in root.children) {
@@ -1328,20 +1329,20 @@
     function obj(url, size, x, y, z, name) {
       size = size * 0.8;
       var startTexture = THREE.ImageUtils.loadTexture(url);
-      if (name == "star3") {
+      if (name == 'star3') {
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/EarthNormal.png",
+              './texture/EarthNormal.png',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               }
             ),
           })
         );
-      } else if (name == "star2") {
+      } else if (name == 'star2') {
         //console.log(name)
         startTexture.wrapS = startTexture.wrapT = THREE.RepeatWrapping;
         startTexture.repeat.set(3, 3);
@@ -1350,7 +1351,7 @@
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/normal1.jpg",
+              './texture/normal1.jpg',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(3, 3);
@@ -1359,7 +1360,7 @@
           })
         );
       } else if (size > 10 && size < 18 && size != 12) {
-        if (name == "star7") {
+        if (name == 'star7') {
           startTexture.wrapS = startTexture.wrapT = THREE.RepeatWrapping;
           startTexture.repeat.set(3, 3);
         }
@@ -1368,28 +1369,28 @@
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/normal.jpg",
+              './texture/normal.jpg',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               }
             ),
           })
         );
-      } else if (size < 18 && name != "starlite6") {
+      } else if (size < 18 && name != 'starlite6') {
         //console.log(name)
         var starBall = new THREE.Mesh(
           new THREE.SphereGeometry(size, 50, 50),
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/normal1.jpg",
+              './texture/normal1.jpg',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               }
             ),
           })
         );
-      } else if (name == "starlite6") {
+      } else if (name == 'starlite6') {
         //console.log(name)
         startTexture.wrapS = startTexture.wrapT = THREE.RepeatWrapping;
         startTexture.repeat.set(5, 5);
@@ -1398,7 +1399,7 @@
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/normal2.jpg",
+              './texture/normal2.jpg',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(30, 30);
@@ -1412,7 +1413,7 @@
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/normal3.jpg",
+              './texture/normal3.jpg',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               }
@@ -1425,7 +1426,7 @@
           new THREE.MeshPhongMaterial({
             map: startTexture,
             normalMap: new THREE.TextureLoader().load(
-              "./texture/normal4.jpg",
+              './texture/normal4.jpg',
               function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
               }
@@ -1489,46 +1490,46 @@
     }
 
     function getMousePosition() {
-      var x = document.getElementById("aiming1").offsetLeft + 10;
-      var y = document.getElementById("aiming1").offsetTop + 10;
+      var x = document.getElementById('aiming1').offsetLeft + 10;
+      var y = document.getElementById('aiming1').offsetTop + 10;
       return { x: x, y: y };
     }
     function mouseMove(e) {
       mouse.x =
-        ((document.getElementById("aiming1").offsetLeft + 10) /
+        ((document.getElementById('aiming1').offsetLeft + 10) /
           window.innerWidth) *
           2 -
         1;
       mouse.y =
         -(
-          (document.getElementById("aiming1").offsetTop + 10) /
+          (document.getElementById('aiming1').offsetTop + 10) /
           window.innerHeight
         ) *
           2 +
         1;
 
-      document.getElementById("aiming1").style.left = e.clientX - 10 + "px";
-      document.getElementById("aiming1").style.top = e.clientY - 10 + "px";
+      document.getElementById('aiming1').style.left = e.clientX - 10 + 'px';
+      document.getElementById('aiming1').style.top = e.clientY - 10 + 'px';
       if (esc)
         var mouseP = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       else var mouseP = getMousePosition();
-      if (mouseP["y"] / window.innerHeight < 0.5) {
-        up = 0.5 - mouseP["y"] / window.innerHeight;
+      if (mouseP['y'] / window.innerHeight < 0.5) {
+        up = 0.5 - mouseP['y'] / window.innerHeight;
       } else {
         up = 0;
       }
-      if (mouseP["y"] / window.innerHeight > 0.62) {
-        down = mouseP["y"] / window.innerHeight - 0.62;
+      if (mouseP['y'] / window.innerHeight > 0.62) {
+        down = mouseP['y'] / window.innerHeight - 0.62;
       } else {
         down = 0;
       }
-      if (mouseP["x"] / window.innerWidth < 0.47) {
-        left = 0.47 - mouseP["x"] / window.innerWidth;
+      if (mouseP['x'] / window.innerWidth < 0.47) {
+        left = 0.47 - mouseP['x'] / window.innerWidth;
       } else {
         left = 0;
       }
-      if (mouseP["x"] / window.innerWidth > 0.53) {
-        right = mouseP["x"] / window.innerWidth - 0.53;
+      if (mouseP['x'] / window.innerWidth > 0.53) {
+        right = mouseP['x'] / window.innerWidth - 0.53;
       } else {
         right = 0;
       }
@@ -1554,23 +1555,23 @@
         Math.min(400, cameraPosition.y)
       );
       if (
-        crash_detect(ufo, sun, "sun") &&
-        crash_detect(ufo, star1, "star1") &&
-        crash_detect(ufo, star2, "star2") &&
-        crash_detect(ufo, star3, "star3") &&
-        crash_detect(ufo, starlite3, "starlite3") &&
-        crash_detect(ufo, star4, "star4") &&
-        crash_detect(ufo, star5, "star5") &&
-        crash_detect(ufo, star6, "star6") &&
-        crash_detect(ufo, starlite6, "starlite6") &&
-        crash_detect(ufo, starlite61, "starlite61") &&
-        crash_detect(ufo, starlite62, "starlite62") &&
-        crash_detect(ufo, starlite63, "starlite63") &&
-        crash_detect(ufo, starlite64, "starlite64") &&
-        crash_detect(ufo, starlite65, "starlite65") &&
-        crash_detect(ufo, star7, "star7") &&
-        crash_detect(ufo, star8, "star8") &&
-        crash_detect(ufo, star9, "star9")
+        crash_detect(ufo, sun, 'sun') &&
+        crash_detect(ufo, star1, 'star1') &&
+        crash_detect(ufo, star2, 'star2') &&
+        crash_detect(ufo, star3, 'star3') &&
+        crash_detect(ufo, starlite3, 'starlite3') &&
+        crash_detect(ufo, star4, 'star4') &&
+        crash_detect(ufo, star5, 'star5') &&
+        crash_detect(ufo, star6, 'star6') &&
+        crash_detect(ufo, starlite6, 'starlite6') &&
+        crash_detect(ufo, starlite61, 'starlite61') &&
+        crash_detect(ufo, starlite62, 'starlite62') &&
+        crash_detect(ufo, starlite63, 'starlite63') &&
+        crash_detect(ufo, starlite64, 'starlite64') &&
+        crash_detect(ufo, starlite65, 'starlite65') &&
+        crash_detect(ufo, star7, 'star7') &&
+        crash_detect(ufo, star8, 'star8') &&
+        crash_detect(ufo, star9, 'star9')
       ) {
         return false;
       } else {
@@ -1643,16 +1644,16 @@
     }
 
     function onMouseClick(event) {
-      if (document.getElementById("content").style.display == "none" && !esc) {
+      if (document.getElementById('content').style.display == 'none' && !esc) {
         raycaster1.setFromCamera(mouse, camera);
         raycaster1.near = 0.1;
         raycaster1.far = 10000;
         var intersects = raycaster1.intersectObjects(scene.children, true);
         for (var i = 0; i < intersects.length; i++) {
           if (
-            intersects[i].object.type != "Sprite" &&
-            intersects[i].object.name != "ring" &&
-            intersects[i].object.name != "Sky"
+            intersects[i].object.type != 'Sprite' &&
+            intersects[i].object.name != 'ring' &&
+            intersects[i].object.name != 'Sky'
           )
             break;
         }
@@ -1668,7 +1669,7 @@
       }
     }
 
-    window.addEventListener("mousedown", onMouseClick, false);
+    window.addEventListener('mousedown', onMouseClick, false);
 
     function operation_method_1(delta) {
       if (!ufo || !ufo.children || !ufo.children[10]) return;
@@ -1705,7 +1706,7 @@
         ufo.children[10].material.specular.set(0x44e0ff);
         ufo.children[10].material.emissive.set(0x44e0ff);
       }
-      if (document.getElementById("content").style.display == "none") {
+      if (document.getElementById('content').style.display == 'none') {
         esc = false;
       }
       if (fast) maxSpeed = 0.6 * fps_speed;
@@ -1855,10 +1856,10 @@
         add_solar &&
         selected_object &&
         plant_name.includes(selected_object.object.name) &&
-        document.getElementById("content").style.display == "none"
+        document.getElementById('content').style.display == 'none'
       ) {
         safe_dis = 1 * ufo_scale;
-        if (selected_object.object.name == "sun") safe_dis = 10;
+        if (selected_object.object.name == 'sun') safe_dis = 10;
 
         chaseing_frame = 50;
         ufo.children[10].material.color.set(0xffff33);
@@ -1918,7 +1919,7 @@
           tranfer_speed = Math.max(tranfer_speed - 0.1 * fps_speed, 1);
           arrived -= 1;
         }
-        if (selected_object.object.name == "starlite3") {
+        if (selected_object.object.name == 'starlite3') {
           cameraPosition.x += (chasing.x * catchspeed) / 10;
           cameraPosition.y += (chasing.y * catchspeed) / 10;
           cameraPosition.z += (chasing.z * catchspeed) / 10;
@@ -1930,7 +1931,7 @@
       } else if (
         arrived > 0 &&
         selected_object &&
-        document.getElementById("content").style.display == "none"
+        document.getElementById('content').style.display == 'none'
       ) {
         ////console.log(selected_object.point)
         safe_dis = 1 * ufo_scale;
@@ -2121,26 +2122,26 @@
         scene.remove(meteorite1[0]);
         return true;
       }
-      meteorite1[0].position.x += meteorite1[1].x * 20 * fps_speed;
-      meteorite1[0].position.y += meteorite1[1].y * 20 * fps_speed;
-      meteorite1[0].position.z += meteorite1[1].z * 20 * fps_speed;
+      meteorite1[0].position.x += meteorite1[1].x * 8 * fps_speed;
+      meteorite1[0].position.y += meteorite1[1].y * 8 * fps_speed;
+      meteorite1[0].position.z += meteorite1[1].z * 8 * fps_speed;
       return false;
     }
-    
+
     function animate() {
       if (esc) {
-        document.querySelector("body").style.cursor =
-          "url(./img/cursor.png),default";
-        document.getElementById("aiming1").style.display = "none";
+        document.querySelector('body').style.cursor =
+          'url(./img/cursor.png),default';
+        document.getElementById('aiming1').style.display = 'none';
       } else {
-        document.querySelector("body").style.cursor = "none";
-        document.getElementById("aiming1").style.display = "block";
+        document.querySelector('body').style.cursor = 'none';
+        document.getElementById('aiming1').style.display = 'block';
       }
 
-      const delta = clock.getDelta();    
+      const delta = clock.getDelta();
       requestAnimationFrame(animate);
       if (loaded_items > 0 && loaded_items == load_items) hide_loading();
-      else return
+      else return;
       customUniforms.time.value += delta;
       // customUniforms.baseSpeed.value = controls.baseSpeed;
       // customUniforms.noiseScale.value = controls.noiseScale;
@@ -2151,17 +2152,17 @@
       timeStamp += delta;
       if (timeStamp > singleFrameTime) {
         //stats.update();
-        if (selected_object && selected_object.object.name == "star3") {
+        if (selected_object && selected_object.object.name == 'star3') {
           follow_frame1 += 1;
         } else {
           follow_frame1 = 0;
         }
-        if (selected_object && selected_object.object.name == "star4") {
+        if (selected_object && selected_object.object.name == 'star4') {
           follow_frame2 += 1;
         } else {
           follow_frame2 = 0;
         }
-        if (selected_object && selected_object.object.name == "star6") {
+        if (selected_object && selected_object.object.name == 'star6') {
           follow_frame3 += 1;
         } else {
           follow_frame3 = 0;
@@ -2174,12 +2175,12 @@
           go_lightning();
         }
 
-        var rotate = angle * Math.PI * rotatespeed;
+        const rotate = angle * Math.PI * rotatespeed;
 
         angle += 0.0005;
         if (add_solar) {
           sun.rotation.y -= ((0.005 / Math.PI) * rotatespeed) / 5;
-          var position1 = (2 * rotate) / 5;
+          const position1 = (2 * rotate) / 5;
           star1.rotateOnWorldAxis(
             vec.clone().set(-1, 1, 0).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 5
@@ -2187,7 +2188,7 @@
           star1.position.x = Math.sin(position1) * 180;
           star1.position.z = Math.cos(position1) * 180;
 
-          var position2 = (1.8 * rotate) / 5;
+          const position2 = (1.8 * rotate) / 5;
           star2.rotateOnWorldAxis(
             vec.clone().set(0, 2, 0).normalize(),
             ((0.02 / Math.PI) * rotatespeed) / 5
@@ -2195,26 +2196,26 @@
           star2.position.x = Math.sin(position2) * 240;
           star2.position.z = Math.cos(position2) * 240;
 
-          var position3 = (1.5 * rotate) / 5;
+          const position3 = (1.5 * rotate) / 5;
           star3.rotateOnWorldAxis(
             vec.clone().set(0.2, 1, 0).normalize(),
             ((0.04 / Math.PI) * rotatespeed) / 5
           );
           star3.position.x = Math.sin(position3) * 320;
           star3.position.z = Math.cos(position3) * 320;
-          var position3 = (10 * rotate) / 5;
+          const starliteposition3 = (10 * rotate) / 5;
           starlite3.rotateOnWorldAxis(
             vec.clone().set(0.1, 1, 0).normalize(),
             ((0.4 / Math.PI) * rotatespeed) / 3 / 5
           );
           starlite3.position.x =
-            Math.sin(position3 / 2) * 19 + star3.position.x;
+            Math.sin(starliteposition3 / 2) * 19 + star3.position.x;
           starlite3.position.z =
-            Math.cos(position3 / 2) * 19 + star3.position.z;
+            Math.cos(starliteposition3 / 2) * 19 + star3.position.z;
           starlite3.position.y =
-            Math.sin(position3 / 2) * 21 + star3.position.y;
+            Math.sin(starliteposition3 / 2) * 21 + star3.position.y;
 
-          var position4 = (0.85 * rotate) / 5;
+          const position4 = (0.85 * rotate) / 5;
           star4.rotateOnWorldAxis(
             vec.clone().set(0, 1, 0).normalize(),
             ((0.06 / Math.PI) * rotatespeed) / 5
@@ -2228,7 +2229,7 @@
           ring4.position.x = Math.sin(position4) * 780;
           ring4.position.z = Math.cos(position4) * 780;
 
-          var position5 = (1.3 * rotate) / 5;
+          const position5 = (1.3 * rotate) / 5;
           star5.rotateOnWorldAxis(
             vec.clone().set(1, 4, 1).normalize(),
             ((0.03 / Math.PI) * rotatespeed) / 5
@@ -2236,78 +2237,78 @@
           star5.position.x = Math.sin(position5) * 420;
           star5.position.z = Math.cos(position5) * 420;
 
-          var position6 = (1.1 * rotate) / 5;
+          const position6 = (1.1 * rotate) / 5;
           star6.rotateOnWorldAxis(
             vec.clone().set(0, 5, 0).normalize(),
             ((0.02 / Math.PI) * rotatespeed) / 5
           );
           star6.position.x = Math.sin(position6) * 600;
           star6.position.z = Math.cos(position6) * 600;
-          position6 = (2 * rotate) / 5;
+          const starliteposition6 = (2 * rotate) / 5;
           starlite6.rotateOnWorldAxis(
             vec.clone().set(0.1, 1, 0.3).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 50
           );
-          starlite6.position.x = Math.sin(position6) * 50 + star6.position.x;
-          starlite6.position.z = Math.cos(position6) * 50 + star6.position.z;
-          starlite6.position.y = Math.sin(position6) * 40 + star6.position.y;
+          starlite6.position.x = Math.sin(starliteposition6) * 50 + star6.position.x;
+          starlite6.position.z = Math.cos(starliteposition6) * 50 + star6.position.z;
+          starlite6.position.y = Math.sin(starliteposition6) * 40 + star6.position.y;
 
           starlite61.rotateOnWorldAxis(
             vec.clone().set(0.5, 1, 0.2).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 50
           );
           starlite61.position.x =
-            Math.sin(position6 * 2) * 40 + star6.position.x;
+            Math.sin(starliteposition6 * 2) * 40 + star6.position.x;
           starlite61.position.z =
-            Math.cos(position6 * 2) * 40 + star6.position.z;
+            Math.cos(starliteposition6 * 2) * 40 + star6.position.z;
           starlite61.position.y =
-            Math.sin(position6 * 2) * 35 + star6.position.y;
+            Math.sin(starliteposition6 * 2) * 35 + star6.position.y;
 
           starlite62.rotateOnWorldAxis(
             vec.clone().set(0.2, 1, 0.6).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 50
           );
           starlite62.position.x =
-            Math.sin(position6 * 1.2) * 55 + star6.position.x;
+            Math.sin(starliteposition6 * 1.2) * 55 + star6.position.x;
           starlite62.position.z =
-            Math.cos(position6 * 1.2) * 55 + star6.position.z;
+            Math.cos(starliteposition6 * 1.2) * 55 + star6.position.z;
           starlite62.position.y =
-            Math.sin(position6 * 1.2) * 45 + star6.position.y;
+            Math.sin(starliteposition6 * 1.2) * 45 + star6.position.y;
 
           starlite63.rotateOnWorldAxis(
             vec.clone().set(0.1, 1, 0.5).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 50
           );
           starlite63.position.x =
-            Math.sin(position6 * 1.5) * 60 + star6.position.x;
+            Math.sin(starliteposition6 * 1.5) * 60 + star6.position.x;
           starlite63.position.z =
-            Math.cos(position6 * 1.5) * 60 + star6.position.z;
+            Math.cos(starliteposition6 * 1.5) * 60 + star6.position.z;
           starlite63.position.y =
-            Math.sin(position6 * 1.5) * 50 + star6.position.y;
+            Math.sin(starliteposition6 * 1.5) * 50 + star6.position.y;
 
           starlite64.rotateOnWorldAxis(
             vec.clone().set(0.2, 1, 0.3).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 50
           );
           starlite64.position.x =
-            Math.sin(position6 * 0.8) * 65 + star6.position.x;
+            Math.sin(starliteposition6 * 0.8) * 65 + star6.position.x;
           starlite64.position.z =
-            Math.cos(position6 * 0.8) * 65 + star6.position.z;
+            Math.cos(starliteposition6 * 0.8) * 65 + star6.position.z;
           starlite64.position.y =
-            Math.sin(position6 * 0.8) * 55 + star6.position.y;
+            Math.sin(starliteposition6 * 0.8) * 55 + star6.position.y;
 
           starlite65.rotateOnWorldAxis(
             vec.clone().set(0.6, 1, 0.3).normalize(),
             ((0.2 / Math.PI) * rotatespeed) / 50
           );
           starlite65.position.x =
-            Math.sin(position6 * 0.18) * 70 + star6.position.x;
+            Math.sin(starliteposition6 * 0.18) * 70 + star6.position.x;
           starlite65.position.z =
-            Math.cos(position6 * 0.18) * 70 + star6.position.z;
+            Math.cos(starliteposition6 * 0.18) * 70 + star6.position.z;
           starlite65.position.y =
-            Math.sin(position6 * 0.18) * 60 + star6.position.y;
+            Math.sin(starliteposition6 * 0.18) * 60 + star6.position.y;
 
-          var position7 = (0.7 * rotate) / 5;
+          const position7 = (0.7 * rotate) / 5;
           star7.rotateOnWorldAxis(
             vec.clone().set(0.5, 3, 1).normalize(),
             ((0.015 / Math.PI) * rotatespeed) / 5
@@ -2315,7 +2316,7 @@
           star7.position.x = Math.sin(position7) * 900;
           star7.position.z = Math.cos(position7) * 900;
 
-          var position8 = (0.4 * rotate) / 5;
+          const position8 = (0.4 * rotate) / 5;
           star8.rotateOnWorldAxis(
             vec.clone().set(0, 1, 0).normalize(),
             ((0.1 / Math.PI) * rotatespeed) / 5
@@ -2329,7 +2330,7 @@
           ring8.position.x = Math.sin(position7) * 900;
           ring8.position.z = Math.cos(position7) * 900;
 
-          var position9 = (0.2 * rotate) / 5;
+          const position9 = (0.2 * rotate) / 5;
           star9.rotateOnWorldAxis(
             vec.clone().set(0, 10, 1).normalize(),
             ((0.01 / Math.PI) * rotatespeed) / 5
@@ -2342,16 +2343,16 @@
         for (let i = 0; i < particles.length; i++) {
           particle = particles[i];
           particle.scale.x = particle.scale.y =
-           Math.sin(star_s_speed[i] * count * 200) + 3;
-         const d = star_d[i];
-         const ds = star_d_speed[i];
-         particle.position.x += (d.x * Math.cos(ds.x * count)) / 6;
-         particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
-         particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
-        }          
+            Math.sin(star_s_speed[i] * count * 200) + 3;
+          const d = star_d[i];
+          const ds = star_d_speed[i];
+          particle.position.x += (d.x * Math.cos(ds.x * count)) / 6;
+          particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
+          particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
+        }
         if (meteorites.length < 10) {
-         let meteorite1 = generate_meteoriteObject3D(8);
-         meteorites.push(meteorite1);
+          const meteorite1 = generate_meteoriteObject3D(8);
+          meteorites.push(meteorite1);
           scene.add(meteorite1[0]);
         }
         for (var met in meteorites) {
@@ -2369,10 +2370,10 @@
     }
 
     animate();
-    var MyResize = function () {
+    const MyResize = function () {
       //get the new sizes
-      var width = window.innerWidth;
-      var height = window.innerHeight;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
 
       //then update the renderer
       renderer.setSize(width, height);
@@ -2385,25 +2386,25 @@
       //and finally render the scene again
       renderer.render(scene, camera);
     };
-    window.addEventListener("resize", MyResize);
+    window.addEventListener('resize', MyResize);
   </script>
   <script>
-    document.querySelector("body").style.cursor =
-      "url(./img/cursor.png),default";
+    document.querySelector('body').style.cursor =
+      'url(./img/cursor.png),default';
     function hideMe() {
-      $("#content").fadeOut(1000);
-      $("#blocker").fadeOut(2000);
-      $("#secondBlocker").delay(1200).fadeIn(1000);
+      $('#content').fadeOut(1000);
+      $('#blocker').fadeOut(2000);
+      $('#secondBlocker').delay(1200).fadeIn(1000);
     }
 
     function goAlianBase() {
-      window.location.href = "alian_base.html";
+      window.location.href = 'alian_base.html';
     }
     function goIsland() {
-      window.location.href = "island.html";
+      window.location.href = 'island.html';
     }
     function goLightning() {
-      window.location.href = "lightning.html";
+      window.location.href = 'lightning.html';
     }
   </script>
 </html>
