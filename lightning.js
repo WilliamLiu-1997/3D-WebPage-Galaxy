@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
@@ -10,6 +10,9 @@ import {
   createResizeRendererHandler,
   createProgressHandler,
 } from './JS/shared/scene-common.js';
+
+const textureLoader = new THREE.TextureLoader();
+
 const {
   targetFps: TARGET_FPS,
   frameInterval,
@@ -136,11 +139,11 @@ const currentSceneIndex = 0;
 
 let currentTime = 0;
 
-const ufolight = new THREE.TextureLoader().load('img/ufo_light1.png');
+const ufolight = textureLoader.load('img/ufo_light1.png');
 
-const starball = new THREE.TextureLoader().load('img/ball.png');
-const cloudMap = new THREE.TextureLoader().load('img/cloud55.png');
-const cloudMap1 = new THREE.TextureLoader().load('img/cloud11.png');
+const starball = textureLoader.load('img/ball.png');
+const cloudMap = textureLoader.load('img/cloud55.png');
+const cloudMap1 = textureLoader.load('img/cloud11.png');
 const flash = new THREE.Color(0.11, 0.11, 0.11);
 const cloudMaterial1 = new THREE.SpriteMaterial({
   map: cloudMap,
@@ -166,7 +169,7 @@ const MeshWater = new Water(
   {
     textureWidth: 2048,
     textureHeight: 2048,
-    waterNormals: new THREE.TextureLoader().load(
+    waterNormals: textureLoader.load(
       './texture/three/water/waternormals.jpg',
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -247,10 +250,10 @@ scene.render = function (time) {
 
 scene.sceneIndex = currentSceneIndex;
 scene.timeRate = 1.5;
-const normalMap2 = new THREE.TextureLoader().load(
+const normalMap2 = textureLoader.load(
   './texture/three/water/Water_1_M_Normal.jpg',
 );
-const clearcoatNormaMap = new THREE.TextureLoader().load(
+const clearcoatNormaMap = textureLoader.load(
   './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
@@ -267,7 +270,7 @@ const ufo_material = new THREE.MeshPhysicalMaterial({
 });
 function init() {
   const skyGeometry = new THREE.SphereGeometry(8000, 100, 100);
-  const map = new THREE.TextureLoader().load('img/bg5.png');
+  const map = textureLoader.load('img/bg5.png');
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(15, 15);
@@ -421,7 +424,7 @@ function init() {
   // let geometryGround = new THREE.CircleBufferGeometry(5000, 100, 100);
   // geometryGround.rotateX(Math.PI / 2);
   // //geometryGround.translate(0, 0, 0);
-  // let texture = THREE.ImageUtils.loadTexture("texture/pattern8.png");
+  // let texture = textureLoader.load("texture/pattern8.png");
   // texture.wrapS = THREE.RepeatWrapping;
   // texture.wrapT = THREE.RepeatWrapping;
   // texture.repeat.set(500, 500);

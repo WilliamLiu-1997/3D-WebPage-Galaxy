@@ -10,6 +10,8 @@ import {
   createResizeRendererHandler,
   createProgressHandler,
 } from './JS/shared/scene-common.js';
+
+const textureLoader = new THREE.TextureLoader();
 const {
   targetFps: TARGET_FPS,
   frameInterval,
@@ -101,13 +103,13 @@ const raycaster1 = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let selected_object = false;
 
-const ufolight = new THREE.TextureLoader().load('img/ufo_light1.png');
+const ufolight = textureLoader.load('img/ufo_light1.png');
 
-const starball = new THREE.TextureLoader().load('img/ball.png');
-const meteoriteball = new THREE.TextureLoader().load('img/star0.png');
-const meteoritetail = new THREE.TextureLoader().load('img/start0.png');
+const starball = textureLoader.load('img/ball.png');
+const meteoriteball = textureLoader.load('img/star0.png');
+const meteoritetail = textureLoader.load('img/start0.png');
 
-const meteoriteballr = new THREE.TextureLoader().load('img/star00.png');
+const meteoriteballr = textureLoader.load('img/star00.png');
 
 const material = new THREE.Sprite(
   new THREE.SpriteMaterial({
@@ -143,7 +145,7 @@ const MeshWater = new Water(
   {
     textureWidth: 1024,
     textureHeight: 1024,
-    waterNormals: new THREE.TextureLoader().load(
+    waterNormals: textureLoader.load(
       './texture/three/water/waternormals.jpg',
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -157,10 +159,10 @@ const MeshWater = new Water(
   },
   2.0,
 );
-const normalMap2 = new THREE.TextureLoader().load(
+const normalMap2 = textureLoader.load(
   './texture/three/water/Water_1_M_Normal.jpg',
 );
-const clearcoatNormaMap = new THREE.TextureLoader().load(
+const clearcoatNormaMap = textureLoader.load(
   './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
@@ -177,7 +179,7 @@ const ufo_material = new THREE.MeshPhysicalMaterial({
 });
 function init() {
   const skyGeometry = new THREE.SphereGeometry(8000, 100, 100);
-  const map = new THREE.TextureLoader().load('img/bg5.png');
+  const map = textureLoader.load('img/bg5.png');
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(15, 15);
@@ -245,7 +247,7 @@ function init() {
   const geometryGround = new THREE.CircleGeometry(5000, 100, 100);
   geometryGround.rotateX(Math.PI / 2);
   geometryGround.translate(0, 0, 0);
-  const texture = THREE.ImageUtils.loadTexture('texture/pattern5.jpg');
+  const texture = textureLoader.load('texture/pattern5.jpg');
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(500, 500);
@@ -726,7 +728,7 @@ let model,
 const loaderAnim = document.getElementById('js-loader');
 
 const MODEL_PATH = './obj/model/model.glb';
-const stacy_txt = new THREE.TextureLoader().load('./obj/model/model.jpg');
+const stacy_txt = textureLoader.load('./obj/model/model.jpg');
 
 stacy_txt.flipY = false; // we flip the texture so that its the right way up
 
@@ -1428,17 +1430,18 @@ function generate_meteoriteObject3D(size) {
   x = (Math.random() - 0.5) * METEOR_MAX_DISTANCE;
   y = Math.random() * 4000 - 500;
   z =
-    Math.sqrt(
-      METEOR_MAX_DISTANCE_SQ - x * x - y * y,
-    ) * (Math.random() > 0.5 ? 1 : -1);
+    Math.sqrt(METEOR_MAX_DISTANCE_SQ - x * x - y * y) *
+    (Math.random() > 0.5 ? 1 : -1);
 
   const v1 = new THREE.Vector3();
   const toCenter = new THREE.Vector3();
   let centerDot = 0;
   while (true) {
-    v1
-      .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
-      .normalize();
+    v1.set(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+    ).normalize();
     toCenter.set(-x, -y, -z).normalize();
     centerDot = toCenter.dot(v1);
     if (

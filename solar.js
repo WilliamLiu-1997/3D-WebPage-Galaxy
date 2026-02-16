@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import {
@@ -9,6 +9,8 @@ import {
   createProgressHandler,
   navigateWithFade,
 } from './JS/shared/scene-common.js';
+
+const textureLoader = new THREE.TextureLoader();
 function goAlienBaseWithFade() {
   navigateWithFade('alian_base.html');
 }
@@ -133,7 +135,7 @@ const followablePlanetNames = [
   'star9',
 ];
 
-const lavaTexture = new THREE.ImageUtils.loadTexture('./texture/sun.jpg');
+const lavaTexture = textureLoader.load('./texture/sun.jpg');
 lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const baseSpeed = 0.025;
@@ -142,13 +144,13 @@ const repeatS = 1.0;
 const repeatT = 1.0;
 
 // texture used to generate "randomness", distort all other textures
-const noiseTexture = new THREE.ImageUtils.loadTexture('texture/cloud.png');
+const noiseTexture = textureLoader.load('texture/cloud.png');
 noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
 // magnitude of noise effect
 const noiseScale = 0.0025;
 
 // texture to additively blend with base image texture
-const blendTexture = new THREE.ImageUtils.loadTexture(
+const blendTexture = textureLoader.load(
   './texture/gstar-original.jpg',
 );
 blendTexture.wrapS = blendTexture.wrapT = THREE.RepeatWrapping;
@@ -196,9 +198,9 @@ const customMaterial = new THREE.ShaderMaterial({
   fragmentShader: document.getElementById('fragmentShader').textContent,
 });
 
-const sunlight = new THREE.TextureLoader().load('img/lensflare2.png');
+const sunlight = textureLoader.load('img/lensflare2.png');
 
-const ufolight = new THREE.TextureLoader().load('img/ufo_light1.png');
+const ufolight = textureLoader.load('img/ufo_light1.png');
 let sunbackground;
 let sunbackground1;
 let sunbackground2;
@@ -233,7 +235,7 @@ if (add_solar) {
   sunbackground = new THREE.Sprite(sunmaterial);
   sunbackground.position.set(0, 0, 0);
   sunbackground.scale.set(500, 400, 1);
-  const sunlight1 = new THREE.TextureLoader().load('img/ball.png');
+  const sunlight1 = textureLoader.load('img/ball.png');
   const sunmaterial1 = new THREE.SpriteMaterial({
     blending: THREE.AdditiveBlending,
     map: sunlight1,
@@ -347,13 +349,13 @@ if (add_solar) {
   star9.receiveShadow = true;
 }
 
-const starball = new THREE.TextureLoader().load('img/ball.png');
-const meteoriteball = new THREE.TextureLoader().load('img/star0.png');
-const meteoritetail = new THREE.TextureLoader().load('img/start0.png');
+const starball = textureLoader.load('img/ball.png');
+const meteoriteball = textureLoader.load('img/star0.png');
+const meteoritetail = textureLoader.load('img/start0.png');
 
-const meteoriteballr = new THREE.TextureLoader().load('img/star00.png');
-const textureFlare0a = new THREE.TextureLoader().load('img/lensflare0a.png');
-const textureFlare0b = new THREE.TextureLoader().load('img/lensflare0b.png');
+const meteoriteballr = textureLoader.load('img/star00.png');
+const textureFlare0a = textureLoader.load('img/lensflare0a.png');
+const textureFlare0b = textureLoader.load('img/lensflare0b.png');
 if (add_solar) {
   const sunmaterial2 = new THREE.SpriteMaterial({
     map: textureFlare0a,
@@ -413,10 +415,10 @@ const material1 = new THREE.Sprite(
 const meteorite_Object3D = obj3d.clone();
 const ufo = meteorite_Object3D.clone();
 
-const normalMap2 = new THREE.TextureLoader().load(
+const normalMap2 = textureLoader.load(
   './texture/three/water/Water_1_M_Normal.jpg',
 );
-const clearcoatNormaMap = new THREE.TextureLoader().load(
+const clearcoatNormaMap = textureLoader.load(
   './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
@@ -442,7 +444,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
   scene = new THREE.Scene();
   const skyGeometry = new THREE.SphereGeometry(5000, 100, 100);
-  const map = new THREE.TextureLoader().load('img/bg5.png');
+  const map = textureLoader.load('img/bg5.png');
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(15, 15);
@@ -884,7 +886,7 @@ init();
 
 function obj_lighting(url, size, x, y, z, name) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   const starBall = new THREE.Mesh(
     new THREE.SphereGeometry(size, 100, 100),
     new THREE.MeshPhongMaterial({
@@ -898,7 +900,7 @@ function obj_lighting(url, size, x, y, z, name) {
 }
 function obj(url, size, x, y, z, name) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   let starBall = new THREE.Mesh(
     new THREE.SphereGeometry(size, 50, 50),
     new THREE.MeshPhongMaterial({ map: startTexture }),
@@ -917,7 +919,7 @@ function obj(url, size, x, y, z, name) {
       new THREE.SphereGeometry(size, 50, 50),
       new THREE.MeshPhongMaterial({
         map: startTexture,
-        normalMap: new THREE.TextureLoader().load(
+        normalMap: textureLoader.load(
           './texture/normal.jpg',
           function (texture) {
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -941,7 +943,7 @@ function obj(url, size, x, y, z, name) {
 
 function ring1(url, size, width, x, y, z) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -966,7 +968,7 @@ function ring1(url, size, width, x, y, z) {
 }
 function ring2(url, size, width, x, y, z) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
