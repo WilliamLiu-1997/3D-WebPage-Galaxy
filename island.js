@@ -1,7 +1,8 @@
-﻿import { OBJLoader } from './three.js/examples/jsm/loaders/OBJLoader.js';
-import { MTLLoader } from './three.js/examples/jsm/loaders/MTLLoader.js';
-import { GLTFLoader } from './three.js/examples/jsm/loaders/GLTFLoader.js';
-import { Water } from './three.js/examples/jsm/objects/Water.js';
+﻿import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { Water } from 'three/examples/jsm/objects/Water.js';
 import {
   createFrameConfig,
   isLoadFinished,
