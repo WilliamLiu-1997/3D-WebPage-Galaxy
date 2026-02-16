@@ -54,12 +54,12 @@ import { LightningStrike } from '../geometries/LightningStrike.js';
 
 var LightningStorm = function ( stormParams ) {
 
-	Object3D.call( this );
+	var self = Reflect.construct( Object3D, [], LightningStorm );
 
 	// Parameters
 
 	stormParams = stormParams || {};
-	this.stormParams = stormParams;
+	self.stormParams = stormParams;
 
 	stormParams.size = stormParams.size !== undefined ? stormParams.size : 1000.0;
 	stormParams.minHeight = stormParams.minHeight !== undefined ? stormParams.minHeight : 80.0;
@@ -74,19 +74,19 @@ var LightningStorm = function ( stormParams ) {
 	stormParams.lightningMinDuration = stormParams.lightningMinDuration !== undefined ? stormParams.lightningMinDuration : 1.0;
 	stormParams.lightningMaxDuration = stormParams.lightningMaxDuration !== undefined ? stormParams.lightningMaxDuration : 2.5;
 
-	this.lightningParameters = LightningStrike.copyParameters( stormParams.lightningParameters, stormParams.lightningParameters );
+	self.lightningParameters = LightningStrike.copyParameters( stormParams.lightningParameters, stormParams.lightningParameters );
 
-	this.lightningParameters.isEternal = false;
+	self.lightningParameters.isEternal = false;
 
-	this.lightningMaterial = stormParams.lightningMaterial !== undefined ? stormParams.lightningMaterial : new MeshBasicMaterial( { color: 0xB0FFFF } );
+	self.lightningMaterial = stormParams.lightningMaterial !== undefined ? stormParams.lightningMaterial : new MeshBasicMaterial( { color: 0xB0FFFF } );
 
 	if ( stormParams.onRayPosition !== undefined ) {
 
-		this.onRayPosition = stormParams.onRayPosition;
+		self.onRayPosition = stormParams.onRayPosition;
 
 	} else {
 
-		this.onRayPosition = function ( source, dest ) {
+		self.onRayPosition = function ( source, dest ) {
 
 			dest.set( ( Math.random() - 0.5 ) * stormParams.size, 0, ( Math.random() - 0.5 ) * stormParams.size );
 
@@ -98,28 +98,32 @@ var LightningStorm = function ( stormParams ) {
 
 	}
 
-	this.onLightningDown = stormParams.onLightningDown;
+	self.onLightningDown = stormParams.onLightningDown;
 
 	// Internal state
 
-	this.inited = false;
-	this.nextLightningTime = 0;
-	this.lightningsMeshes = [];
-	this.deadLightningsMeshes = [];
+	self.inited = false;
+	self.nextLightningTime = 0;
+	self.lightningsMeshes = [];
+	self.deadLightningsMeshes = [];
 
-	for ( var i = 0; i < this.stormParams.maxLightnings; i ++ ) {
+	for ( var i = 0; i < self.stormParams.maxLightnings; i ++ ) {
 
-		var lightning = new LightningStrike( LightningStrike.copyParameters( {}, this.lightningParameters ) );
-		var mesh = new Mesh( lightning, this.lightningMaterial );
-		this.deadLightningsMeshes.push( mesh );
+		var lightning = new LightningStrike( LightningStrike.copyParameters( {}, self.lightningParameters ) );
+		var mesh = new Mesh( lightning, self.lightningMaterial );
+		self.deadLightningsMeshes.push( mesh );
 
 	}
+
+	return self;
 
 };
 
 LightningStorm.prototype = Object.create( Object3D.prototype );
 
 LightningStorm.prototype.constructor = LightningStorm;
+
+Object.setPrototypeOf( LightningStorm, Object3D );
 
 LightningStorm.prototype.isLightningStorm = true;
 
