@@ -52,14 +52,55 @@ let safe_dis = 2.25;
 
 let particles,
   particle,
-  star_d,
-  star_d_speed,
+  star_dx,
+  star_dy,
+  star_dz,
+  star_dsx,
+  star_dsy,
+  star_dsz,
   star_s_speed,
   count = 0;
 
 let rain, rainGeo;
 const rainCount = 100000;
-let all_drop, velocity;
+const RAIN_RESET_Y = 420;
+const RAIN_AREA_HALF = 25;
+const RAIN_BASE_FALL = 0.08;
+const RAIN_RANDOM_FALL = 0.06;
+const RAIN_WIND_X = 0.015;
+const RAIN_WIND_Z = 0.01;
+const RAIN_UFO_CLEAR_RADIUS = 5;
+const RAIN_UFO_CLEAR_RADIUS_SQ = RAIN_UFO_CLEAR_RADIUS * RAIN_UFO_CLEAR_RADIUS;
+let rainVelocity;
+let rainCenterX = cameraPositionVec.x;
+let rainCenterZ = cameraPositionVec.z;
+
+function createRainDropTexture() {
+  const width = 32;
+  const height = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(
+    width * 0.5,
+    0,
+    width * 0.5,
+    height,
+  );
+  gradient.addColorStop(0, 'rgba(230,245,255,0)');
+  gradient.addColorStop(0.2, 'rgba(230,245,255,0.9)');
+  gradient.addColorStop(0.8, 'rgba(230,245,255,1)');
+  gradient.addColorStop(1, 'rgba(230,245,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(width * 0.4, 0, width * 0.1, height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapNearestFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
 
 // Mouse Move
 let mouseP = { x: 0, y: 0 };
@@ -249,8 +290,12 @@ function init() {
   );
 
   particles = new Array();
-  star_d = new Array();
-  star_d_speed = new Array();
+  star_dx = new Array();
+  star_dy = new Array();
+  star_dz = new Array();
+  star_dsx = new Array();
+  star_dsy = new Array();
+  star_dsz = new Array();
   star_s_speed = new Array();
   const material = new THREE.SpriteMaterial({
     transparent: true,
@@ -289,12 +334,12 @@ function init() {
         cloudMaterial.rotation = Math.PI * rotate_cloud;
         const cloud = new THREE.Sprite(cloudMaterial);
         particle = particles[i] = cloud;
-        star_d[i] = vec
-          .clone()
-          .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        star_d_speed[i] = vec
-          .clone()
-          .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+        star_dx[i] = Math.random() - 0.5;
+        star_dy[i] = Math.random() - 0.5;
+        star_dz[i] = Math.random() - 0.5;
+        star_dsx[i] = Math.random() - 0.5;
+        star_dsy[i] = Math.random() - 0.5;
+        star_dsz[i] = Math.random() - 0.5;
         star_s_speed[i] = Math.random() - 0.5;
         i++;
         particle.position.y = 220 + Math.random() * 10;
@@ -312,12 +357,12 @@ function init() {
         cloudMaterial.rotation = Math.PI * rotate_cloud;
         const cloud = new THREE.Sprite(cloudMaterial);
         particle = particles[i] = cloud;
-        star_d[i] = vec
-          .clone()
-          .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        star_d_speed[i] = vec
-          .clone()
-          .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+        star_dx[i] = Math.random() - 0.5;
+        star_dy[i] = Math.random() - 0.5;
+        star_dz[i] = Math.random() - 0.5;
+        star_dsx[i] = Math.random() - 0.5;
+        star_dsy[i] = Math.random() - 0.5;
+        star_dsz[i] = Math.random() - 0.5;
         star_s_speed[i] = Math.random() - 0.5;
         i++;
         particle.position.y = 220 + Math.random() * 10;
@@ -337,25 +382,27 @@ function init() {
   }
 
   rainGeo = new THREE.BufferGeometry();
-  all_drop = [];
-  velocity = [];
+  const rainPositions = new Float32Array(rainCount * 3);
+  rainVelocity = new Float32Array(rainCount);
   for (i = 0; i < rainCount; i++) {
-    const rainDrop = vec.clone();
-    rainDrop.set(
-      Math.random() * 1000 - 500,
-      Math.random() * 350,
-      Math.random() * 1000 - 500,
-    );
-    velocity.push(0);
-    all_drop.push(rainDrop);
+    const idx = i * 3;
+    rainPositions[idx] = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+    rainPositions[idx + 1] = Math.random() * RAIN_RESET_Y;
+    rainPositions[idx + 2] =
+      rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
   }
-  rainGeo.setFromPoints(all_drop);
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
   const rainMaterial = new THREE.PointsMaterial({
-    color: 0xaaaaaa,
-    size: 0.2,
+    color: 0xe8f6ff,
+    size: 0.6,
+    map: createRainDropTexture(),
     transparent: true,
+    opacity: 0.92,
+    alphaTest: 0,
+    fog: false,
   });
   rain = new THREE.Points(rainGeo, rainMaterial);
+  rain.frustumCulled = false;
   scene.add(rain);
 
   MeshWater.rotation.x = -Math.PI / 2;
@@ -1166,36 +1213,74 @@ function animate() {
   if (frameAccumulator > frameInterval) {
     //stats.update();
 
+    const cloudCount = count * 10;
     for (let i = 0; i < particles.length; i++) {
       particle = particles[i];
-      const d = star_d[i];
-      const ds = star_d_speed[i];
-      particle.position.x += (d.x * Math.cos(ds.x * count * 10)) / 2;
-      particle.position.y += (d.y * Math.cos(ds.y * count * 10)) / 200;
-      particle.position.z += (d.z * Math.cos(ds.z * count * 10)) / 2;
+      particle.position.x +=
+        (star_dx[i] * Math.cos(star_dsx[i] * cloudCount)) / 2;
+      particle.position.y +=
+        (star_dy[i] * Math.cos(star_dsy[i] * cloudCount)) / 200;
+      particle.position.z +=
+        (star_dz[i] * Math.cos(star_dsz[i] * cloudCount)) / 2;
     }
-
-    const positions = rainGeo.attributes.position.array;
-    for (let i = 0; i < positions.length; i += 3) {
-      if (
-        ufo.position.distanceTo(
-          vec.clone().set(positions[i], positions[i + 1], positions[i + 2]),
-        ) > 50
-      ) {
-        velocity[Math.round(i / 3)] -= 0.02 + Math.random() * 0.02;
-        positions[i + 1] += velocity[Math.round(i / 3)];
-        if (positions[i + 1] < 0) {
-          positions[i + 1] = 350;
-          velocity[Math.round(i / 3)] = 0;
-        }
-      } else {
-        positions[i + 1] = -10;
-      }
-    }
-    rainGeo.attributes.position.needsUpdate = true;
     count += 0.0005 * fpsScale;
 
+    // Update UFO transform first.
     operation_method_1(delta, count);
+
+    const positions = rainGeo.attributes.position.array;
+    const centerX = camera.position.x;
+    const centerZ = camera.position.z;
+    const ufoX = ufo.position.x;
+    const ufoY = ufo.position.y;
+    const ufoZ = ufo.position.z;
+    const centerDx = centerX - rainCenterX;
+    const centerDz = centerZ - rainCenterZ;
+    for (let dropIndex = 0, i = 0; dropIndex < rainCount; dropIndex++, i += 3) {
+      // Keep rain field centered around camera forward direction.
+      positions[i] += centerDx;
+      positions[i + 2] += centerDz;
+
+      const vel =
+        rainVelocity[dropIndex] -
+        (RAIN_BASE_FALL + Math.random() * RAIN_RANDOM_FALL);
+      rainVelocity[dropIndex] = vel;
+      positions[i + 1] += vel;
+      positions[i] += RAIN_WIND_X;
+      positions[i + 2] += RAIN_WIND_Z;
+
+      const duX = positions[i] - ufoX;
+      const duY = positions[i + 1] - ufoY;
+      const duZ = positions[i + 2] - ufoZ;
+      const insideUfoClearZone =
+        duX * duX + duY * duY + duZ * duZ < RAIN_UFO_CLEAR_RADIUS_SQ;
+
+      if (
+        insideUfoClearZone ||
+        positions[i + 1] < 0 ||
+        positions[i] < centerX - RAIN_AREA_HALF ||
+        positions[i] > centerX + RAIN_AREA_HALF ||
+        positions[i + 2] < centerZ - RAIN_AREA_HALF ||
+        positions[i + 2] > centerZ + RAIN_AREA_HALF
+      ) {
+        if (insideUfoClearZone) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius =
+            RAIN_UFO_CLEAR_RADIUS +
+            Math.random() * (RAIN_AREA_HALF - RAIN_UFO_CLEAR_RADIUS);
+          positions[i] = ufoX + Math.cos(angle) * radius;
+          positions[i + 2] = ufoZ + Math.sin(angle) * radius;
+        } else {
+          positions[i] = centerX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          positions[i + 2] = centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+        }
+        positions[i + 1] = RAIN_RESET_Y;
+        rainVelocity[dropIndex] = 0;
+      }
+    }
+    rainCenterX = centerX;
+    rainCenterZ = centerZ;
+    rainGeo.attributes.position.needsUpdate = true;
 
     //all_obj4.children[1].position.y=-2.85+0.5*Math.sin(count*2)
 

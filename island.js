@@ -34,6 +34,9 @@ let moveRight = false;
 let fast = false;
 let esc = true;
 const meteorites = [];
+const METEOR_MAX_DISTANCE = 8000;
+const METEOR_MAX_DISTANCE_SQ = METEOR_MAX_DISTANCE * METEOR_MAX_DISTANCE;
+const METEOR_SPEED = 8 * fpsScale;
 let arrived = 50;
 let ufo_scale = 3.5;
 
@@ -59,8 +62,12 @@ const SEPARATION = 250,
   AMOUNTZ = 12;
 let particles,
   particle,
-  star_d,
-  star_d_speed,
+  star_dx,
+  star_dy,
+  star_dz,
+  star_dsx,
+  star_dsy,
+  star_dsz,
   star_s_speed,
   count = 0;
 
@@ -193,8 +200,12 @@ function init() {
   );
 
   particles = new Array();
-  star_d = new Array();
-  star_d_speed = new Array();
+  star_dx = new Array();
+  star_dy = new Array();
+  star_dz = new Array();
+  star_dsx = new Array();
+  star_dsy = new Array();
+  star_dsz = new Array();
   star_s_speed = new Array();
   const material = new THREE.SpriteMaterial({
     transparent: true,
@@ -208,12 +219,12 @@ function init() {
     for (let iy = 0; iy < AMOUNTY; iy++) {
       for (let iz = 0; iz < AMOUNTZ; iz++) {
         particle = particles[i] = littlestar.clone();
-        star_d[i] = vec
-          .clone()
-          .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        star_d_speed[i] = vec
-          .clone()
-          .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+        star_dx[i] = Math.random() - 0.5;
+        star_dy[i] = Math.random() - 0.5;
+        star_dz[i] = Math.random() - 0.5;
+        star_dsx[i] = Math.random() - 0.5;
+        star_dsy[i] = Math.random() - 0.5;
+        star_dsz[i] = Math.random() - 0.5;
         star_s_speed[i] = Math.random() - 0.5;
         i++;
         particle.position.x =
@@ -1414,24 +1425,32 @@ function generate_meteoriteObject3D(size) {
   const meteoriteObject3D = meteorite_Object3D.clone();
 
   let x, y, z;
-  x = (Math.random() - 0.5) * 8000;
+  x = (Math.random() - 0.5) * METEOR_MAX_DISTANCE;
   y = Math.random() * 4000 - 500;
-  z = Math.sqrt(7999 * 7999 - x * x - y * y) * (Math.random() > 0.5 ? 1 : -1);
+  z =
+    Math.sqrt(
+      METEOR_MAX_DISTANCE_SQ - x * x - y * y,
+    ) * (Math.random() > 0.5 ? 1 : -1);
 
-  let v1 = vec
-    .clone()
-    .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
-    .normalize();
-  while (
-    (v1.y < 0 && y < 500) ||
-    vec.clone().set(-x, -y, -z).normalize().dot(v1) < 0.85 ||
-    vec.clone().set(-x, -y, -z).normalize().dot(v1) > 0.851 ||
-    (z < 0 && v1.z < 0)
-  ) {
-    v1 = vec
-      .clone()
+  const v1 = new THREE.Vector3();
+  const toCenter = new THREE.Vector3();
+  let centerDot = 0;
+  while (true) {
+    v1
       .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
       .normalize();
+    toCenter.set(-x, -y, -z).normalize();
+    centerDot = toCenter.dot(v1);
+    if (
+      !(
+        (v1.y < 0 && y < 500) ||
+        centerDot < 0.85 ||
+        centerDot > 0.851 ||
+        (z < 0 && v1.z < 0)
+      )
+    ) {
+      break;
+    }
   }
   const x1 = x;
   const y1 = y;
@@ -1468,13 +1487,13 @@ function generate_meteoriteObject3D(size) {
 }
 
 function meteorite_move(meteorite1) {
-  if (meteorite1[0].position.distanceTo(originPoint) > 8000) {
-    scene.remove(meteorite1[0]);
+  const meteorObject = meteorite1[0];
+  const meteorVelocity = meteorite1[1];
+  if (meteorObject.position.lengthSq() > METEOR_MAX_DISTANCE_SQ) {
+    scene.remove(meteorObject);
     return true;
   }
-  meteorite1[0].position.x += meteorite1[1].x * 3 * fpsScale;
-  meteorite1[0].position.y += meteorite1[1].y * 3 * fpsScale;
-  meteorite1[0].position.z += meteorite1[1].z * 3 * fpsScale;
+  meteorObject.position.addScaledVector(meteorVelocity, METEOR_SPEED);
   return false;
 }
 
@@ -1643,19 +1662,20 @@ function animate() {
       meteorites.push(meteorite1);
       scene.add(meteorite1[0]);
     }
-    for (const met in meteorites) {
-      if (meteorite_move(meteorites[met])) meteorites.splice(met, 1);
+    for (let i = meteorites.length - 1; i >= 0; i--) {
+      if (meteorite_move(meteorites[i])) {
+        meteorites.splice(i, 1);
+      }
     }
 
+    const scaleCount = count * 200;
     for (let i = 0; i < particles.length; i++) {
       particle = particles[i];
       particle.scale.x = particle.scale.y =
-        Math.sin(star_s_speed[i] * count * 200) + 3;
-      const d = star_d[i];
-      const ds = star_d_speed[i];
-      particle.position.x += (d.x * Math.cos(ds.x * count)) / 6;
-      particle.position.y += (d.y * Math.cos(ds.y * count)) / 6;
-      particle.position.z += (d.z * Math.cos(ds.z * count)) / 6;
+        Math.sin(star_s_speed[i] * scaleCount) + 3;
+      particle.position.x += (star_dx[i] * Math.cos(star_dsx[i] * count)) / 6;
+      particle.position.y += (star_dy[i] * Math.cos(star_dsy[i] * count)) / 6;
+      particle.position.z += (star_dz[i] * Math.cos(star_dsz[i] * count)) / 6;
     }
     count += 0.0005 * fpsScale;
 
