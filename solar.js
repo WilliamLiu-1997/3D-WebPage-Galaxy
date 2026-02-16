@@ -241,7 +241,7 @@ if (add_solar) {
   star1 = obj('./texture/j022.jpg', 4, 180, 0, 0, 'star1');
   star2 = obj('./texture/j028.jpg', 8, 240, 0, 0, 'star2');
   star3 = obj(
-    './three.js/examples/textures/land_ocean_ice_cloud_2048.jpg',
+    './texture/land_ocean_ice_cloud_2048.jpg',
     10,
     320,
     0,
@@ -407,10 +407,10 @@ const meteorite_Object3D = obj3d.clone();
 const ufo = meteorite_Object3D.clone();
 
 const normalMap2 = new THREE.TextureLoader().load(
-  './three.js/examples/textures/water/Water_1_M_Normal.jpg',
+  './texture/three/water/Water_1_M_Normal.jpg',
 );
 const clearcoatNormaMap = new THREE.TextureLoader().load(
-  './three.js/examples/textures/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
+  './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
 const ufo_material = new THREE.MeshPhysicalMaterial({

@@ -158,7 +158,7 @@ const MeshWater = new Water(
     textureWidth: 1024,
     textureHeight: 1024,
     waterNormals: new THREE.TextureLoader().load(
-      './three.js/examples/textures/waternormals.jpg',
+      './texture/three/water/waternormals.jpg',
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       },
@@ -180,10 +180,10 @@ const jupiter_m = new THREE.MeshBasicMaterial({
 const jupiter = new THREE.Mesh(new THREE.PlaneGeometry(2500, 2500), jupiter_m);
 jupiter.name = 'jupiter';
 const normalMap2 = new THREE.TextureLoader().load(
-  './three.js/examples/textures/water/Water_1_M_Normal.jpg',
+  './texture/three/water/Water_1_M_Normal.jpg',
 );
 const clearcoatNormaMap = new THREE.TextureLoader().load(
-  './three.js/examples/textures/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
+  './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
 const ufo_material = new THREE.MeshPhysicalMaterial({
@@ -277,7 +277,7 @@ function init() {
     }
   }
 
-  const geometryGround = new THREE.CircleBufferGeometry(5000, 100, 100);
+  const geometryGround = new THREE.CircleGeometry(5000, 100, 100);
   geometryGround.rotateX(Math.PI / 2);
   geometryGround.translate(0, 0, 0);
   const texture = THREE.ImageUtils.loadTexture('texture/pattern5.jpg');

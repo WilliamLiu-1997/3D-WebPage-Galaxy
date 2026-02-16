@@ -1,8 +1,8 @@
 ﻿import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
-import { LightningStorm } from 'three/examples/jsm/objects/LightningStorm.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
+import { LightningStorm } from './JS/vendor/objects/LightningStorm.js';
 import {
   createFrameConfig,
   isLoadFinished,
@@ -126,7 +126,7 @@ const MeshWater = new Water(
     textureWidth: 2048,
     textureHeight: 2048,
     waterNormals: new THREE.TextureLoader().load(
-      './three.js/examples/textures/waternormals.jpg',
+      './texture/three/water/waternormals.jpg',
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       },
@@ -207,10 +207,10 @@ scene.render = function (time) {
 scene.sceneIndex = currentSceneIndex;
 scene.timeRate = 1.5;
 const normalMap2 = new THREE.TextureLoader().load(
-  './three.js/examples/textures/water/Water_1_M_Normal.jpg',
+  './texture/three/water/Water_1_M_Normal.jpg',
 );
 const clearcoatNormaMap = new THREE.TextureLoader().load(
-  './three.js/examples/textures/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
+  './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
 const ufo_material = new THREE.MeshPhysicalMaterial({
