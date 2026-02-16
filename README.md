@@ -22,3 +22,14 @@ Video
 https://3-d-web-page-galaxy.vercel.app/
 
 **A RTX2060 or better GPU is highly recommended for this program!**
+
+## Local Development
+
+Use Node.js `24.x` (see `.nvmrc`).
+
+```bash
+npm install
+npm run dev
+```
+
+Then open the page shown by Vite (default opens `solar.html`).
