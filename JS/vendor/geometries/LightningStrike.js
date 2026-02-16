@@ -111,22 +111,26 @@ import { SimplexNoise } from '../math/SimplexNoise.js';
 
 var LightningStrike = function ( rayParameters ) {
 
-	BufferGeometry.call( this );
+	var self = Reflect.construct( BufferGeometry, [], LightningStrike );
 
-	this.type = 'LightningStrike';
+	self.type = 'LightningStrike';
 
 	// Set parameters, and set undefined parameters to default values
 	rayParameters = rayParameters || {};
-	this.init( LightningStrike.copyParameters( rayParameters, rayParameters ) );
+	self.init( LightningStrike.copyParameters( rayParameters, rayParameters ) );
 
 	// Creates and populates the mesh
-	this.createMesh();
+	self.createMesh();
+
+	return self;
 
 };
 
 LightningStrike.prototype = Object.create( BufferGeometry.prototype );
 
 LightningStrike.prototype.constructor = LightningStrike;
+
+Object.setPrototypeOf( LightningStrike, BufferGeometry );
 
 LightningStrike.prototype.isLightningStrike = true;
 
