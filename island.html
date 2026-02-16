@@ -137,19 +137,7 @@
 
   <script src="./three.js/build/three.js"></script>
   <script src="./JS/jquery.js"></script>
-    <script>
-    show_loading();
-
-    function show_loading() {
-      $("#loading").show();
-      $("#loading").css({ display: "flex", opacity: 0 });
-      $("#loading").animate({ opacity: 1 }, 500);
-    }
-    function hide_loading() {
-      $("#loading").fadeOut(800);
-      $("#loading_background").fadeOut(800);
-    }
-  </script>
+  <script src="./JS/loading.js"></script>
   <!-- <script src="./JS/stats.min.js"></script> -->
 
   <script type="module">
@@ -2025,19 +2013,5 @@
     };
     window.addEventListener("resize", MyResize);
   </script>
-  <script>
-    document.querySelector("body").style.cursor =
-      "url(./img/cursor.png),default";
-    function hideMe() {
-      $("#content").fadeOut(1000);
-      $("#blocker").fadeOut(2000);
-      $("#secondBlocker").delay(1200).fadeIn(1000);
-    }
-    function goSolar() {
-      window.location.href = "solar.html";
-    }
-    function goAlianBase() {
-      window.location.href = "alian_base.html";
-    }
-  </script>
+  <script src="./JS/navigation.js"></script>
 </html>
