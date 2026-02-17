@@ -423,7 +423,7 @@ if (add_solar) {
   );
   starlite3 = obj('./texture/j029.jpg', 1, 349, 200 + 21, 0, 'starlite3');
   star4 = obj('./texture/saturnmap.jpg', 11, 780, 0, 0, 'star4');
-  ring4 = ring('./texture/ring1.png', 14, 15, 780, 0, 0, 0.2);
+  ring4 = ring1('./texture/ring1.png', 14, 15, 780, 0, 0);
   star5 = obj('./texture/j006.jpg', 6, 420, 0, 0, 'star5');
   star6 = obj('./texture/TDVC_Jupiter_Texture_Map.jpg', 25, 600, 0, 0, 'star6');
   starlite6 = obj('./texture/opura1.jpg', 0.8, 650, 200 + 40, 0, 'starlite6');
@@ -448,7 +448,7 @@ if (add_solar) {
   starlite65 = obj('./texture/j008.jpg', 1.4, 670, 200 + 60, 0, 'starlite65');
   star7 = obj('./texture/uranus.JPG', 13, 900, 0, 0, 'star7');
   star8 = obj('./texture/j030.jpg', 8, 1050, 0, 0, 'star8');
-  ring8 = ring('./texture/ring2.png', 20, 2, 900, 0, 0, 0.1);
+  ring8 = ring2('./texture/ring2.png', 20, 2, 900, 0, 0);
   star9 = obj('./texture/j033.jpg', 3, 1200, 0, 0, 'star9');
 
   sun.name = 'sun';
@@ -1012,7 +1012,7 @@ function obj(url, size, x, y, z, name) {
   return starBall;
 }
 
-function ring(url, size, width, x, y, z, opacity) {
+function ring1(url, size, width, x, y, z) {
   size = size * 0.8;
   const startTexture = textureLoader.load(url);
   const r = new THREE.RingGeometry(size, size + width, size * 10);
@@ -1028,7 +1028,31 @@ function ring(url, size, width, x, y, z, opacity) {
       map: startTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: opacity,
+      opacity: 0.2,
+    }),
+  );
+  starBall.rotation.x = -Math.PI / 2;
+  starBall.rotation.y = -Math.PI / 12;
+  starBall.position.set(x, y, z);
+  return starBall;
+}
+function ring2(url, size, width, x, y, z) {
+  size = size * 0.8;
+  const startTexture = textureLoader.load(url);
+  const r = new THREE.RingGeometry(size, size + width, size * 10);
+  const pos = r.attributes.position;
+  const v3 = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v3.fromBufferAttribute(pos, i);
+    r.attributes.uv.setXY(i, v3.length() < size + 1 ? 0 : 1, 1);
+  }
+  const starBall = new THREE.Mesh(
+    r,
+    new THREE.MeshBasicMaterial({
+      map: startTexture,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.1,
     }),
   );
   starBall.rotation.x = -Math.PI / 2;
