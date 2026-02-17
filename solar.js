@@ -224,34 +224,66 @@ const bumpScale = 2.5;
 const noiseRepeat = 60;
 const bumpRepeat = 30;
 
-// use "this." to create global object
-const customUniforms = {
-  baseTexture: { type: 't', value: lavaTexture },
-  baseSpeed: { type: 'f', value: baseSpeed },
-  repeatS: { type: 'f', value: repeatS },
-  repeatT: { type: 'f', value: repeatT },
-  noiseRepeat: { type: 'f', value: noiseRepeat },
-  bumpRepeat: { type: 'f', value: bumpRepeat },
-  repeatT: { type: 'f', value: repeatT },
-  noiseTexture: { type: 't', value: noiseTexture },
-  noiseScale: { type: 'f', value: noiseScale },
-  blendTexture: { type: 't', value: blendTexture },
-  blendSpeed: { type: 'f', value: blendSpeed },
-  blendOffset: { type: 'f', value: blendOffset },
-  bumpTexture: { type: 't', value: bumpTexture },
-  bumpSpeed: { type: 'f', value: bumpSpeed },
-  bumpScale: { type: 'f', value: bumpScale },
-  alpha: { type: 'f', value: 1.0 },
-  time: { type: 'f', value: 1.0 },
-};
+const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(
+  navigator.userAgent || '',
+);
+let sunShaderUniforms = null;
 
-// create custom material from the shader code above
-//   that is within specially labeled script tags
-const customMaterial = new THREE.ShaderMaterial({
-  uniforms: customUniforms,
-  vertexShader: document.getElementById('vertexShader').textContent,
-  fragmentShader: document.getElementById('fragmentShader').textContent,
-});
+function createSunShaderUniforms(mobileSafeMode = false) {
+  const qualityScale = mobileSafeMode ? 0.55 : 1;
+  return {
+    baseTexture: { value: lavaTexture },
+    baseSpeed: { value: mobileSafeMode ? baseSpeed * 0.8 : baseSpeed },
+    repeatS: { value: repeatS },
+    repeatT: { value: repeatT },
+    noiseRepeat: { value: Math.max(12, noiseRepeat * qualityScale) },
+    bumpRepeat: { value: Math.max(8, bumpRepeat * qualityScale) },
+    noiseTexture: { value: noiseTexture },
+    noiseScale: { value: mobileSafeMode ? noiseScale * 0.8 : noiseScale },
+    blendTexture: { value: blendTexture },
+    blendSpeed: { value: mobileSafeMode ? blendSpeed * 0.8 : blendSpeed },
+    blendOffset: { value: blendOffset },
+    bumpTexture: { value: bumpTexture },
+    bumpSpeed: { value: mobileSafeMode ? bumpSpeed * 0.8 : bumpSpeed },
+    bumpScale: { value: mobileSafeMode ? bumpScale * 0.8 : bumpScale },
+    alpha: { value: 1.0 },
+    time: { value: 1.0 },
+  };
+}
+
+function createSunFallbackMaterial() {
+  return new THREE.MeshPhongMaterial({
+    map: lavaTexture,
+    emissive: 0xffaa55,
+    emissiveMap: blendTexture,
+    emissiveIntensity: 1.1,
+  });
+}
+
+function createSunMaterialForRenderer(rendererRef) {
+  const maxPrecision = rendererRef.capabilities.getMaxPrecision('highp');
+  const hasBasicShaderSupport =
+    maxPrecision !== 'lowp' && rendererRef.capabilities.maxTextures >= 8;
+  if (!hasBasicShaderSupport) {
+    return {
+      material: createSunFallbackMaterial(),
+      uniforms: null,
+    };
+  }
+
+  const mobileSafeMode = isMobileDevice;
+  const uniforms = createSunShaderUniforms(mobileSafeMode);
+  const material = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: document.getElementById('vertexShader').textContent,
+    fragmentShader: document.getElementById('fragmentShader').textContent,
+    precision: mobileSafeMode ? 'mediump' : maxPrecision,
+  });
+  return {
+    material,
+    uniforms,
+  };
+}
 
 const sunlight = textureLoader.load('img/lensflare2.png');
 
@@ -305,7 +337,6 @@ if (add_solar) {
   sunbackground1.position.set(0, 0, 0);
   sunbackground1.scale.set(500, 400, 1);
   sun = obj_lighting('./texture/fluid1-original.png', 100, 0, 0, 0, 'sun');
-  sun.material = customMaterial;
   star1 = obj('./texture/j022.jpg', 4, 180, 0, 0, 'star1');
   star2 = obj('./texture/j028.jpg', 8, 240, 0, 0, 'star2');
   star3 = obj(
@@ -507,6 +538,11 @@ function init() {
   document.getElementById('container').appendChild(renderer.domElement);
   document.body.appendChild(renderer.domElement);
   scene = new THREE.Scene();
+  if (add_solar && sun) {
+    const sunMaterialState = createSunMaterialForRenderer(renderer);
+    sun.material = sunMaterialState.material;
+    sunShaderUniforms = sunMaterialState.uniforms;
+  }
   meteorSystem = createMeteorSystem({
     THREE,
     scene,
@@ -1462,7 +1498,9 @@ function animate() {
   requestAnimationFrame(animate);
   if (isLoadFinished(loadedItemCount, totalLoadItems)) hide_loading();
   else return;
-  customUniforms.time.value += delta;
+  if (sunShaderUniforms) {
+    sunShaderUniforms.time.value += delta;
+  }
   // customUniforms.baseSpeed.value = controls.baseSpeed;
   // customUniforms.noiseScale.value = controls.noiseScale;
   // customUniforms.bumpSpeed.value = controls.bumpSpeed;
