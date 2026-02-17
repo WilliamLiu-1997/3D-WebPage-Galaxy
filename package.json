@@ -7,7 +7,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "vite --open /index.html",
+    "dev": "vite",
     "start": "npm run dev",
     "build": "vite build",
     "preview": "vite preview"

@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import {
@@ -9,6 +9,8 @@ import {
   createProgressHandler,
   navigateWithFade,
 } from './JS/shared/scene-common.js';
+
+const textureLoader = new THREE.TextureLoader();
 function goAlienBaseWithFade() {
   navigateWithFade('alian_base.html');
 }
@@ -25,7 +27,7 @@ const {
   targetFps: TARGET_FPS,
   frameInterval,
   fpsScale,
-} = createFrameConfig(120);
+} = createFrameConfig(60);
 let frameAccumulator = 0;
 let scene;
 let camera;
@@ -68,20 +70,37 @@ let safe_dis = 2.25;
 let hit_open = false;
 const scaling = false;
 
-const SEPARATION = 140,
-  AMOUNTX = 24,
-  AMOUNTY = 8,
-  AMOUNTZ = 24;
-let particles,
-  particle,
-  star_dx,
-  star_dy,
-  star_dz,
-  star_dsx,
-  star_dsy,
-  star_dsz,
-  star_s_speed,
-  count = 0;
+const SEPARATION = 100,
+  AMOUNTX = 33,
+  AMOUNTY = 11,
+  AMOUNTZ = 33;
+let starCount = 0;
+let starGeometry;
+let starPositions;
+let starSizes;
+let starAlphas;
+let starColors;
+let star_dx, star_dy, star_dz, star_dsx, star_dsy, star_dsz, star_s_speed;
+let count = 0;
+const STAR_GROUP_SIZE = 50;
+const STAR_POINT_BASE_SIZE = 8;
+const STAR_MOVE_DIVISOR = 10;
+const STAR_COLOR_TINTS = [
+  [1.0, 0.5, 0.5],
+  [0.5, 0.5, 1.0],
+  [0.5, 0.5, 1.0],
+  [0.5, 0.5, 1.0],
+  [1.0, 1.0, 0.5],
+];
+const STAR_FADE_START_DISTANCE = 1000;
+const STAR_FADE_END_DISTANCE = 800;
+const STAR_FADE_RANGE = STAR_FADE_START_DISTANCE - STAR_FADE_END_DISTANCE;
+const STAR_FADE_START_DISTANCE_SQ =
+  STAR_FADE_START_DISTANCE * STAR_FADE_START_DISTANCE;
+const STAR_FADE_END_DISTANCE_SQ =
+  STAR_FADE_END_DISTANCE * STAR_FADE_END_DISTANCE;
+let starGroupCount = 0;
+let starGroupOrder;
 
 let angle = 0;
 
@@ -133,7 +152,48 @@ const followablePlanetNames = [
   'star9',
 ];
 
-const lavaTexture = new THREE.ImageUtils.loadTexture('./texture/sun.jpg');
+function isFollowTargetObject(object) {
+  if (!object) return false;
+  if (object.userData && object.userData.ignoreClickFollow) return false;
+  if (object.type === 'Sprite' || object.type === 'Points') return false;
+  if (object.name === 'ring' || object.name === 'Sky') return false;
+  return true;
+}
+
+function buildRandomStarGroupOrder(count) {
+  const order = new Uint32Array(count);
+  for (let i = 0; i < count; i++) {
+    order[i] = i;
+  }
+  for (let i = count - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = order[i];
+    order[i] = order[j];
+    order[j] = temp;
+  }
+  return order;
+}
+
+function assignRandomBrightStarColor(colors, colorIndex) {
+  const tint =
+    STAR_COLOR_TINTS[Math.floor(Math.random() * STAR_COLOR_TINTS.length)];
+  const tintMix = 0.12 + Math.random() * 0.22;
+  const brightness = 0.95 + Math.random() * 0.05;
+  colors[colorIndex] = Math.min(
+    1,
+    (1 - tintMix + tint[0] * tintMix) * brightness,
+  );
+  colors[colorIndex + 1] = Math.min(
+    1,
+    (1 - tintMix + tint[1] * tintMix) * brightness,
+  );
+  colors[colorIndex + 2] = Math.min(
+    1,
+    (1 - tintMix + tint[2] * tintMix) * brightness,
+  );
+}
+
+const lavaTexture = textureLoader.load('./texture/sun.jpg');
 lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const baseSpeed = 0.025;
@@ -142,15 +202,13 @@ const repeatS = 1.0;
 const repeatT = 1.0;
 
 // texture used to generate "randomness", distort all other textures
-const noiseTexture = new THREE.ImageUtils.loadTexture('texture/cloud.png');
+const noiseTexture = textureLoader.load('texture/cloud.png');
 noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
 // magnitude of noise effect
 const noiseScale = 0.0025;
 
 // texture to additively blend with base image texture
-const blendTexture = new THREE.ImageUtils.loadTexture(
-  './texture/gstar-original.jpg',
-);
+const blendTexture = textureLoader.load('./texture/gstar-original.jpg');
 blendTexture.wrapS = blendTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const blendSpeed = 0.01;
@@ -196,9 +254,9 @@ const customMaterial = new THREE.ShaderMaterial({
   fragmentShader: document.getElementById('fragmentShader').textContent,
 });
 
-const sunlight = new THREE.TextureLoader().load('img/lensflare2.png');
+const sunlight = textureLoader.load('img/lensflare2.png');
 
-const ufolight = new THREE.TextureLoader().load('img/ufo_light1.png');
+const ufolight = textureLoader.load('img/ufo_light1.png');
 let sunbackground;
 let sunbackground1;
 let sunbackground2;
@@ -229,16 +287,20 @@ if (add_solar) {
     map: sunlight,
     transparent: true,
     opacity: 0.1,
+    depthTest: false,
+    depthWrite: false,
   });
   sunbackground = new THREE.Sprite(sunmaterial);
   sunbackground.position.set(0, 0, 0);
   sunbackground.scale.set(500, 400, 1);
-  const sunlight1 = new THREE.TextureLoader().load('img/ball.png');
+  const sunlight1 = textureLoader.load('img/ball.png');
   const sunmaterial1 = new THREE.SpriteMaterial({
     blending: THREE.AdditiveBlending,
     map: sunlight1,
     transparent: true,
     opacity: 0.1,
+    depthTest: false,
+    depthWrite: false,
   });
   sunbackground1 = new THREE.Sprite(sunmaterial1);
   sunbackground1.position.set(0, 0, 0);
@@ -347,18 +409,20 @@ if (add_solar) {
   star9.receiveShadow = true;
 }
 
-const starball = new THREE.TextureLoader().load('img/ball.png');
-const meteoriteball = new THREE.TextureLoader().load('img/star0.png');
-const meteoritetail = new THREE.TextureLoader().load('img/start0.png');
+const starball = textureLoader.load('img/ball.png');
+const meteoriteball = textureLoader.load('img/star0.png');
+const meteoritetail = textureLoader.load('img/start0.png');
 
-const meteoriteballr = new THREE.TextureLoader().load('img/star00.png');
-const textureFlare0a = new THREE.TextureLoader().load('img/lensflare0a.png');
-const textureFlare0b = new THREE.TextureLoader().load('img/lensflare0b.png');
+const meteoriteballr = textureLoader.load('img/star00.png');
+const textureFlare0a = textureLoader.load('img/lensflare0a.png');
+const textureFlare0b = textureLoader.load('img/lensflare0b.png');
 if (add_solar) {
   const sunmaterial2 = new THREE.SpriteMaterial({
     map: textureFlare0a,
     transparent: true,
     opacity: 0.1,
+    depthTest: false,
+    depthWrite: false,
   });
   sunbackground2 = new THREE.Sprite(sunmaterial2);
   sunbackground2.position.set(0, 0, 0);
@@ -367,6 +431,8 @@ if (add_solar) {
     map: textureFlare0b,
     transparent: true,
     opacity: 0.1,
+    depthTest: false,
+    depthWrite: false,
   });
   sunbackground3 = new THREE.Sprite(sunmaterial3);
   sunbackground3.position.set(0, 0, 0);
@@ -413,10 +479,10 @@ const material1 = new THREE.Sprite(
 const meteorite_Object3D = obj3d.clone();
 const ufo = meteorite_Object3D.clone();
 
-const normalMap2 = new THREE.TextureLoader().load(
+const normalMap2 = textureLoader.load(
   './texture/three/water/Water_1_M_Normal.jpg',
 );
-const clearcoatNormaMap = new THREE.TextureLoader().load(
+const clearcoatNormaMap = textureLoader.load(
   './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
@@ -442,7 +508,7 @@ function init() {
   document.body.appendChild(renderer.domElement);
   scene = new THREE.Scene();
   const skyGeometry = new THREE.SphereGeometry(5000, 100, 100);
-  const map = new THREE.TextureLoader().load('img/bg5.png');
+  const map = textureLoader.load('img/bg5.png');
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(15, 15);
@@ -464,26 +530,61 @@ function init() {
     10000, // far
   );
 
-  particles = new Array();
-  star_dx = new Array();
-  star_dy = new Array();
-  star_dz = new Array();
-  star_dsx = new Array();
-  star_dsy = new Array();
-  star_dsz = new Array();
-  star_s_speed = new Array();
-  const material = new THREE.SpriteMaterial({
+  starCount = AMOUNTX * AMOUNTY * AMOUNTZ;
+  starPositions = new Float32Array(starCount * 3);
+  star_dx = new Float32Array(starCount);
+  star_dy = new Float32Array(starCount);
+  star_dz = new Float32Array(starCount);
+  star_dsx = new Float32Array(starCount);
+  star_dsy = new Float32Array(starCount);
+  star_dsz = new Float32Array(starCount);
+  star_s_speed = new Float32Array(starCount);
+  starSizes = new Float32Array(starCount);
+  starAlphas = new Float32Array(starCount);
+  starColors = new Float32Array(starCount * 3);
+  const starPointMaterial = new THREE.PointsMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    map: starball,
+    color: 0xffffff,
+    vertexColors: true,
+    size: STAR_POINT_BASE_SIZE,
+    sizeAttenuation: true,
+    depthWrite: false,
+    alphaTest: 0.01,
+  });
+  starPointMaterial.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        'uniform float size;',
+        'uniform float size;\nattribute float pointSize;\nattribute float pointAlpha;\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'gl_PointSize = size;',
+        'gl_PointSize = pointSize;\nvPointAlpha = pointAlpha;',
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( diffuse, opacity * vPointAlpha );',
+      );
+  };
+  starPointMaterial.needsUpdate = true;
+  const whiteLightMaterial = new THREE.SpriteMaterial({
     transparent: true,
     blending: THREE.AdditiveBlending,
     map: starball,
     color: 0xffffff,
   });
-  const littlestar = new THREE.Sprite(material);
+  const littlestar = new THREE.Sprite(whiteLightMaterial);
   let i = 0;
   for (let ix = 0; ix < AMOUNTX; ix++) {
     for (let iy = 0; iy < AMOUNTY; iy++) {
       for (let iz = 0; iz < AMOUNTZ; iz++) {
-        particle = particles[i] = littlestar.clone();
         star_dx[i] = Math.random() - 0.5;
         star_dy[i] = Math.random() - 0.5;
         star_dz[i] = Math.random() - 0.5;
@@ -491,23 +592,46 @@ function init() {
         star_dsy[i] = Math.random() - 0.5;
         star_dsz[i] = Math.random() - 0.5;
         star_s_speed[i] = Math.random() - 0.5;
-        i++;
-        particle.position.x =
+        starSizes[i] = STAR_POINT_BASE_SIZE;
+        starAlphas[i] = 1;
+        assignRandomBrightStarColor(starColors, i * 3);
+        const positionIndex = i * 3;
+        starPositions[positionIndex] =
           ix * SEPARATION -
           (AMOUNTX * SEPARATION) / 2 +
           (Math.random() - 0.5) * SEPARATION * 16;
-        particle.position.y =
+        starPositions[positionIndex + 1] =
           (iy * SEPARATION) / 2 -
           (AMOUNTY * SEPARATION) / 4 +
           (Math.random() - 0.5) * SEPARATION * 16;
-        particle.position.z =
+        starPositions[positionIndex + 2] =
           iz * SEPARATION -
           (AMOUNTZ * SEPARATION) / 2 +
           (Math.random() - 0.5) * SEPARATION * 16;
-        scene.add(particle);
+        i++;
       }
     }
   }
+  starCount = i;
+  starGroupOrder = buildRandomStarGroupOrder(starCount);
+  starGeometry = new THREE.BufferGeometry();
+  const starPositionAttribute = new THREE.BufferAttribute(starPositions, 3);
+  starPositionAttribute.setUsage(THREE.DynamicDrawUsage);
+  const starSizeAttribute = new THREE.BufferAttribute(starSizes, 1);
+  starSizeAttribute.setUsage(THREE.DynamicDrawUsage);
+  const starAlphaAttribute = new THREE.BufferAttribute(starAlphas, 1);
+  starAlphaAttribute.setUsage(THREE.DynamicDrawUsage);
+  const starColorAttribute = new THREE.BufferAttribute(starColors, 3);
+  starGeometry.setAttribute('position', starPositionAttribute);
+  starGeometry.setAttribute('pointSize', starSizeAttribute);
+  starGeometry.setAttribute('pointAlpha', starAlphaAttribute);
+  starGeometry.setAttribute('color', starColorAttribute);
+  starGeometry.computeBoundingSphere();
+  const starPoints = new THREE.Points(starGeometry, starPointMaterial);
+  starPoints.userData.ignoreClickFollow = true;
+  starPoints.frustumCulled = false;
+  scene.add(starPoints);
+  starGroupCount = Math.ceil(starCount / STAR_GROUP_SIZE);
 
   camera.position.set(
     cameraPositionVec.x,
@@ -884,7 +1008,7 @@ init();
 
 function obj_lighting(url, size, x, y, z, name) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   const starBall = new THREE.Mesh(
     new THREE.SphereGeometry(size, 100, 100),
     new THREE.MeshPhongMaterial({
@@ -898,7 +1022,7 @@ function obj_lighting(url, size, x, y, z, name) {
 }
 function obj(url, size, x, y, z, name) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   let starBall = new THREE.Mesh(
     new THREE.SphereGeometry(size, 50, 50),
     new THREE.MeshPhongMaterial({ map: startTexture }),
@@ -917,7 +1041,7 @@ function obj(url, size, x, y, z, name) {
       new THREE.SphereGeometry(size, 50, 50),
       new THREE.MeshPhongMaterial({
         map: startTexture,
-        normalMap: new THREE.TextureLoader().load(
+        normalMap: textureLoader.load(
           './texture/normal.jpg',
           function (texture) {
             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -941,7 +1065,7 @@ function obj(url, size, x, y, z, name) {
 
 function ring1(url, size, width, x, y, z) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -966,7 +1090,7 @@ function ring1(url, size, width, x, y, z) {
 }
 function ring2(url, size, width, x, y, z) {
   size = size * 0.8;
-  const startTexture = THREE.ImageUtils.loadTexture(url);
+  const startTexture = textureLoader.load(url);
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -1102,11 +1226,7 @@ function onMouseClick(event) {
     const intersects = raycaster1.intersectObjects(scene.children, true);
     let hitIndex = -1;
     for (let i = 0; i < intersects.length; i++) {
-      if (
-        intersects[i].object.type != 'Sprite' &&
-        intersects[i].object.name != 'ring' &&
-        intersects[i].object.name != 'Sky'
-      ) {
+      if (isFollowTargetObject(intersects[i].object)) {
         hitIndex = i;
         break;
       }
@@ -1507,17 +1627,18 @@ function generate_meteoriteObject3D(size) {
   x = (Math.random() - 0.5) * METEOR_MAX_DISTANCE;
   y = Math.random() * 4000 - 500;
   z =
-    Math.sqrt(
-      METEOR_MAX_DISTANCE_SQ - x * x - y * y,
-    ) * (Math.random() > 0.5 ? 1 : -1);
+    Math.sqrt(METEOR_MAX_DISTANCE_SQ - x * x - y * y) *
+    (Math.random() > 0.5 ? 1 : -1);
 
   const v1 = new THREE.Vector3();
   const toCenter = new THREE.Vector3();
   let centerDot = 0;
   while (true) {
-    v1
-      .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
-      .normalize();
+    v1.set(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+    ).normalize();
     toCenter.set(-x, -y, -z).normalize();
     centerDot = toCenter.dot(v1);
     if (
@@ -1785,14 +1906,82 @@ function animate() {
 
     //Ball Maving
     const scaleCount = count * 200;
-    for (let i = 0; i < particles.length; i++) {
-      particle = particles[i];
-      particle.scale.x = particle.scale.y =
-        Math.sin(star_s_speed[i] * scaleCount) + 3;
-      particle.position.x += (star_dx[i] * Math.cos(star_dsx[i] * count)) / 6;
-      particle.position.y += (star_dy[i] * Math.cos(star_dsy[i] * count)) / 6;
-      particle.position.z += (star_dz[i] * Math.cos(star_dsz[i] * count)) / 6;
+    const ufoX = ufo.position.x;
+    const ufoY = ufo.position.y;
+    const ufoZ = ufo.position.z;
+    for (let groupIndex = 0; groupIndex < starGroupCount; groupIndex++) {
+      const groupStart = groupIndex * STAR_GROUP_SIZE;
+      if (groupStart >= starCount) break;
+      const leaderIndex = starGroupOrder[groupStart];
+      const leaderOffset = leaderIndex * 3;
+      const oldSize = starSizes[leaderIndex];
+      const targetSize =
+        ((Math.sin(star_s_speed[leaderIndex] * scaleCount) + 3) *
+          STAR_POINT_BASE_SIZE) /
+        3;
+      const deltaX =
+        (star_dx[leaderIndex] * Math.cos(star_dsx[leaderIndex] * count)) /
+        STAR_MOVE_DIVISOR;
+      const deltaY =
+        (star_dy[leaderIndex] * Math.cos(star_dsy[leaderIndex] * count)) /
+        STAR_MOVE_DIVISOR;
+      const deltaZ =
+        (star_dz[leaderIndex] * Math.cos(star_dsz[leaderIndex] * count)) /
+        STAR_MOVE_DIVISOR;
+      starSizes[leaderIndex] = targetSize;
+      starPositions[leaderOffset] += deltaX;
+      starPositions[leaderOffset + 1] += deltaY;
+      starPositions[leaderOffset + 2] += deltaZ;
+      const leaderDxUfo = starPositions[leaderOffset] - ufoX;
+      const leaderDyUfo = starPositions[leaderOffset + 1] - ufoY;
+      const leaderDzUfo = starPositions[leaderOffset + 2] - ufoZ;
+      const leaderDistSq =
+        leaderDxUfo * leaderDxUfo +
+        leaderDyUfo * leaderDyUfo +
+        leaderDzUfo * leaderDzUfo;
+      if (leaderDistSq <= STAR_FADE_END_DISTANCE_SQ) {
+        starAlphas[leaderIndex] = 0;
+      } else if (leaderDistSq >= STAR_FADE_START_DISTANCE_SQ) {
+        starAlphas[leaderIndex] = 1;
+      } else {
+        const leaderDist = Math.sqrt(leaderDistSq);
+        starAlphas[leaderIndex] =
+          (leaderDist - STAR_FADE_END_DISTANCE) / STAR_FADE_RANGE;
+      }
+      const deltaSize = targetSize - oldSize;
+
+      for (
+        let member = 1;
+        member < STAR_GROUP_SIZE && groupStart + member < starCount;
+        member++
+      ) {
+        const memberIndex = starGroupOrder[groupStart + member];
+        const memberOffset = memberIndex * 3;
+        starSizes[memberIndex] += deltaSize;
+        starPositions[memberOffset] += deltaX;
+        starPositions[memberOffset + 1] += deltaY;
+        starPositions[memberOffset + 2] += deltaZ;
+        const memberDxUfo = starPositions[memberOffset] - ufoX;
+        const memberDyUfo = starPositions[memberOffset + 1] - ufoY;
+        const memberDzUfo = starPositions[memberOffset + 2] - ufoZ;
+        const memberDistSq =
+          memberDxUfo * memberDxUfo +
+          memberDyUfo * memberDyUfo +
+          memberDzUfo * memberDzUfo;
+        if (memberDistSq <= STAR_FADE_END_DISTANCE_SQ) {
+          starAlphas[memberIndex] = 0;
+        } else if (memberDistSq >= STAR_FADE_START_DISTANCE_SQ) {
+          starAlphas[memberIndex] = 1;
+        } else {
+          const memberDist = Math.sqrt(memberDistSq);
+          starAlphas[memberIndex] =
+            (memberDist - STAR_FADE_END_DISTANCE) / STAR_FADE_RANGE;
+        }
+      }
     }
+    starGeometry.attributes.position.needsUpdate = true;
+    starGeometry.attributes.pointSize.needsUpdate = true;
+    starGeometry.attributes.pointAlpha.needsUpdate = true;
     if (meteorites.length < 10) {
       const meteorite1 = generate_meteoriteObject3D(8);
       meteorites.push(meteorite1);

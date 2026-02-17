@@ -10,11 +10,14 @@ import {
   createResizeRendererHandler,
   createProgressHandler,
 } from './JS/shared/scene-common.js';
+
+const textureLoader = new THREE.TextureLoader();
+
 const {
   targetFps: TARGET_FPS,
   frameInterval,
   fpsScale,
-} = createFrameConfig(120);
+} = createFrameConfig(60);
 let frameAccumulator = 0;
 let totalLoadItems = 0;
 let loadedItemCount = 0;
@@ -60,20 +63,249 @@ let particles,
   star_dsz,
   star_s_speed,
   count = 0;
+const CLOUD_GROUP_SIZE = 10;
+let cloudGroupCount = 0;
+let cloudGroupOrder;
 
-let rain, rainGeo;
-const rainCount = 100000;
+let rain, rainGeo, rainGroupOrder;
+const RAIN_TOTAL_DROPS = 100000;
+const RAIN_DROP_GROUP_SIZE = 100;
+const rainCount = RAIN_TOTAL_DROPS;
+const RAIN_GROUP_COUNT = Math.ceil(rainCount / RAIN_DROP_GROUP_SIZE);
 const RAIN_RESET_Y = 420;
-const RAIN_AREA_HALF = 25;
-const RAIN_BASE_FALL = 0.08;
-const RAIN_RANDOM_FALL = 0.06;
+const RAIN_AREA_HALF = 50;
 const RAIN_WIND_X = 0.015;
 const RAIN_WIND_Z = 0.01;
 const RAIN_UFO_CLEAR_RADIUS = 5;
 const RAIN_UFO_CLEAR_RADIUS_SQ = RAIN_UFO_CLEAR_RADIUS * RAIN_UFO_CLEAR_RADIUS;
-let rainVelocity;
+const RAIN_SPEED_MIN = 0.2;
+const RAIN_SPEED_MAX = 4.0;
+const RAIN_SPEED_DEFAULT = 1;
+let rainSpeedMultiplier = RAIN_SPEED_DEFAULT;
 let rainCenterX = cameraPositionVec.x;
 let rainCenterZ = cameraPositionVec.z;
+
+let ringRipples, ringGeo, ringSurfaceRipples;
+let ringLife,
+  ringSpeed,
+  ringScaleStart,
+  ringScaleMax,
+  ringDriftX,
+  ringDriftZ,
+  ringX,
+  ringZ,
+  ringPointSizes,
+  ringPointAlphas,
+  ringPositions,
+  ringGroupOrder;
+let splashDrops, splashDropsGeo;
+let splashDropLife,
+  splashDropSpeed,
+  splashDropPeak,
+  splashDropDriftX,
+  splashDropDriftZ,
+  splashDropPhase,
+  splashDropAlphas,
+  splashDropGroupOrder;
+let splashDropCenterX = cameraPositionVec.x;
+let splashDropCenterZ = cameraPositionVec.z;
+const WATER_SURFACE_EFFECT_RADIUS = 400;
+const RING_TOTAL = 80000;
+const RING_GROUP_SIZE = 100;
+const RING_GROUP_COUNT = Math.ceil(RING_TOTAL / RING_GROUP_SIZE);
+const RING_BASE_Y = 0;
+const RING_SURFACE_BASE_Y = 0.01;
+const RING_SCALE_START_MIN = 0;
+const RING_SCALE_START_MAX = 0;
+const RING_SCALE_END_MIN = 1;
+const RING_SCALE_END_MAX = 1;
+const RING_SPEED_MIN = 0.025;
+const RING_SPEED_MAX = 0.05;
+const RING_DRIFT_MAX = 0.0015;
+const RING_OPACITY_BASE = 0.8;
+const RING_OPACITY_VARIANCE = 0.2;
+const RING_FADE_START = 300;
+const RING_FADE_END = 400;
+const RING_FADE_MIN_ALPHA = 0;
+const SPLASH_TOTAL_DROPS = 80000;
+const SPLASH_DROP_GROUP_SIZE = 100;
+const SPLASH_DROP_GROUP_COUNT = Math.ceil(
+  SPLASH_TOTAL_DROPS / SPLASH_DROP_GROUP_SIZE,
+);
+const SPLASH_BASE_Y = 0.05;
+const SPLASH_PEAK_MIN = 0.2;
+const SPLASH_PEAK_MAX = 1.0;
+const SPLASH_SPEED_MIN = 0.012;
+const SPLASH_SPEED_MAX = 0.045;
+const SPLASH_DRIFT_MAX = 0.035;
+const SPLASH_RIPPLE_AMPLITUDE = 0.06;
+const SPLASH_RIPPLE_FREQUENCY = 11;
+const SPLASH_FADE_START = 300;
+const SPLASH_FADE_END = 400;
+const SPLASH_FADE_MIN_ALPHA = 0;
+const ringMatrixDummy = new THREE.Object3D();
+const ringColorDummy = new THREE.Color();
+
+function setRandomWaterPositionAroundCenterInArrays(
+  index,
+  xArray,
+  zArray,
+  centerX,
+  centerZ,
+) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = Math.sqrt(Math.random()) * WATER_SURFACE_EFFECT_RADIUS;
+  xArray[index] = centerX + Math.cos(angle) * radius;
+  zArray[index] = centerZ + Math.sin(angle) * radius;
+}
+
+function setRandomWaterPositionAroundCenterInBuffer(
+  index,
+  positions,
+  centerX,
+  centerZ,
+) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = Math.sqrt(Math.random()) * WATER_SURFACE_EFFECT_RADIUS;
+  const idx = index * 3;
+  positions[idx] = centerX + Math.cos(angle) * radius;
+  positions[idx + 2] = centerZ + Math.sin(angle) * radius;
+}
+
+function computeSplashDistanceAlpha(x, z, centerX, centerZ) {
+  const dx = x - centerX;
+  const dz = z - centerZ;
+  const distance = Math.sqrt(dx * dx + dz * dz);
+  if (distance <= SPLASH_FADE_START) return 1;
+  if (distance >= SPLASH_FADE_END) return SPLASH_FADE_MIN_ALPHA;
+  const fadeRange = Math.max(1e-6, SPLASH_FADE_END - SPLASH_FADE_START);
+  const t = (distance - SPLASH_FADE_START) / fadeRange;
+  return 1 - t * (1 - SPLASH_FADE_MIN_ALPHA);
+}
+
+function computeRingDistanceAlpha(x, z, centerX, centerZ) {
+  const dx = x - centerX;
+  const dz = z - centerZ;
+  const distance = Math.sqrt(dx * dx + dz * dz);
+  if (distance <= RING_FADE_START) return 1;
+  if (distance >= RING_FADE_END) return RING_FADE_MIN_ALPHA;
+  const fadeRange = Math.max(1e-6, RING_FADE_END - RING_FADE_START);
+  const t = (distance - RING_FADE_START) / fadeRange;
+  return 1 - t * (1 - RING_FADE_MIN_ALPHA);
+}
+
+function resetRingRipple(index, centerX, centerZ, randomLife = false) {
+  setRandomWaterPositionAroundCenterInArrays(
+    index,
+    ringX,
+    ringZ,
+    centerX,
+    centerZ,
+  );
+  ringLife[index] = randomLife ? Math.random() : 0;
+  ringSpeed[index] =
+    RING_SPEED_MIN + Math.random() * (RING_SPEED_MAX - RING_SPEED_MIN);
+  ringScaleStart[index] =
+    RING_SCALE_START_MIN +
+    Math.random() * (RING_SCALE_START_MAX - RING_SCALE_START_MIN);
+  ringScaleMax[index] =
+    RING_SCALE_END_MIN +
+    Math.random() * (RING_SCALE_END_MAX - RING_SCALE_END_MIN);
+  ringDriftX[index] = (Math.random() * 2 - 1) * RING_DRIFT_MAX;
+  ringDriftZ[index] = (Math.random() * 2 - 1) * RING_DRIFT_MAX;
+}
+
+function resetSplashDrop(
+  index,
+  positions,
+  centerX,
+  centerZ,
+  randomLife = false,
+) {
+  setRandomWaterPositionAroundCenterInBuffer(
+    index,
+    positions,
+    centerX,
+    centerZ,
+  );
+  splashDropLife[index] = randomLife ? Math.random() : 0;
+  splashDropSpeed[index] =
+    SPLASH_SPEED_MIN + Math.random() * (SPLASH_SPEED_MAX - SPLASH_SPEED_MIN);
+  splashDropPeak[index] =
+    SPLASH_PEAK_MIN + Math.random() * (SPLASH_PEAK_MAX - SPLASH_PEAK_MIN);
+  splashDropDriftX[index] = (Math.random() * 2 - 1) * SPLASH_DRIFT_MAX;
+  splashDropDriftZ[index] = (Math.random() * 2 - 1) * SPLASH_DRIFT_MAX;
+  splashDropPhase[index] = Math.random() * Math.PI * 2;
+
+  const idx = index * 3;
+  const t = splashDropLife[index];
+  const arc = 4 * t * (1 - t);
+  const ripple =
+    SPLASH_RIPPLE_AMPLITUDE *
+    Math.sin(splashDropPhase[index] + t * SPLASH_RIPPLE_FREQUENCY);
+  positions[idx + 1] = SPLASH_BASE_Y + splashDropPeak[index] * arc + ripple;
+  if (positions[idx + 1] < SPLASH_BASE_Y) {
+    positions[idx + 1] = SPLASH_BASE_Y;
+  }
+}
+
+function applyRingRippleInstance(index, px, pz, scale, opacity) {
+  const idx = index * 3;
+  ringPositions[idx] = px;
+  ringPositions[idx + 1] = RING_BASE_Y;
+  ringPositions[idx + 2] = pz;
+  ringPointSizes[index] = scale;
+  ringPointAlphas[index] = opacity;
+
+  ringMatrixDummy.position.set(px, RING_SURFACE_BASE_Y, pz);
+  ringMatrixDummy.scale.set(scale, scale, scale);
+  ringMatrixDummy.rotation.set(-Math.PI / 2, 0, 0);
+  ringMatrixDummy.updateMatrix();
+  ringSurfaceRipples.setMatrixAt(index, ringMatrixDummy.matrix);
+
+  ringColorDummy.setRGB(opacity, opacity, opacity);
+  ringSurfaceRipples.setColorAt(index, ringColorDummy);
+}
+
+function setRainSpeed(multiplier) {
+  const clamped = Math.max(
+    RAIN_SPEED_MIN,
+    Math.min(RAIN_SPEED_MAX, Number(multiplier)),
+  );
+  if (!Number.isFinite(clamped)) return rainSpeedMultiplier;
+  rainSpeedMultiplier = clamped;
+
+  return rainSpeedMultiplier;
+}
+
+function isFollowTargetObject(object) {
+  if (!object) return false;
+  if (object.userData && object.userData.ignoreClickFollow) return false;
+  if (object.type === 'Sprite' || object.type === 'Points') return false;
+  if (object.name === 'ring' || object.name === 'Sky') return false;
+  return true;
+}
+
+function buildRandomGroupOrder(count) {
+  const order = new Uint32Array(count);
+  for (let i = 0; i < count; i++) {
+    order[i] = i;
+  }
+  for (let i = count - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = order[i];
+    order[i] = order[j];
+    order[j] = temp;
+  }
+  return order;
+}
+
+if (typeof window !== 'undefined') {
+  window.setRainSpeed = setRainSpeed;
+  window.getRainSpeed = function () {
+    return rainSpeedMultiplier;
+  };
+}
 
 function createRainDropTexture() {
   const width = 32;
@@ -97,6 +329,66 @@ function createRainDropTexture() {
   const texture = new THREE.CanvasTexture(canvas);
   texture.generateMipmaps = true;
   texture.minFilter = THREE.LinearMipmapNearestFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function createSplashDropTexture() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(
+    size * 0.5,
+    size * 0.5,
+    1,
+    size * 0.5,
+    size * 0.5,
+    size * 0.5,
+  );
+  gradient.addColorStop(0, 'rgba(240,248,255,1.0)');
+  gradient.addColorStop(0.45, 'rgba(220,235,255,0.85)');
+  gradient.addColorStop(1, 'rgba(220,235,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function createSplashRingTexture() {
+  const size = 16;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const center = size * 0.5;
+
+  ctx.clearRect(0, 0, size, size);
+  const ring = ctx.createRadialGradient(
+    center,
+    center,
+    size * 0.01,
+    center,
+    center,
+    size * 0.5,
+  );
+  ring.addColorStop(0.0, 'rgba(220,240,255,0)');
+  ring.addColorStop(0.64, 'rgba(220,240,255,0)');
+  ring.addColorStop(0.74, 'rgba(245,252,255,0.92)');
+  ring.addColorStop(0.88, 'rgba(190,220,255,0.35)');
+  ring.addColorStop(1.0, 'rgba(180,215,255,0)');
+  ctx.fillStyle = ring;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   return texture;
@@ -136,11 +428,11 @@ const currentSceneIndex = 0;
 
 let currentTime = 0;
 
-const ufolight = new THREE.TextureLoader().load('img/ufo_light1.png');
+const ufolight = textureLoader.load('img/ufo_light1.png');
 
-const starball = new THREE.TextureLoader().load('img/ball.png');
-const cloudMap = new THREE.TextureLoader().load('img/cloud55.png');
-const cloudMap1 = new THREE.TextureLoader().load('img/cloud11.png');
+const starball = textureLoader.load('img/ball.png');
+const cloudMap = textureLoader.load('img/cloud55.png');
+const cloudMap1 = textureLoader.load('img/cloud11.png');
 const flash = new THREE.Color(0.11, 0.11, 0.11);
 const cloudMaterial1 = new THREE.SpriteMaterial({
   map: cloudMap,
@@ -166,7 +458,7 @@ const MeshWater = new Water(
   {
     textureWidth: 2048,
     textureHeight: 2048,
-    waterNormals: new THREE.TextureLoader().load(
+    waterNormals: textureLoader.load(
       './texture/three/water/waternormals.jpg',
       function (texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -247,10 +539,10 @@ scene.render = function (time) {
 
 scene.sceneIndex = currentSceneIndex;
 scene.timeRate = 1.5;
-const normalMap2 = new THREE.TextureLoader().load(
+const normalMap2 = textureLoader.load(
   './texture/three/water/Water_1_M_Normal.jpg',
 );
-const clearcoatNormaMap = new THREE.TextureLoader().load(
+const clearcoatNormaMap = textureLoader.load(
   './texture/three/pbr/Scratched_gold/Scratched_gold_01_1K_Normal.png',
 );
 
@@ -267,7 +559,7 @@ const ufo_material = new THREE.MeshPhysicalMaterial({
 });
 function init() {
   const skyGeometry = new THREE.SphereGeometry(8000, 100, 100);
-  const map = new THREE.TextureLoader().load('img/bg5.png');
+  const map = textureLoader.load('img/bg5.png');
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(15, 15);
@@ -377,32 +669,60 @@ function init() {
         particle.scale.set(scale_cloud, scale_cloud);
       }
 
+      particle.userData.ignoreClickFollow = true;
       scene.add(particle);
     }
   }
+  cloudGroupCount = Math.ceil(particles.length / CLOUD_GROUP_SIZE);
+  cloudGroupOrder = buildRandomGroupOrder(particles.length);
 
   rainGeo = new THREE.BufferGeometry();
   const rainPositions = new Float32Array(rainCount * 3);
-  rainVelocity = new Float32Array(rainCount);
-  for (i = 0; i < rainCount; i++) {
-    const idx = i * 3;
-    rainPositions[idx] = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
-    rainPositions[idx + 1] = Math.random() * RAIN_RESET_Y;
-    rainPositions[idx + 2] =
-      rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+  rainGroupOrder = buildRandomGroupOrder(rainCount);
+  for (let groupIndex = 0; groupIndex < RAIN_GROUP_COUNT; groupIndex++) {
+    const groupStart = groupIndex * RAIN_DROP_GROUP_SIZE;
+    if (groupStart >= rainCount) break;
+    const leaderDropIndex = rainGroupOrder[groupStart];
+    const leaderIdx = leaderDropIndex * 3;
+
+    const leaderX = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+    const leaderY = Math.random() * RAIN_RESET_Y;
+    const leaderZ = rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+
+    rainPositions[leaderIdx] = leaderX;
+    rainPositions[leaderIdx + 1] = leaderY;
+    rainPositions[leaderIdx + 2] = leaderZ;
+
+    for (
+      let member = 1;
+      member < RAIN_DROP_GROUP_SIZE && groupStart + member < rainCount;
+      member++
+    ) {
+      const dropIndex = rainGroupOrder[groupStart + member];
+      const idx = dropIndex * 3;
+      const memberX = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+      const memberY = Math.random() * RAIN_RESET_Y;
+      const memberZ = rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+      rainPositions[idx] = memberX;
+      rainPositions[idx + 1] = memberY;
+      rainPositions[idx + 2] = memberZ;
+    }
   }
   rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
   const rainMaterial = new THREE.PointsMaterial({
     color: 0xe8f6ff,
-    size: 0.6,
+    size: 0.72,
+    sizeAttenuation: true,
     map: createRainDropTexture(),
     transparent: true,
-    opacity: 0.92,
-    alphaTest: 0,
+    opacity: 0.95,
+    alphaTest: 0.01,
+    blending: THREE.AdditiveBlending,
     fog: false,
   });
   rain = new THREE.Points(rainGeo, rainMaterial);
   rain.frustumCulled = false;
+  rain.userData.ignoreClickFollow = true;
   scene.add(rain);
 
   MeshWater.rotation.x = -Math.PI / 2;
@@ -411,6 +731,251 @@ function init() {
   MeshWater.receiveShadow = true;
   MeshWater.castShadow = false;
   all_obj4.add(MeshWater);
+
+  ringGeo = new THREE.BufferGeometry();
+  ringPositions = new Float32Array(RING_TOTAL * 3);
+  ringPointSizes = new Float32Array(RING_TOTAL);
+  ringPointAlphas = new Float32Array(RING_TOTAL);
+  const ringSurfaceGeometry = new THREE.PlaneGeometry(0.8, 0.8);
+  const ringSurfaceColors = new Float32Array(
+    ringSurfaceGeometry.attributes.position.count * 3,
+  );
+  ringSurfaceColors.fill(1);
+  ringSurfaceGeometry.setAttribute(
+    'color',
+    new THREE.BufferAttribute(ringSurfaceColors, 3),
+  );
+  const ringSurfaceMaterial = new THREE.MeshBasicMaterial({
+    color: 0xf3fbff,
+    map: createSplashRingTexture(),
+    transparent: true,
+    opacity: 1.0,
+    side: THREE.FrontSide,
+    blending: THREE.AdditiveBlending,
+    fog: false,
+    toneMapped: false,
+    vertexColors: true,
+  });
+  ringSurfaceRipples = new THREE.InstancedMesh(
+    ringSurfaceGeometry,
+    ringSurfaceMaterial,
+    RING_TOTAL,
+  );
+  ringSurfaceRipples.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  ringLife = new Float32Array(RING_TOTAL);
+  ringSpeed = new Float32Array(RING_TOTAL);
+  ringScaleStart = new Float32Array(RING_TOTAL);
+  ringScaleMax = new Float32Array(RING_TOTAL);
+  ringDriftX = new Float32Array(RING_TOTAL);
+  ringDriftZ = new Float32Array(RING_TOTAL);
+  ringX = new Float32Array(RING_TOTAL);
+  ringZ = new Float32Array(RING_TOTAL);
+  ringGroupOrder = buildRandomGroupOrder(RING_TOTAL);
+  for (let groupIndex = 0; groupIndex < RING_GROUP_COUNT; groupIndex++) {
+    const groupStart = groupIndex * RING_GROUP_SIZE;
+    if (groupStart >= RING_TOTAL) break;
+    const leaderRingIndex = ringGroupOrder[groupStart];
+    resetRingRipple(
+      leaderRingIndex,
+      cameraPositionVec.x,
+      cameraPositionVec.z,
+      true,
+    );
+
+    const leaderLife = ringLife[leaderRingIndex];
+    const leaderScale =
+      ringScaleStart[leaderRingIndex] +
+      (ringScaleMax[leaderRingIndex] - ringScaleStart[leaderRingIndex]) *
+        leaderLife;
+    const leaderDistanceAlpha = computeRingDistanceAlpha(
+      ringX[leaderRingIndex],
+      ringZ[leaderRingIndex],
+      cameraPositionVec.x,
+      cameraPositionVec.z,
+    );
+    const leaderOpacity =
+      (RING_OPACITY_BASE +
+        RING_OPACITY_VARIANCE * Math.sin(leaderLife * Math.PI)) *
+      leaderDistanceAlpha;
+    applyRingRippleInstance(
+      leaderRingIndex,
+      ringX[leaderRingIndex],
+      ringZ[leaderRingIndex],
+      leaderScale,
+      leaderOpacity,
+    );
+
+    for (
+      let member = 1;
+      member < RING_GROUP_SIZE && groupStart + member < RING_TOTAL;
+      member++
+    ) {
+      const memberRingIndex = ringGroupOrder[groupStart + member];
+      setRandomWaterPositionAroundCenterInArrays(
+        memberRingIndex,
+        ringX,
+        ringZ,
+        cameraPositionVec.x,
+        cameraPositionVec.z,
+      );
+      applyRingRippleInstance(
+        memberRingIndex,
+        ringX[memberRingIndex],
+        ringZ[memberRingIndex],
+        leaderScale,
+        leaderOpacity,
+      );
+    }
+  }
+  const ringPositionAttribute = new THREE.BufferAttribute(ringPositions, 3);
+  ringPositionAttribute.setUsage(THREE.DynamicDrawUsage);
+  ringGeo.setAttribute('position', ringPositionAttribute);
+  const ringSizeAttribute = new THREE.BufferAttribute(ringPointSizes, 1);
+  ringSizeAttribute.setUsage(THREE.DynamicDrawUsage);
+  ringGeo.setAttribute('pointSize', ringSizeAttribute);
+  const ringAlphaAttribute = new THREE.BufferAttribute(ringPointAlphas, 1);
+  ringAlphaAttribute.setUsage(THREE.DynamicDrawUsage);
+  ringGeo.setAttribute('pointAlpha', ringAlphaAttribute);
+  const ringMaterial = new THREE.PointsMaterial({
+    color: 0xf3fbff,
+    size: 2,
+    sizeAttenuation: true,
+    map: createSplashRingTexture(),
+    transparent: true,
+    opacity: 1.0,
+    alphaTest: 0.01,
+    blending: THREE.AdditiveBlending,
+    fog: false,
+  });
+  ringMaterial.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        'uniform float size;',
+        'uniform float size;\nattribute float pointSize;\nattribute float pointAlpha;\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'gl_PointSize = size;',
+        'gl_PointSize = max(1.0, size * pointSize);\nvPointAlpha = pointAlpha;',
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( diffuse, opacity * vPointAlpha );',
+      );
+  };
+  ringMaterial.needsUpdate = true;
+  ringRipples = new THREE.Points(ringGeo, ringMaterial);
+  ringRipples.frustumCulled = false;
+  ringRipples.userData.ignoreClickFollow = true;
+  ringSurfaceRipples.instanceMatrix.needsUpdate = true;
+  if (ringSurfaceRipples.instanceColor) {
+    ringSurfaceRipples.instanceColor.needsUpdate = true;
+  }
+  ringSurfaceRipples.frustumCulled = false;
+  ringSurfaceRipples.userData.ignoreClickFollow = true;
+  all_obj4.add(ringRipples);
+  all_obj4.add(ringSurfaceRipples);
+
+  splashDropsGeo = new THREE.BufferGeometry();
+  const splashPositions = new Float32Array(SPLASH_TOTAL_DROPS * 3);
+  splashDropLife = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropSpeed = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropPeak = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropDriftX = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropDriftZ = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropPhase = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropAlphas = new Float32Array(SPLASH_TOTAL_DROPS);
+  splashDropGroupOrder = buildRandomGroupOrder(SPLASH_TOTAL_DROPS);
+  for (let groupIndex = 0; groupIndex < SPLASH_DROP_GROUP_COUNT; groupIndex++) {
+    const groupStart = groupIndex * SPLASH_DROP_GROUP_SIZE;
+    if (groupStart >= SPLASH_TOTAL_DROPS) break;
+    const leaderDropIndex = splashDropGroupOrder[groupStart];
+    const leaderIdx = leaderDropIndex * 3;
+    resetSplashDrop(
+      leaderDropIndex,
+      splashPositions,
+      splashDropCenterX,
+      splashDropCenterZ,
+      true,
+    );
+    splashDropAlphas[leaderDropIndex] = computeSplashDistanceAlpha(
+      splashPositions[leaderIdx],
+      splashPositions[leaderIdx + 2],
+      splashDropCenterX,
+      splashDropCenterZ,
+    );
+
+    for (
+      let member = 1;
+      member < SPLASH_DROP_GROUP_SIZE &&
+      groupStart + member < SPLASH_TOTAL_DROPS;
+      member++
+    ) {
+      const memberDropIndex = splashDropGroupOrder[groupStart + member];
+      const memberIdx = memberDropIndex * 3;
+      setRandomWaterPositionAroundCenterInBuffer(
+        memberDropIndex,
+        splashPositions,
+        splashDropCenterX,
+        splashDropCenterZ,
+      );
+      splashPositions[memberIdx + 1] =
+        SPLASH_BASE_Y + Math.random() * SPLASH_PEAK_MAX * 0.8;
+      splashDropAlphas[memberDropIndex] = computeSplashDistanceAlpha(
+        splashPositions[memberIdx],
+        splashPositions[memberIdx + 2],
+        splashDropCenterX,
+        splashDropCenterZ,
+      );
+    }
+  }
+  const splashPositionAttribute = new THREE.BufferAttribute(splashPositions, 3);
+  splashPositionAttribute.setUsage(THREE.DynamicDrawUsage);
+  splashDropsGeo.setAttribute('position', splashPositionAttribute);
+  const splashAlphaAttribute = new THREE.BufferAttribute(splashDropAlphas, 1);
+  splashAlphaAttribute.setUsage(THREE.DynamicDrawUsage);
+  splashDropsGeo.setAttribute('pointAlpha', splashAlphaAttribute);
+  const splashDropMaterial = new THREE.PointsMaterial({
+    color: 0xeef7ff,
+    size: 0.36,
+    sizeAttenuation: true,
+    map: createSplashDropTexture(),
+    transparent: true,
+    opacity: 0.9,
+    alphaTest: 0.01,
+    blending: THREE.AdditiveBlending,
+    fog: false,
+  });
+  splashDropMaterial.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        'uniform float size;',
+        'uniform float size;\nattribute float pointAlpha;\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'gl_PointSize = size;',
+        'gl_PointSize = size;\nvPointAlpha = pointAlpha;',
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( diffuse, opacity * vPointAlpha );',
+      );
+  };
+  splashDropMaterial.needsUpdate = true;
+  splashDrops = new THREE.Points(splashDropsGeo, splashDropMaterial);
+  splashDrops.frustumCulled = false;
+  splashDrops.userData.ignoreClickFollow = true;
+  all_obj4.add(splashDrops);
+
   // MeshWater.rotation.x = - Math.PI / 2;
   // MeshWater.position.set(0, -503+500, 0)
   // MeshWater.name = "Water";
@@ -421,7 +986,7 @@ function init() {
   // let geometryGround = new THREE.CircleBufferGeometry(5000, 100, 100);
   // geometryGround.rotateX(Math.PI / 2);
   // //geometryGround.translate(0, 0, 0);
-  // let texture = THREE.ImageUtils.loadTexture("texture/pattern8.png");
+  // let texture = textureLoader.load("texture/pattern8.png");
   // texture.wrapS = THREE.RepeatWrapping;
   // texture.wrapT = THREE.RepeatWrapping;
   // texture.repeat.set(500, 500);
@@ -856,11 +1421,7 @@ function onMouseClick(event) {
     const intersects = raycaster1.intersectObjects(scene.children, true);
     let hitIndex = -1;
     for (let i = 0; i < intersects.length; i++) {
-      if (
-        intersects[i].object.type != 'Sprite' &&
-        intersects[i].object.name != 'ring' &&
-        intersects[i].object.name != 'Sky'
-      ) {
+      if (isFollowTargetObject(intersects[i].object)) {
         hitIndex = i;
         break;
       }
@@ -1214,14 +1775,41 @@ function animate() {
     //stats.update();
 
     const cloudCount = count * 10;
-    for (let i = 0; i < particles.length; i++) {
-      particle = particles[i];
-      particle.position.x +=
-        (star_dx[i] * Math.cos(star_dsx[i] * cloudCount)) / 2;
-      particle.position.y +=
-        (star_dy[i] * Math.cos(star_dsy[i] * cloudCount)) / 200;
-      particle.position.z +=
-        (star_dz[i] * Math.cos(star_dsz[i] * cloudCount)) / 2;
+    for (let groupIndex = 0; groupIndex < cloudGroupCount; groupIndex++) {
+      const groupStart = groupIndex * CLOUD_GROUP_SIZE;
+      if (groupStart >= particles.length) break;
+      const leaderIndex = cloudGroupOrder[groupStart];
+
+      const leaderCloud = particles[leaderIndex];
+      const oldX = leaderCloud.position.x;
+      const oldY = leaderCloud.position.y;
+      const oldZ = leaderCloud.position.z;
+
+      leaderCloud.position.x +=
+        (star_dx[leaderIndex] * Math.cos(star_dsx[leaderIndex] * cloudCount)) /
+        2;
+      leaderCloud.position.y +=
+        (star_dy[leaderIndex] * Math.cos(star_dsy[leaderIndex] * cloudCount)) /
+        200;
+      leaderCloud.position.z +=
+        (star_dz[leaderIndex] * Math.cos(star_dsz[leaderIndex] * cloudCount)) /
+        2;
+
+      const deltaX = leaderCloud.position.x - oldX;
+      const deltaY = leaderCloud.position.y - oldY;
+      const deltaZ = leaderCloud.position.z - oldZ;
+
+      for (
+        let member = 1;
+        member < CLOUD_GROUP_SIZE && groupStart + member < particles.length;
+        member++
+      ) {
+        const memberIndex = cloudGroupOrder[groupStart + member];
+        const memberCloud = particles[memberIndex];
+        memberCloud.position.x += deltaX;
+        memberCloud.position.y += deltaY;
+        memberCloud.position.z += deltaZ;
+      }
     }
     count += 0.0005 * fpsScale;
 
@@ -1232,55 +1820,215 @@ function animate() {
     const centerX = camera.position.x;
     const centerZ = camera.position.z;
     const ufoX = ufo.position.x;
-    const ufoY = ufo.position.y;
     const ufoZ = ufo.position.z;
     const centerDx = centerX - rainCenterX;
     const centerDz = centerZ - rainCenterZ;
-    for (let dropIndex = 0, i = 0; dropIndex < rainCount; dropIndex++, i += 3) {
-      // Keep rain field centered around camera forward direction.
-      positions[i] += centerDx;
-      positions[i + 2] += centerDz;
+    for (let groupIndex = 0; groupIndex < RAIN_GROUP_COUNT; groupIndex++) {
+      const groupStart = groupIndex * RAIN_DROP_GROUP_SIZE;
+      if (groupStart >= rainCount) break;
+      const leaderDropIndex = rainGroupOrder[groupStart];
+      const leaderIdx = leaderDropIndex * 3;
+      const oldLeaderX = positions[leaderIdx];
+      const oldLeaderY = positions[leaderIdx + 1];
+      const oldLeaderZ = positions[leaderIdx + 2];
 
-      const vel =
-        rainVelocity[dropIndex] -
-        (RAIN_BASE_FALL + Math.random() * RAIN_RANDOM_FALL);
-      rainVelocity[dropIndex] = vel;
-      positions[i + 1] += vel;
-      positions[i] += RAIN_WIND_X;
-      positions[i + 2] += RAIN_WIND_Z;
+      positions[leaderIdx] += centerDx;
+      positions[leaderIdx + 2] += centerDz;
+      positions[leaderIdx + 1] -= rainSpeedMultiplier;
+      positions[leaderIdx] += RAIN_WIND_X * rainSpeedMultiplier;
+      positions[leaderIdx + 2] += RAIN_WIND_Z * rainSpeedMultiplier;
 
-      const duX = positions[i] - ufoX;
-      const duY = positions[i + 1] - ufoY;
-      const duZ = positions[i + 2] - ufoZ;
+      const duX = positions[leaderIdx] - ufoX;
+      const duZ = positions[leaderIdx + 2] - ufoZ;
       const insideUfoClearZone =
-        duX * duX + duY * duY + duZ * duZ < RAIN_UFO_CLEAR_RADIUS_SQ;
+        duX * duX + duZ * duZ < RAIN_UFO_CLEAR_RADIUS_SQ;
 
       if (
         insideUfoClearZone ||
-        positions[i + 1] < 0 ||
-        positions[i] < centerX - RAIN_AREA_HALF ||
-        positions[i] > centerX + RAIN_AREA_HALF ||
-        positions[i + 2] < centerZ - RAIN_AREA_HALF ||
-        positions[i + 2] > centerZ + RAIN_AREA_HALF
+        positions[leaderIdx + 1] < 0 ||
+        positions[leaderIdx] < centerX - RAIN_AREA_HALF ||
+        positions[leaderIdx] > centerX + RAIN_AREA_HALF ||
+        positions[leaderIdx + 2] < centerZ - RAIN_AREA_HALF ||
+        positions[leaderIdx + 2] > centerZ + RAIN_AREA_HALF
       ) {
         if (insideUfoClearZone) {
           const angle = Math.random() * Math.PI * 2;
           const radius =
             RAIN_UFO_CLEAR_RADIUS +
             Math.random() * (RAIN_AREA_HALF - RAIN_UFO_CLEAR_RADIUS);
-          positions[i] = ufoX + Math.cos(angle) * radius;
-          positions[i + 2] = ufoZ + Math.sin(angle) * radius;
+          positions[leaderIdx] = ufoX + Math.cos(angle) * radius;
+          positions[leaderIdx + 2] = ufoZ + Math.sin(angle) * radius;
         } else {
-          positions[i] = centerX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
-          positions[i + 2] = centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          positions[leaderIdx] =
+            centerX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          positions[leaderIdx + 2] =
+            centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
         }
-        positions[i + 1] = RAIN_RESET_Y;
-        rainVelocity[dropIndex] = 0;
+        positions[leaderIdx + 1] = RAIN_RESET_Y;
+      }
+
+      const deltaX = positions[leaderIdx] - oldLeaderX;
+      const deltaY = positions[leaderIdx + 1] - oldLeaderY;
+      const deltaZ = positions[leaderIdx + 2] - oldLeaderZ;
+
+      for (
+        let member = 1;
+        member < RAIN_DROP_GROUP_SIZE && groupStart + member < rainCount;
+        member++
+      ) {
+        const memberDropIndex = rainGroupOrder[groupStart + member];
+        const memberIdx = memberDropIndex * 3;
+        positions[memberIdx] += deltaX;
+        positions[memberIdx + 1] += deltaY;
+        positions[memberIdx + 2] += deltaZ;
       }
     }
     rainCenterX = centerX;
     rainCenterZ = centerZ;
     rainGeo.attributes.position.needsUpdate = true;
+
+    for (let groupIndex = 0; groupIndex < RING_GROUP_COUNT; groupIndex++) {
+      const groupStart = groupIndex * RING_GROUP_SIZE;
+      if (groupStart >= RING_TOTAL) break;
+      const leaderRingIndex = ringGroupOrder[groupStart];
+      const oldLeaderX = ringX[leaderRingIndex];
+      const oldLeaderZ = ringZ[leaderRingIndex];
+
+      ringX[leaderRingIndex] += ringDriftX[leaderRingIndex] * fpsScale;
+      ringZ[leaderRingIndex] += ringDriftZ[leaderRingIndex] * fpsScale;
+      ringLife[leaderRingIndex] += ringSpeed[leaderRingIndex] * fpsScale;
+
+      if (ringLife[leaderRingIndex] >= 1) {
+        resetRingRipple(leaderRingIndex, centerX, centerZ);
+      }
+
+      const leaderLife = ringLife[leaderRingIndex];
+      const leaderScale =
+        ringScaleStart[leaderRingIndex] +
+        (ringScaleMax[leaderRingIndex] - ringScaleStart[leaderRingIndex]) *
+          leaderLife;
+      const leaderDistanceAlpha = computeRingDistanceAlpha(
+        ringX[leaderRingIndex],
+        ringZ[leaderRingIndex],
+        centerX,
+        centerZ,
+      );
+      const leaderOpacity =
+        (RING_OPACITY_BASE +
+          RING_OPACITY_VARIANCE * Math.sin(leaderLife * Math.PI)) *
+        leaderDistanceAlpha;
+
+      applyRingRippleInstance(
+        leaderRingIndex,
+        ringX[leaderRingIndex],
+        ringZ[leaderRingIndex],
+        leaderScale,
+        leaderOpacity,
+      );
+      const deltaX = ringX[leaderRingIndex] - oldLeaderX;
+      const deltaZ = ringZ[leaderRingIndex] - oldLeaderZ;
+
+      for (
+        let member = 1;
+        member < RING_GROUP_SIZE && groupStart + member < RING_TOTAL;
+        member++
+      ) {
+        const memberRingIndex = ringGroupOrder[groupStart + member];
+        ringX[memberRingIndex] += deltaX;
+        ringZ[memberRingIndex] += deltaZ;
+
+        applyRingRippleInstance(
+          memberRingIndex,
+          ringX[memberRingIndex],
+          ringZ[memberRingIndex],
+          leaderScale,
+          leaderOpacity,
+        );
+      }
+    }
+    ringGeo.attributes.position.needsUpdate = true;
+    ringGeo.attributes.pointSize.needsUpdate = true;
+    ringGeo.attributes.pointAlpha.needsUpdate = true;
+    ringSurfaceRipples.instanceMatrix.needsUpdate = true;
+    if (ringSurfaceRipples.instanceColor) {
+      ringSurfaceRipples.instanceColor.needsUpdate = true;
+    }
+
+    const splashPositions = splashDropsGeo.attributes.position.array;
+    for (
+      let groupIndex = 0;
+      groupIndex < SPLASH_DROP_GROUP_COUNT;
+      groupIndex++
+    ) {
+      const groupStart = groupIndex * SPLASH_DROP_GROUP_SIZE;
+      if (groupStart >= SPLASH_TOTAL_DROPS) break;
+      const leaderDropIndex = splashDropGroupOrder[groupStart];
+      const leaderIdx = leaderDropIndex * 3;
+      const oldLeaderX = splashPositions[leaderIdx];
+      const oldLeaderY = splashPositions[leaderIdx + 1];
+      const oldLeaderZ = splashPositions[leaderIdx + 2];
+
+      splashPositions[leaderIdx] +=
+        splashDropDriftX[leaderDropIndex] * fpsScale;
+      splashPositions[leaderIdx + 2] +=
+        splashDropDriftZ[leaderDropIndex] * fpsScale;
+      splashDropLife[leaderDropIndex] +=
+        splashDropSpeed[leaderDropIndex] * fpsScale;
+
+      if (splashDropLife[leaderDropIndex] >= 1) {
+        resetSplashDrop(
+          leaderDropIndex,
+          splashPositions,
+          centerX,
+          centerZ,
+          false,
+        );
+      } else {
+        const t = splashDropLife[leaderDropIndex];
+        const arc = 4 * t * (1 - t);
+        const ripple =
+          SPLASH_RIPPLE_AMPLITUDE *
+          Math.sin(
+            splashDropPhase[leaderDropIndex] + t * SPLASH_RIPPLE_FREQUENCY,
+          );
+        splashPositions[leaderIdx + 1] =
+          SPLASH_BASE_Y + splashDropPeak[leaderDropIndex] * arc + ripple;
+        if (splashPositions[leaderIdx + 1] < SPLASH_BASE_Y) {
+          splashPositions[leaderIdx + 1] = SPLASH_BASE_Y;
+        }
+      }
+      splashDropAlphas[leaderDropIndex] = computeSplashDistanceAlpha(
+        splashPositions[leaderIdx],
+        splashPositions[leaderIdx + 2],
+        centerX,
+        centerZ,
+      );
+      const deltaX = splashPositions[leaderIdx] - oldLeaderX;
+      const deltaY = splashPositions[leaderIdx + 1] - oldLeaderY;
+      const deltaZ = splashPositions[leaderIdx + 2] - oldLeaderZ;
+
+      for (
+        let member = 1;
+        member < SPLASH_DROP_GROUP_SIZE &&
+        groupStart + member < SPLASH_TOTAL_DROPS;
+        member++
+      ) {
+        const memberDropIndex = splashDropGroupOrder[groupStart + member];
+        const memberIdx = memberDropIndex * 3;
+        splashPositions[memberIdx] += deltaX;
+        splashPositions[memberIdx + 1] += deltaY;
+        splashPositions[memberIdx + 2] += deltaZ;
+
+        splashDropAlphas[memberDropIndex] = computeSplashDistanceAlpha(
+          splashPositions[memberIdx],
+          splashPositions[memberIdx + 2],
+          centerX,
+          centerZ,
+        );
+      }
+    }
+    splashDropsGeo.attributes.position.needsUpdate = true;
+    splashDropsGeo.attributes.pointAlpha.needsUpdate = true;
 
     //all_obj4.children[1].position.y=-2.85+0.5*Math.sin(count*2)
 
