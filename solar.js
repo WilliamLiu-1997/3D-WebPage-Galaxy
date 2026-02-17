@@ -457,7 +457,7 @@ if (add_solar) {
   star3.name = 'star3';
   starlite3.name = 'starlite3';
   star4.name = 'star4';
-  ring4.name = 'ring';
+  ring4.name = 'ring4';
   star5.name = 'star5';
   star6.name = 'star6';
 
@@ -470,7 +470,7 @@ if (add_solar) {
 
   star7.name = 'star7';
   star8.name = 'star8';
-  ring8.name = 'ring';
+  ring8.name = 'ring8';
   star9.name = 'star9';
 
   star1.castShadow = true;
