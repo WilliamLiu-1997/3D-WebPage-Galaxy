@@ -1015,12 +1015,6 @@ function obj(url, size, x, y, z, name) {
 function ring1(url, size, width, x, y, z) {
   size = size * 0.8;
   const startTexture = textureLoader.load(url);
-  if (isMobileDevice) {
-    startTexture.generateMipmaps = false;
-    startTexture.minFilter = THREE.LinearFilter;
-  }
-  startTexture.magFilter = THREE.LinearFilter;
-  startTexture.needsUpdate = true;
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -1031,11 +1025,11 @@ function ring1(url, size, width, x, y, z) {
   const starBall = new THREE.Mesh(
     r,
     new THREE.MeshBasicMaterial({
-      color: 0xccbbaa,
+      color: 0x887755,
       map: startTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: isMobileDevice ? 0.75 : 0.35,
+      opacity: 0.35,
       blending: THREE.AdditiveBlending,
     }),
   );
