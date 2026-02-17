@@ -1740,10 +1740,7 @@ function animate() {
     starGeometry.attributes.position.needsUpdate = true;
     starGeometry.attributes.pointSize.needsUpdate = true;
     starGeometry.attributes.pointAlpha.needsUpdate = true;
-    meteorSystem.updateMeteorites(meteorites, {
-      maxCount: 10,
-      spawnSize: 8,
-    });
+    meteorSystem.updateMeteorites(meteorites, 20, 15);
     count += 0.0005 * fpsScale;
 
     operation_method_1(delta);
