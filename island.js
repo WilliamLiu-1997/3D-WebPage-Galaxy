@@ -75,11 +75,10 @@ const STAR_GROUP_SIZE = 50;
 const STAR_POINT_BASE_SIZE = 10;
 const STAR_MOVE_DIVISOR = 10;
 const STAR_COLOR_TINTS = [
-  [1.0, 0.5, 0.5],
-  [0.5, 0.5, 1.0],
-  [0.5, 0.5, 1.0],
-  [0.5, 0.5, 1.0],
-  [1.0, 1.0, 0.5],
+  [0.7, 0.7, 1.0],
+  [0.7, 0.7, 1.0],
+  [0.7, 0.7, 1.0],
+  [1.0, 1.0, 0.7],
 ];
 const STAR_FADE_START_DISTANCE = 1000;
 const STAR_FADE_END_DISTANCE = 800;
@@ -160,20 +159,9 @@ function buildRandomStarGroupOrder(count) {
 function assignRandomBrightStarColor(colors, colorIndex) {
   const tint =
     STAR_COLOR_TINTS[Math.floor(Math.random() * STAR_COLOR_TINTS.length)];
-  const tintMix = 0.12 + Math.random() * 0.22;
-  const brightness = 0.95 + Math.random() * 0.05;
-  colors[colorIndex] = Math.min(
-    1,
-    (1 - tintMix + tint[0] * tintMix) * brightness,
-  );
-  colors[colorIndex + 1] = Math.min(
-    1,
-    (1 - tintMix + tint[1] * tintMix) * brightness,
-  );
-  colors[colorIndex + 2] = Math.min(
-    1,
-    (1 - tintMix + tint[2] * tintMix) * brightness,
-  );
+  colors[colorIndex] = tint[0] + (1 - tint[0]) * Math.random();
+  colors[colorIndex + 1] = tint[1] + (1 - tint[1]) * Math.random();
+  colors[colorIndex + 2] = tint[2] + (1 - tint[2]) * Math.random();
 }
 
 const ufolight = textureLoader.load('img/ufo_light1.png');
