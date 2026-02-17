@@ -220,7 +220,7 @@ bumpTexture.wrapS = bumpTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const bumpSpeed = 0.025;
 // magnitude of normal displacement
-const bumpScale = 2;
+const bumpScale = 0.5;
 const noiseRepeat = 60;
 const bumpRepeat = 30;
 
@@ -228,6 +228,9 @@ const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(
   navigator.userAgent || '',
 );
 let sunShaderUniforms = null;
+const SUN_BASE_SIZE = 100;
+const SUN_RADIUS = SUN_BASE_SIZE * 0.8;
+const SUN_EDGE_GLOW_RADIUS_SCALE = 1.2;
 
 function createSunShaderUniforms(mobileSafeMode = false) {
   const qualityScale = mobileSafeMode ? 0.55 : 1;
@@ -285,6 +288,79 @@ function createSunMaterialForRenderer(rendererRef) {
   };
 }
 
+function createSunEdgeGlow() {
+  const sunGlowMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      glowColor: { value: new THREE.Color(0xff9a27) },
+      peakPosition: { value: 0.2 },
+      solidEnd: { value: 0.21 },
+      glowOpacity: { value: 1.0 },
+      innerRadiusRatio: { value: 1 / SUN_EDGE_GLOW_RADIUS_SCALE },
+      outerFadePower: { value: 2.5 },
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vViewPosition;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = -mvPosition.xyz;
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 glowColor;
+      uniform float peakPosition;
+      uniform float solidEnd;
+      uniform float glowOpacity;
+      uniform float innerRadiusRatio;
+      uniform float outerFadePower;
+      varying vec3 vNormal;
+      varying vec3 vViewPosition;
+      void main() {
+        vec3 n = normalize(vNormal);
+        vec3 v = normalize(vViewPosition);
+        float cosView = clamp(abs(dot(n, v)), 0.0, 1.0);
+        float radial = sqrt(max(1.0 - cosView * cosView, 0.0));
+        float innerRatio = clamp(innerRadiusRatio, 0.0, 0.9999);
+        float haloT = clamp(
+          (radial - innerRatio) / max(1.0 - innerRatio, 0.0001),
+          0.0,
+          1.0
+        );
+        float profile;
+        if (haloT <= peakPosition) {
+          profile = haloT / max(peakPosition, 0.0001);
+        } else if (haloT <= solidEnd) {
+          profile = 1.0;
+        } else {
+          float outerT = (haloT - solidEnd) / max(1.0 - solidEnd, 0.0001);
+          profile = pow(max(1.0 - outerT, 0.0), outerFadePower);
+        }
+        float alpha = clamp(profile, 0.0, 1.0) * glowOpacity;
+        if (alpha <= 0.001) discard;
+        gl_FragColor = vec4(glowColor, alpha);
+      }
+    `,
+    side: THREE.BackSide,
+    blending: THREE.NormalBlending,
+    transparent: true,
+    depthWrite: false,
+  });
+
+  const glowMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(
+      SUN_RADIUS * SUN_EDGE_GLOW_RADIUS_SCALE * 0.96,
+      72,
+      72,
+    ),
+    sunGlowMaterial,
+  );
+  glowMesh.name = 'sunEdgeGlow';
+  glowMesh.userData.ignoreClickFollow = true;
+  return glowMesh;
+}
+
 const sunlight = textureLoader.load('img/lensflare2.png');
 
 const ufolight = textureLoader.load('img/ufo_light1.png');
@@ -292,6 +368,7 @@ let sunbackground;
 let sunbackground1;
 let sunbackground2;
 let sunbackground3;
+let sunEdgeGlow;
 let sun;
 let star1;
 let star2;
@@ -336,7 +413,16 @@ if (add_solar) {
   sunbackground1 = new THREE.Sprite(sunmaterial1);
   sunbackground1.position.set(0, 0, 0);
   sunbackground1.scale.set(500, 400, 1);
-  sun = obj_lighting('./texture/fluid1-original.png', 100, 0, 0, 0, 'sun');
+  sun = obj_lighting(
+    './texture/fluid1-original.png',
+    SUN_BASE_SIZE,
+    0,
+    0,
+    0,
+    'sun',
+  );
+  sunEdgeGlow = createSunEdgeGlow();
+  sunEdgeGlow.position.set(0, 0, 0);
   star1 = obj('./texture/j022.jpg', 4, 180, 0, 0, 'star1');
   star2 = obj('./texture/j028.jpg', 8, 240, 0, 0, 'star2');
   star3 = obj(
@@ -794,6 +880,7 @@ function init() {
     all_obj4.add(sunbackground1);
     all_obj4.add(sunbackground2);
     all_obj4.add(sunbackground3);
+    all_obj4.add(sunEdgeGlow);
 
     all_obj3.add(sun);
     all_obj3.add(star1);

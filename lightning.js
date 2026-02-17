@@ -361,7 +361,7 @@ function createSplashDropTexture() {
 }
 
 function createSplashRingTexture() {
-  const size = 16;
+  const size = 32;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
