@@ -220,7 +220,7 @@ bumpTexture.wrapS = bumpTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const bumpSpeed = 0.025;
 // magnitude of normal displacement
-const bumpScale = 2.5;
+const bumpScale = 2;
 const noiseRepeat = 60;
 const bumpRepeat = 30;
 
@@ -787,7 +787,7 @@ function init() {
     light.shadow.mapSize.width = 4096;
     light.shadow.mapSize.height = 4096;
     light.shadow.camera.far = 2500 * 1 /*ufo_scale/100*/;
-    light.shadow.camera.near = 1 * 1 /*ufo_scale/100*/;
+    light.shadow.camera.near = 100 * 1 /*ufo_scale/100*/;
     all_obj4.add(light);
 
     all_obj4.add(sunbackground);
