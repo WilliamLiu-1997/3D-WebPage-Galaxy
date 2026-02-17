@@ -423,7 +423,7 @@ if (add_solar) {
   );
   starlite3 = obj('./texture/j029.jpg', 1, 349, 200 + 21, 0, 'starlite3');
   star4 = obj('./texture/saturnmap.jpg', 11, 780, 0, 0, 'star4');
-  ring4 = ring1('./texture/ring1.png', 14, 15, 780, 0, 0);
+  ring4 = ring1('./texture/ring1.gif', 14, 15, 780, 0, 0);
   star5 = obj('./texture/j006.jpg', 6, 420, 0, 0, 'star5');
   star6 = obj('./texture/TDVC_Jupiter_Texture_Map.jpg', 25, 600, 0, 0, 'star6');
   starlite6 = obj('./texture/opura1.jpg', 0.8, 650, 200 + 40, 0, 'starlite6');
@@ -1015,6 +1015,12 @@ function obj(url, size, x, y, z, name) {
 function ring1(url, size, width, x, y, z) {
   size = size * 0.8;
   const startTexture = textureLoader.load(url);
+  if (isMobileDevice) {
+    startTexture.generateMipmaps = false;
+    startTexture.minFilter = THREE.LinearFilter;
+  }
+  startTexture.magFilter = THREE.LinearFilter;
+  startTexture.needsUpdate = true;
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -1025,10 +1031,12 @@ function ring1(url, size, width, x, y, z) {
   const starBall = new THREE.Mesh(
     r,
     new THREE.MeshBasicMaterial({
+      color: 0xccbbaa,
       map: startTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.2,
+      opacity: isMobileDevice ? 0.75 : 0.35,
+      blending: THREE.AdditiveBlending,
     }),
   );
   starBall.rotation.x = -Math.PI / 2;
@@ -1053,6 +1061,7 @@ function ring2(url, size, width, x, y, z) {
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.1,
+      blending: THREE.AdditiveBlending,
     }),
   );
   starBall.rotation.x = -Math.PI / 2;
