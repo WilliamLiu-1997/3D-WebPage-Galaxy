@@ -63,9 +63,14 @@ let particles,
   star_dsz,
   star_s_speed,
   count = 0;
+const CLOUD_GROUP_SIZE = 10;
+let cloudGroupCount = 0;
 
-let rain, rainGeo;
-const rainCount = 100000;
+let rain, rainGeo, rainGroupOffsets;
+const RAIN_TOTAL_DROPS = 100000;
+const RAIN_DROP_GROUP_SIZE = 100;
+const rainCount = RAIN_TOTAL_DROPS;
+const RAIN_GROUP_COUNT = Math.ceil(rainCount / RAIN_DROP_GROUP_SIZE);
 const RAIN_RESET_Y = 420;
 const RAIN_AREA_HALF = 50;
 const RAIN_WIND_X = 0.015;
@@ -88,6 +93,14 @@ function setRainSpeed(multiplier) {
   rainSpeedMultiplier = clamped;
 
   return rainSpeedMultiplier;
+}
+
+function isFollowTargetObject(object) {
+  if (!object) return false;
+  if (object.userData && object.userData.ignoreClickFollow) return false;
+  if (object.type === 'Sprite' || object.type === 'Points') return false;
+  if (object.name === 'ring' || object.name === 'Sky') return false;
+  return true;
 }
 
 if (typeof window !== 'undefined') {
@@ -399,18 +412,48 @@ function init() {
         particle.scale.set(scale_cloud, scale_cloud);
       }
 
+      particle.userData.ignoreClickFollow = true;
       scene.add(particle);
     }
   }
+  cloudGroupCount = Math.ceil(particles.length / CLOUD_GROUP_SIZE);
 
   rainGeo = new THREE.BufferGeometry();
   const rainPositions = new Float32Array(rainCount * 3);
-  for (i = 0; i < rainCount; i++) {
-    const idx = i * 3;
-    rainPositions[idx] = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
-    rainPositions[idx + 1] = Math.random() * RAIN_RESET_Y;
-    rainPositions[idx + 2] =
-      rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+  rainGroupOffsets = new Float32Array(rainCount * 3);
+  for (let groupIndex = 0; groupIndex < RAIN_GROUP_COUNT; groupIndex++) {
+    const leaderDropIndex = groupIndex * RAIN_DROP_GROUP_SIZE;
+    if (leaderDropIndex >= rainCount) break;
+    const leaderIdx = leaderDropIndex * 3;
+
+    const leaderX = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+    const leaderY = Math.random() * RAIN_RESET_Y;
+    const leaderZ = rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+
+    rainGroupOffsets[leaderIdx] = 0;
+    rainGroupOffsets[leaderIdx + 1] = 0;
+    rainGroupOffsets[leaderIdx + 2] = 0;
+    rainPositions[leaderIdx] = leaderX;
+    rainPositions[leaderIdx + 1] = leaderY;
+    rainPositions[leaderIdx + 2] = leaderZ;
+
+    for (
+      let member = 1;
+      member < RAIN_DROP_GROUP_SIZE && leaderDropIndex + member < rainCount;
+      member++
+    ) {
+      const dropIndex = leaderDropIndex + member;
+      const idx = dropIndex * 3;
+      const memberX = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+      const memberY = Math.random() * RAIN_RESET_Y;
+      const memberZ = rainCenterZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+      rainGroupOffsets[idx] = memberX - leaderX;
+      rainGroupOffsets[idx + 1] = memberY - leaderY;
+      rainGroupOffsets[idx + 2] = memberZ - leaderZ;
+      rainPositions[idx] = memberX;
+      rainPositions[idx + 1] = memberY;
+      rainPositions[idx + 2] = memberZ;
+    }
   }
   rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
   const rainMaterial = new THREE.PointsMaterial({
@@ -426,6 +469,7 @@ function init() {
   });
   rain = new THREE.Points(rainGeo, rainMaterial);
   rain.frustumCulled = false;
+  rain.userData.ignoreClickFollow = true;
   scene.add(rain);
 
   MeshWater.rotation.x = -Math.PI / 2;
@@ -879,11 +923,7 @@ function onMouseClick(event) {
     const intersects = raycaster1.intersectObjects(scene.children, true);
     let hitIndex = -1;
     for (let i = 0; i < intersects.length; i++) {
-      if (
-        intersects[i].object.type != 'Sprite' &&
-        intersects[i].object.name != 'ring' &&
-        intersects[i].object.name != 'Sky'
-      ) {
+      if (isFollowTargetObject(intersects[i].object)) {
         hitIndex = i;
         break;
       }
@@ -1237,14 +1277,39 @@ function animate() {
     //stats.update();
 
     const cloudCount = count * 10;
-    for (let i = 0; i < particles.length; i++) {
-      particle = particles[i];
-      particle.position.x +=
-        (star_dx[i] * Math.cos(star_dsx[i] * cloudCount)) / 2;
-      particle.position.y +=
-        (star_dy[i] * Math.cos(star_dsy[i] * cloudCount)) / 200;
-      particle.position.z +=
-        (star_dz[i] * Math.cos(star_dsz[i] * cloudCount)) / 2;
+    for (let groupIndex = 0; groupIndex < cloudGroupCount; groupIndex++) {
+      const leaderIndex = groupIndex * CLOUD_GROUP_SIZE;
+      if (leaderIndex >= particles.length) break;
+
+      const leaderCloud = particles[leaderIndex];
+      const oldX = leaderCloud.position.x;
+      const oldY = leaderCloud.position.y;
+      const oldZ = leaderCloud.position.z;
+
+      leaderCloud.position.x +=
+        (star_dx[leaderIndex] * Math.cos(star_dsx[leaderIndex] * cloudCount)) /
+        2;
+      leaderCloud.position.y +=
+        (star_dy[leaderIndex] * Math.cos(star_dsy[leaderIndex] * cloudCount)) /
+        200;
+      leaderCloud.position.z +=
+        (star_dz[leaderIndex] * Math.cos(star_dsz[leaderIndex] * cloudCount)) /
+        2;
+
+      const deltaX = leaderCloud.position.x - oldX;
+      const deltaY = leaderCloud.position.y - oldY;
+      const deltaZ = leaderCloud.position.z - oldZ;
+
+      for (
+        let member = 1;
+        member < CLOUD_GROUP_SIZE && leaderIndex + member < particles.length;
+        member++
+      ) {
+        const memberCloud = particles[leaderIndex + member];
+        memberCloud.position.x += deltaX;
+        memberCloud.position.y += deltaY;
+        memberCloud.position.z += deltaZ;
+      }
     }
     count += 0.0005 * fpsScale;
 
@@ -1258,39 +1323,80 @@ function animate() {
     const ufoZ = ufo.position.z;
     const centerDx = centerX - rainCenterX;
     const centerDz = centerZ - rainCenterZ;
-    for (let dropIndex = 0, i = 0; dropIndex < rainCount; dropIndex++, i += 3) {
-      // Keep rain field centered around camera forward direction.
-      positions[i] += centerDx;
-      positions[i + 2] += centerDz;
-      positions[i + 1] -= rainSpeedMultiplier;
-      positions[i] += RAIN_WIND_X * rainSpeedMultiplier;
-      positions[i + 2] += RAIN_WIND_Z * rainSpeedMultiplier;
+    for (let groupIndex = 0; groupIndex < RAIN_GROUP_COUNT; groupIndex++) {
+      const leaderDropIndex = groupIndex * RAIN_DROP_GROUP_SIZE;
+      if (leaderDropIndex >= rainCount) break;
+      const leaderIdx = leaderDropIndex * 3;
+      const oldLeaderX = positions[leaderIdx];
+      const oldLeaderY = positions[leaderIdx + 1];
+      const oldLeaderZ = positions[leaderIdx + 2];
 
-      const duX = positions[i] - ufoX;
-      const duZ = positions[i + 2] - ufoZ;
+      // Move leader first; group members stay bound by shared delta.
+      positions[leaderIdx] += centerDx;
+      positions[leaderIdx + 2] += centerDz;
+      positions[leaderIdx + 1] -= rainSpeedMultiplier;
+      positions[leaderIdx] += RAIN_WIND_X * rainSpeedMultiplier;
+      positions[leaderIdx + 2] += RAIN_WIND_Z * rainSpeedMultiplier;
+
+      const duX = positions[leaderIdx] - ufoX;
+      const duZ = positions[leaderIdx + 2] - ufoZ;
       const insideUfoClearZone =
         duX * duX + duZ * duZ < RAIN_UFO_CLEAR_RADIUS_SQ;
 
+      let groupRespawned = false;
       if (
         insideUfoClearZone ||
-        positions[i + 1] < 0 ||
-        positions[i] < centerX - RAIN_AREA_HALF ||
-        positions[i] > centerX + RAIN_AREA_HALF ||
-        positions[i + 2] < centerZ - RAIN_AREA_HALF ||
-        positions[i + 2] > centerZ + RAIN_AREA_HALF
+        positions[leaderIdx + 1] < 0 ||
+        positions[leaderIdx] < centerX - RAIN_AREA_HALF ||
+        positions[leaderIdx] > centerX + RAIN_AREA_HALF ||
+        positions[leaderIdx + 2] < centerZ - RAIN_AREA_HALF ||
+        positions[leaderIdx + 2] > centerZ + RAIN_AREA_HALF
       ) {
+        groupRespawned = true;
         if (insideUfoClearZone) {
           const angle = Math.random() * Math.PI * 2;
           const radius =
             RAIN_UFO_CLEAR_RADIUS +
             Math.random() * (RAIN_AREA_HALF - RAIN_UFO_CLEAR_RADIUS);
-          positions[i] = ufoX + Math.cos(angle) * radius;
-          positions[i + 2] = ufoZ + Math.sin(angle) * radius;
+          positions[leaderIdx] = ufoX + Math.cos(angle) * radius;
+          positions[leaderIdx + 2] = ufoZ + Math.sin(angle) * radius;
         } else {
-          positions[i] = centerX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
-          positions[i + 2] = centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          positions[leaderIdx] =
+            centerX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          positions[leaderIdx + 2] =
+            centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
         }
-        positions[i + 1] = RAIN_RESET_Y;
+        positions[leaderIdx + 1] = RAIN_RESET_Y;
+        rainGroupOffsets[leaderIdx] = 0;
+        rainGroupOffsets[leaderIdx + 1] = 0;
+        rainGroupOffsets[leaderIdx + 2] = 0;
+      }
+
+      const deltaX = positions[leaderIdx] - oldLeaderX;
+      const deltaY = positions[leaderIdx + 1] - oldLeaderY;
+      const deltaZ = positions[leaderIdx + 2] - oldLeaderZ;
+
+      for (
+        let member = 1;
+        member < RAIN_DROP_GROUP_SIZE && leaderDropIndex + member < rainCount;
+        member++
+      ) {
+        const memberIdx = (leaderDropIndex + member) * 3;
+        if (groupRespawned) {
+          const memberX = centerX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          const memberY = Math.random() * RAIN_RESET_Y;
+          const memberZ = centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
+          rainGroupOffsets[memberIdx] = memberX - positions[leaderIdx];
+          rainGroupOffsets[memberIdx + 1] = memberY - positions[leaderIdx + 1];
+          rainGroupOffsets[memberIdx + 2] = memberZ - positions[leaderIdx + 2];
+          positions[memberIdx] = memberX;
+          positions[memberIdx + 1] = memberY;
+          positions[memberIdx + 2] = memberZ;
+        } else {
+          positions[memberIdx] += deltaX;
+          positions[memberIdx + 1] += deltaY;
+          positions[memberIdx + 2] += deltaZ;
+        }
       }
     }
     rainCenterX = centerX;

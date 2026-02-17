@@ -62,20 +62,42 @@ let chasingFrame = 50;
 let safe_dis = 2.25;
 const hit_open = true;
 
-const SEPARATION = 250,
-  AMOUNTX = 12,
-  AMOUNTY = 4,
-  AMOUNTZ = 12;
-let particles,
-  particle,
-  star_dx,
-  star_dy,
-  star_dz,
-  star_dsx,
-  star_dsy,
-  star_dsz,
-  star_s_speed,
-  count = 0;
+const SEPARATION = 140,
+  AMOUNTX = 24,
+  AMOUNTY = 8,
+  AMOUNTZ = 24;
+let starCount = 0;
+let starGeometry;
+let starPositions;
+let starSizes;
+let starAlphas;
+let starColors;
+let star_dx, star_dy, star_dz, star_dsx, star_dsy, star_dsz, star_s_speed;
+let count = 0;
+const STAR_GROUP_SIZE = 50;
+const STAR_POINT_BASE_SIZE = 10;
+const STAR_MOVE_DIVISOR = 10;
+const STAR_COLOR_TINTS = [
+  [1.0, 0.5, 0.5],
+  [0.5, 0.5, 1.0],
+  [0.5, 0.5, 1.0],
+  [0.5, 0.5, 1.0],
+  [1.0, 1.0, 0.5],
+];
+const STAR_FADE_START_DISTANCE = 1000;
+const STAR_FADE_END_DISTANCE = 800;
+const STAR_FADE_RANGE = STAR_FADE_START_DISTANCE - STAR_FADE_END_DISTANCE;
+const STAR_FADE_START_DISTANCE_SQ =
+  STAR_FADE_START_DISTANCE * STAR_FADE_START_DISTANCE;
+const STAR_FADE_END_DISTANCE_SQ =
+  STAR_FADE_END_DISTANCE * STAR_FADE_END_DISTANCE;
+const ALIEN_BASE_SEA_LEVEL_Y = -504;
+const STAR_CONE_CENTER_HEIGHT_FROM_SEA = 500;
+const STAR_CONE_EDGE_HEIGHT_FROM_SEA = 50;
+const STAR_CONE_EDGE_RADIUS =
+  Math.max(AMOUNTX, AMOUNTZ) * (SEPARATION / 2) + SEPARATION * 8;
+let starGroupCount = 0;
+let starGroupOrder;
 
 let city1;
 
@@ -109,6 +131,56 @@ const raycaster = new THREE.Raycaster();
 const raycaster1 = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let selected_object = false;
+
+function isFollowTargetObject(object) {
+  if (!object) return false;
+  if (object.userData && object.userData.ignoreClickFollow) return false;
+  if (object.type === 'Sprite' || object.type === 'Points') return false;
+  if (object.name === 'ring' || object.name === 'Sky') return false;
+  return true;
+}
+
+function getStarConeMinY(x, z) {
+  const radialDistance = Math.sqrt(x * x + z * z);
+  const t = Math.min(radialDistance / STAR_CONE_EDGE_RADIUS, 1);
+  const minHeightFromSea =
+    STAR_CONE_CENTER_HEIGHT_FROM_SEA +
+    (STAR_CONE_EDGE_HEIGHT_FROM_SEA - STAR_CONE_CENTER_HEIGHT_FROM_SEA) * t;
+  return ALIEN_BASE_SEA_LEVEL_Y + minHeightFromSea;
+}
+
+function buildRandomStarGroupOrder(count) {
+  const order = new Uint32Array(count);
+  for (let i = 0; i < count; i++) {
+    order[i] = i;
+  }
+  for (let i = count - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = order[i];
+    order[i] = order[j];
+    order[j] = temp;
+  }
+  return order;
+}
+
+function assignRandomBrightStarColor(colors, colorIndex) {
+  const tint =
+    STAR_COLOR_TINTS[Math.floor(Math.random() * STAR_COLOR_TINTS.length)];
+  const tintMix = 0.12 + Math.random() * 0.22;
+  const brightness = 0.95 + Math.random() * 0.05;
+  colors[colorIndex] = Math.min(
+    1,
+    (1 - tintMix + tint[0] * tintMix) * brightness,
+  );
+  colors[colorIndex + 1] = Math.min(
+    1,
+    (1 - tintMix + tint[1] * tintMix) * brightness,
+  );
+  colors[colorIndex + 2] = Math.min(
+    1,
+    (1 - tintMix + tint[2] * tintMix) * brightness,
+  );
+}
 
 const env_light = new THREE.AmbientLight(0x282930);
 
@@ -246,27 +318,62 @@ function init() {
     10000, // far
   );
 
-  particles = new Array();
-  star_dx = new Array();
-  star_dy = new Array();
-  star_dz = new Array();
-  star_dsx = new Array();
-  star_dsy = new Array();
-  star_dsz = new Array();
-  star_s_speed = new Array();
-  const material = new THREE.SpriteMaterial({
+  starCount = AMOUNTX * AMOUNTY * AMOUNTZ;
+  starPositions = new Float32Array(starCount * 3);
+  star_dx = new Float32Array(starCount);
+  star_dy = new Float32Array(starCount);
+  star_dz = new Float32Array(starCount);
+  star_dsx = new Float32Array(starCount);
+  star_dsy = new Float32Array(starCount);
+  star_dsz = new Float32Array(starCount);
+  star_s_speed = new Float32Array(starCount);
+  starSizes = new Float32Array(starCount);
+  starAlphas = new Float32Array(starCount);
+  starColors = new Float32Array(starCount * 3);
+  const starPointMaterial = new THREE.PointsMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    map: starball,
+    color: 0xffffff,
+    vertexColors: true,
+    size: STAR_POINT_BASE_SIZE,
+    sizeAttenuation: true,
+    depthWrite: false,
+    alphaTest: 0.01,
+  });
+  starPointMaterial.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        'uniform float size;',
+        'uniform float size;\nattribute float pointSize;\nattribute float pointAlpha;\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'gl_PointSize = size;',
+        'gl_PointSize = pointSize;\nvPointAlpha = pointAlpha;',
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying float vPointAlpha;',
+      )
+      .replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( diffuse, opacity * vPointAlpha );',
+      );
+  };
+  starPointMaterial.needsUpdate = true;
+  const whiteLightMaterial = new THREE.SpriteMaterial({
     transparent: true,
     blending: THREE.AdditiveBlending,
     map: starball,
     color: 0xffffff,
   });
-  const littlestar = new THREE.Sprite(material);
+  const littlestar = new THREE.Sprite(whiteLightMaterial);
   littlestar.renderOrder = 2;
   let i = 0;
   for (let ix = 0; ix < AMOUNTX; ix++) {
     for (let iy = 0; iy < AMOUNTY; iy++) {
       for (let iz = 0; iz < AMOUNTZ; iz++) {
-        particle = particles[i] = littlestar.clone();
         star_dx[i] = Math.random() - 0.5;
         star_dy[i] = Math.random() - 0.5;
         star_dz[i] = Math.random() - 0.5;
@@ -274,21 +381,51 @@ function init() {
         star_dsy[i] = Math.random() - 0.5;
         star_dsz[i] = Math.random() - 0.5;
         star_s_speed[i] = Math.random() - 0.5;
-        i++;
-        particle.position.x =
+        starSizes[i] = STAR_POINT_BASE_SIZE;
+        starAlphas[i] = 1;
+        assignRandomBrightStarColor(starColors, i * 3);
+        const positionIndex = i * 3;
+        const initialStarX =
           ix * SEPARATION -
           (AMOUNTX * SEPARATION) / 2 +
           (Math.random() - 0.5) * SEPARATION * 16;
-        particle.position.y =
-          (iy * SEPARATION) / 2 + (Math.random() - 0.5) * SEPARATION * 16;
-        particle.position.z =
+        const initialStarZ =
           iz * SEPARATION -
           (AMOUNTZ * SEPARATION) / 2 +
           (Math.random() - 0.5) * SEPARATION * 16;
-        scene.add(particle);
+        const initialStarY =
+          (iy * SEPARATION) / 2 + (Math.random() - 0.5) * SEPARATION * 16;
+        starPositions[positionIndex] = initialStarX;
+        starPositions[positionIndex + 1] = Math.max(
+          initialStarY,
+          getStarConeMinY(initialStarX, initialStarZ),
+        );
+        starPositions[positionIndex + 2] = initialStarZ;
+        i++;
       }
     }
   }
+  starCount = i;
+  starGroupOrder = buildRandomStarGroupOrder(starCount);
+  starGeometry = new THREE.BufferGeometry();
+  const starPositionAttribute = new THREE.BufferAttribute(starPositions, 3);
+  starPositionAttribute.setUsage(THREE.DynamicDrawUsage);
+  const starSizeAttribute = new THREE.BufferAttribute(starSizes, 1);
+  starSizeAttribute.setUsage(THREE.DynamicDrawUsage);
+  const starAlphaAttribute = new THREE.BufferAttribute(starAlphas, 1);
+  starAlphaAttribute.setUsage(THREE.DynamicDrawUsage);
+  const starColorAttribute = new THREE.BufferAttribute(starColors, 3);
+  starGeometry.setAttribute('position', starPositionAttribute);
+  starGeometry.setAttribute('pointSize', starSizeAttribute);
+  starGeometry.setAttribute('pointAlpha', starAlphaAttribute);
+  starGeometry.setAttribute('color', starColorAttribute);
+  starGeometry.computeBoundingSphere();
+  const starPoints = new THREE.Points(starGeometry, starPointMaterial);
+  starPoints.renderOrder = 2;
+  starPoints.userData.ignoreClickFollow = true;
+  starPoints.frustumCulled = false;
+  scene.add(starPoints);
+  starGroupCount = Math.ceil(starCount / STAR_GROUP_SIZE);
 
   const geometryGround = new THREE.CircleGeometry(5000, 100, 100);
   geometryGround.rotateX(Math.PI / 2);
@@ -309,7 +446,7 @@ function init() {
   all_obj4.add(MeshGround);
 
   MeshWater.rotation.x = -Math.PI / 2;
-  MeshWater.position.set(0, -504, 0);
+  MeshWater.position.set(0, ALIEN_BASE_SEA_LEVEL_Y, 0);
   MeshWater.name = 'Water';
   MeshWater.receiveShadow = true;
   MeshWater.castShadow = false;
@@ -971,11 +1108,7 @@ function onMouseClick(event) {
     const intersects = raycaster1.intersectObjects(scene.children, true);
     let hitIndex = -1;
     for (let i = 0; i < intersects.length; i++) {
-      if (
-        intersects[i].object.type != 'Sprite' &&
-        intersects[i].object.name != 'ring' &&
-        intersects[i].object.name != 'Sky'
-      ) {
+      if (isFollowTargetObject(intersects[i].object)) {
         hitIndex = i;
         break;
       }
@@ -1416,14 +1549,82 @@ function animate() {
     //Ball Maving
 
     const scaleCount = count * 200;
-    for (let i = 0; i < particles.length; i++) {
-      particle = particles[i];
-      particle.scale.x = particle.scale.y =
-        Math.sin(star_s_speed[i] * scaleCount) + 3;
-      particle.position.x += (star_dx[i] * Math.cos(star_dsx[i] * count)) / 6;
-      particle.position.y += (star_dy[i] * Math.cos(star_dsy[i] * count)) / 6;
-      particle.position.z += (star_dz[i] * Math.cos(star_dsz[i] * count)) / 6;
+    const ufoX = ufo.position.x;
+    const ufoY = ufo.position.y;
+    const ufoZ = ufo.position.z;
+    for (let groupIndex = 0; groupIndex < starGroupCount; groupIndex++) {
+      const groupStart = groupIndex * STAR_GROUP_SIZE;
+      if (groupStart >= starCount) break;
+      const leaderIndex = starGroupOrder[groupStart];
+      const leaderOffset = leaderIndex * 3;
+      const oldSize = starSizes[leaderIndex];
+      const targetSize =
+        ((Math.sin(star_s_speed[leaderIndex] * scaleCount) + 3) *
+          STAR_POINT_BASE_SIZE) /
+        3;
+      const deltaX =
+        (star_dx[leaderIndex] * Math.cos(star_dsx[leaderIndex] * count)) /
+        STAR_MOVE_DIVISOR;
+      const deltaY =
+        (star_dy[leaderIndex] * Math.cos(star_dsy[leaderIndex] * count)) /
+        STAR_MOVE_DIVISOR;
+      const deltaZ =
+        (star_dz[leaderIndex] * Math.cos(star_dsz[leaderIndex] * count)) /
+        STAR_MOVE_DIVISOR;
+      starSizes[leaderIndex] = targetSize;
+      starPositions[leaderOffset] += deltaX;
+      starPositions[leaderOffset + 1] += deltaY;
+      starPositions[leaderOffset + 2] += deltaZ;
+      const leaderDxUfo = starPositions[leaderOffset] - ufoX;
+      const leaderDyUfo = starPositions[leaderOffset + 1] - ufoY;
+      const leaderDzUfo = starPositions[leaderOffset + 2] - ufoZ;
+      const leaderDistSq =
+        leaderDxUfo * leaderDxUfo +
+        leaderDyUfo * leaderDyUfo +
+        leaderDzUfo * leaderDzUfo;
+      if (leaderDistSq <= STAR_FADE_END_DISTANCE_SQ) {
+        starAlphas[leaderIndex] = 0;
+      } else if (leaderDistSq >= STAR_FADE_START_DISTANCE_SQ) {
+        starAlphas[leaderIndex] = 1;
+      } else {
+        const leaderDist = Math.sqrt(leaderDistSq);
+        starAlphas[leaderIndex] =
+          (leaderDist - STAR_FADE_END_DISTANCE) / STAR_FADE_RANGE;
+      }
+      const deltaSize = targetSize - oldSize;
+
+      for (
+        let member = 1;
+        member < STAR_GROUP_SIZE && groupStart + member < starCount;
+        member++
+      ) {
+        const memberIndex = starGroupOrder[groupStart + member];
+        const memberOffset = memberIndex * 3;
+        starSizes[memberIndex] += deltaSize;
+        starPositions[memberOffset] += deltaX;
+        starPositions[memberOffset + 1] += deltaY;
+        starPositions[memberOffset + 2] += deltaZ;
+        const memberDxUfo = starPositions[memberOffset] - ufoX;
+        const memberDyUfo = starPositions[memberOffset + 1] - ufoY;
+        const memberDzUfo = starPositions[memberOffset + 2] - ufoZ;
+        const memberDistSq =
+          memberDxUfo * memberDxUfo +
+          memberDyUfo * memberDyUfo +
+          memberDzUfo * memberDzUfo;
+        if (memberDistSq <= STAR_FADE_END_DISTANCE_SQ) {
+          starAlphas[memberIndex] = 0;
+        } else if (memberDistSq >= STAR_FADE_START_DISTANCE_SQ) {
+          starAlphas[memberIndex] = 1;
+        } else {
+          const memberDist = Math.sqrt(memberDistSq);
+          starAlphas[memberIndex] =
+            (memberDist - STAR_FADE_END_DISTANCE) / STAR_FADE_RANGE;
+        }
+      }
     }
+    starGeometry.attributes.position.needsUpdate = true;
+    starGeometry.attributes.pointSize.needsUpdate = true;
+    starGeometry.attributes.pointAlpha.needsUpdate = true;
     count += 0.0005 * fpsScale;
 
     operation_method_1(delta);
