@@ -25,11 +25,7 @@ https://3-d-web-page-galaxy.vercel.app/
 
 ## Local Development
 
-Use Node.js `24.x` (see `.nvmrc`).
-
 ```bash
 npm install
 npm run dev
 ```
-
-Then open the page shown by Vite (default opens `solar.html`).
