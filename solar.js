@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import {
@@ -27,7 +27,7 @@ const {
   targetFps: TARGET_FPS,
   frameInterval,
   fpsScale,
-} = createFrameConfig(120);
+} = createFrameConfig(60);
 let frameAccumulator = 0;
 let scene;
 let camera;
@@ -150,9 +150,7 @@ noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
 const noiseScale = 0.0025;
 
 // texture to additively blend with base image texture
-const blendTexture = textureLoader.load(
-  './texture/gstar-original.jpg',
-);
+const blendTexture = textureLoader.load('./texture/gstar-original.jpg');
 blendTexture.wrapS = blendTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const blendSpeed = 0.01;
@@ -1509,17 +1507,18 @@ function generate_meteoriteObject3D(size) {
   x = (Math.random() - 0.5) * METEOR_MAX_DISTANCE;
   y = Math.random() * 4000 - 500;
   z =
-    Math.sqrt(
-      METEOR_MAX_DISTANCE_SQ - x * x - y * y,
-    ) * (Math.random() > 0.5 ? 1 : -1);
+    Math.sqrt(METEOR_MAX_DISTANCE_SQ - x * x - y * y) *
+    (Math.random() > 0.5 ? 1 : -1);
 
   const v1 = new THREE.Vector3();
   const toCenter = new THREE.Vector3();
   let centerDot = 0;
   while (true) {
-    v1
-      .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
-      .normalize();
+    v1.set(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+    ).normalize();
     toCenter.set(-x, -y, -z).normalize();
     centerDot = toCenter.dot(v1);
     if (

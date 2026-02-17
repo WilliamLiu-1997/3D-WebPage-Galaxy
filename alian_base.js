@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
@@ -16,7 +16,7 @@ const {
   targetFps: TARGET_FPS,
   frameInterval,
   fpsScale,
-} = createFrameConfig(120);
+} = createFrameConfig(60);
 let frameAccumulator = 0;
 
 let totalLoadItems = 0;
@@ -689,9 +689,7 @@ function init() {
   if (add_base) all_obj2.add(city1);
   all_obj2.position.y += 50;
 
-  const protection_texture = textureLoader.load(
-    'texture/shield4.png',
-  );
+  const protection_texture = textureLoader.load('texture/shield4.png');
   protection_texture.wrapS = THREE.RepeatWrapping;
   protection_texture.wrapT = THREE.RepeatWrapping;
   protection_texture.repeat.set(500, 500);
@@ -1321,17 +1319,18 @@ function generate_meteoriteObject3D(size) {
   x = (Math.random() - 0.5) * METEOR_MAX_DISTANCE;
   y = Math.random() * 4000 - 500;
   z =
-    Math.sqrt(
-      METEOR_MAX_DISTANCE_SQ - x * x - y * y,
-    ) * (Math.random() > 0.5 ? 1 : -1);
+    Math.sqrt(METEOR_MAX_DISTANCE_SQ - x * x - y * y) *
+    (Math.random() > 0.5 ? 1 : -1);
 
   const v1 = new THREE.Vector3();
   const toCenter = new THREE.Vector3();
   let centerDot = 0;
   while (true) {
-    v1
-      .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
-      .normalize();
+    v1.set(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+    ).normalize();
     toCenter.set(-x, -y, -z).normalize();
     centerDot = toCenter.dot(v1);
     if (

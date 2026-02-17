@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { Water } from 'three/examples/jsm/objects/Water.js';
@@ -17,7 +17,7 @@ const {
   targetFps: TARGET_FPS,
   frameInterval,
   fpsScale,
-} = createFrameConfig(120);
+} = createFrameConfig(60);
 let frameAccumulator = 0;
 let totalLoadItems = 0;
 let loadedItemCount = 0;
@@ -67,16 +67,35 @@ let particles,
 let rain, rainGeo;
 const rainCount = 100000;
 const RAIN_RESET_Y = 420;
-const RAIN_AREA_HALF = 25;
-const RAIN_BASE_FALL = 0.08;
-const RAIN_RANDOM_FALL = 0.06;
+const RAIN_AREA_HALF = 50;
 const RAIN_WIND_X = 0.015;
 const RAIN_WIND_Z = 0.01;
 const RAIN_UFO_CLEAR_RADIUS = 5;
 const RAIN_UFO_CLEAR_RADIUS_SQ = RAIN_UFO_CLEAR_RADIUS * RAIN_UFO_CLEAR_RADIUS;
-let rainVelocity;
+const RAIN_SPEED_MIN = 0.2;
+const RAIN_SPEED_MAX = 4.0;
+const RAIN_SPEED_DEFAULT = 0.5;
+let rainSpeedMultiplier = RAIN_SPEED_DEFAULT;
 let rainCenterX = cameraPositionVec.x;
 let rainCenterZ = cameraPositionVec.z;
+
+function setRainSpeed(multiplier) {
+  const clamped = Math.max(
+    RAIN_SPEED_MIN,
+    Math.min(RAIN_SPEED_MAX, Number(multiplier)),
+  );
+  if (!Number.isFinite(clamped)) return rainSpeedMultiplier;
+  rainSpeedMultiplier = clamped;
+
+  return rainSpeedMultiplier;
+}
+
+if (typeof window !== 'undefined') {
+  window.setRainSpeed = setRainSpeed;
+  window.getRainSpeed = function () {
+    return rainSpeedMultiplier;
+  };
+}
 
 function createRainDropTexture() {
   const width = 32;
@@ -386,7 +405,6 @@ function init() {
 
   rainGeo = new THREE.BufferGeometry();
   const rainPositions = new Float32Array(rainCount * 3);
-  rainVelocity = new Float32Array(rainCount);
   for (i = 0; i < rainCount; i++) {
     const idx = i * 3;
     rainPositions[idx] = rainCenterX + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
@@ -397,11 +415,13 @@ function init() {
   rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
   const rainMaterial = new THREE.PointsMaterial({
     color: 0xe8f6ff,
-    size: 0.6,
+    size: 0.72,
+    sizeAttenuation: true,
     map: createRainDropTexture(),
     transparent: true,
-    opacity: 0.92,
-    alphaTest: 0,
+    opacity: 0.95,
+    alphaTest: 0.01,
+    blending: THREE.AdditiveBlending,
     fog: false,
   });
   rain = new THREE.Points(rainGeo, rainMaterial);
@@ -1235,7 +1255,6 @@ function animate() {
     const centerX = camera.position.x;
     const centerZ = camera.position.z;
     const ufoX = ufo.position.x;
-    const ufoY = ufo.position.y;
     const ufoZ = ufo.position.z;
     const centerDx = centerX - rainCenterX;
     const centerDz = centerZ - rainCenterZ;
@@ -1243,20 +1262,14 @@ function animate() {
       // Keep rain field centered around camera forward direction.
       positions[i] += centerDx;
       positions[i + 2] += centerDz;
-
-      const vel =
-        rainVelocity[dropIndex] -
-        (RAIN_BASE_FALL + Math.random() * RAIN_RANDOM_FALL);
-      rainVelocity[dropIndex] = vel;
-      positions[i + 1] += vel;
-      positions[i] += RAIN_WIND_X;
-      positions[i + 2] += RAIN_WIND_Z;
+      positions[i + 1] -= rainSpeedMultiplier;
+      positions[i] += RAIN_WIND_X * rainSpeedMultiplier;
+      positions[i + 2] += RAIN_WIND_Z * rainSpeedMultiplier;
 
       const duX = positions[i] - ufoX;
-      const duY = positions[i + 1] - ufoY;
       const duZ = positions[i + 2] - ufoZ;
       const insideUfoClearZone =
-        duX * duX + duY * duY + duZ * duZ < RAIN_UFO_CLEAR_RADIUS_SQ;
+        duX * duX + duZ * duZ < RAIN_UFO_CLEAR_RADIUS_SQ;
 
       if (
         insideUfoClearZone ||
@@ -1278,7 +1291,6 @@ function animate() {
           positions[i + 2] = centerZ + (Math.random() * 2 - 1) * RAIN_AREA_HALF;
         }
         positions[i + 1] = RAIN_RESET_Y;
-        rainVelocity[dropIndex] = 0;
       }
     }
     rainCenterX = centerX;

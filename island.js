@@ -16,7 +16,7 @@ const {
   targetFps: TARGET_FPS,
   frameInterval,
   fpsScale,
-} = createFrameConfig(120);
+} = createFrameConfig(60);
 let frameAccumulator = 0;
 let totalLoadItems = 0;
 let loadedItemCount = 0;
