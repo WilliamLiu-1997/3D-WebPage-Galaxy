@@ -784,8 +784,8 @@ function init() {
     light.position.set(0, 0, 0);
     light.penumbra = 0.3;
     light.castShadow = true;
-    light.shadow.mapSize.width = 16384;
-    light.shadow.mapSize.height = 16384;
+    light.shadow.mapSize.width = 8192;
+    light.shadow.mapSize.height = 8192;
     light.shadow.camera.far = 2500 * 1 /*ufo_scale/100*/;
     light.shadow.camera.near = 1 * 1 /*ufo_scale/100*/;
     all_obj4.add(light);
