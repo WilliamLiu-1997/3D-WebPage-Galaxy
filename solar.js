@@ -868,7 +868,6 @@ function init() {
     all_obj4.add(sunbackground1);
     all_obj4.add(sunbackground2);
     all_obj4.add(sunbackground3);
-    all_obj4.add(sunEdgeGlow);
 
     all_obj3.add(sun);
     all_obj3.add(star1);
@@ -890,6 +889,8 @@ function init() {
     all_obj3.add(star8);
     all_obj4.add(ring8);
     all_obj3.add(star9);
+
+    all_obj4.add(sunEdgeGlow);
   }
 
   totalLoadItems += 2;
