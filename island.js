@@ -10,6 +10,8 @@ import {
   createResizeRendererHandler,
   createProgressHandler,
 } from './JS/shared/scene-common.js';
+import { initSharedUfo } from './JS/shared/ufo-factory.js';
+import { createMeteorSystem } from './JS/shared/meteor-system.js';
 
 const textureLoader = new THREE.TextureLoader();
 const {
@@ -37,7 +39,6 @@ let fast = false;
 let esc = true;
 const meteorites = [];
 const METEOR_MAX_DISTANCE = 8000;
-const METEOR_MAX_DISTANCE_SQ = METEOR_MAX_DISTANCE * METEOR_MAX_DISTANCE;
 const METEOR_SPEED = 8 * fpsScale;
 let arrived = 50;
 let ufo_scale = 3.5;
@@ -210,6 +211,21 @@ const material1 = new THREE.Sprite(
 
 const meteorite_Object3D = obj3d.clone();
 const ufo = meteorite_Object3D.clone();
+const meteorSystem = createMeteorSystem({
+  THREE,
+  scene,
+  meteorTemplate: meteorite_Object3D,
+  meteorHeadMaterial: material,
+  meteorHeadAltMaterial: materialr,
+  meteorTailMaterial: material1,
+  maxDistance: METEOR_MAX_DISTANCE,
+  speed: METEOR_SPEED,
+  sizeScaleMin: 0.7,
+  sizeScaleRange: 0.6,
+  centerDotMin: 0.85,
+  centerDotMax: 0.851,
+  trailStepDivisor: 2.5,
+});
 const waterGeometry = new THREE.CircleGeometry(5000, 100);
 
 const MeshWater = new Water(
@@ -436,208 +452,34 @@ function init() {
   const onProgress_mtl = createProgressHandler(function markMtlLoaded() {
     loadedItemCount += 1;
   }, 'mtl');
-  const mtlLoader = new MTLLoader();
-  mtlLoader.load(
-    'UFO2/UFO2.mtl',
-    (mtl) => {
-      mtl.preload();
-      const objLoader = new OBJLoader();
-      objLoader.setMaterials(mtl);
-      objLoader.load(
-        'UFO2/UFO2.obj',
-        (root) => {
-          for (const k in root.children) {
-            root.children[k].castShadow = true;
-          }
-          root.position.set(0, 0, 0);
-          root.scale.set(0.1, 0.1, 0.1);
-          const ufo_light_material = new THREE.SpriteMaterial({
-            blending: THREE.AdditiveBlending,
-            map: ufolight,
-            transparent: true,
-            opacity: 0.5,
-          });
-          const ufo_light = new THREE.Sprite(ufo_light_material);
-          const ufo_top_light = new THREE.Mesh(
-            new THREE.SphereGeometry(0.085, 32, 32),
-            new THREE.MeshBasicMaterial({ color: 0xffffee }),
-          );
-          const white_light = littlestar.clone();
-
-          const ring_m = new THREE.MeshPhongMaterial({
-            color: 0xff51aa,
-            specular: 0xff51aa,
-            emissive: 0xff51aa,
-          });
-          const ufo_ring1 = new THREE.Mesh(
-            new THREE.TorusGeometry(
-              0.0909 * 5,
-              0.0025,
-              3,
-              144,
-              Math.PI / 5.455,
-            ),
-            ring_m,
-          );
-          ufo_ring1.rotation.x = Math.PI / 2;
-          ufo_ring1.rotation.z = Math.PI / 15.35;
-          ufo_ring1.position.y = 0.021 * 5;
-          const ufo_ring2 = new THREE.Mesh(
-            new THREE.TorusGeometry(0.092 * 5, 0.0025, 3, 144, Math.PI / 5.455),
-            ring_m,
-          );
-          ufo_ring2.rotation.x = Math.PI / 2;
-          ufo_ring2.rotation.z = Math.PI / 9.35 + Math.PI / 3;
-          ufo_ring2.position.y = 0.021 * 5;
-          const ufo_ring3 = new THREE.Mesh(
-            new THREE.TorusGeometry(
-              0.09095 * 5,
-              0.0025,
-              3,
-              144,
-              Math.PI / 5.455,
-            ),
-            ring_m,
-          );
-          ufo_ring3.rotation.x = Math.PI / 2;
-          ufo_ring3.rotation.z = Math.PI / 8.65 + (Math.PI * 2) / 3;
-          ufo_ring3.position.y = 0.021 * 5;
-          const ufo_ring4 = new THREE.Mesh(
-            new THREE.TorusGeometry(
-              0.09085 * 5,
-              0.0025,
-              3,
-              144,
-              Math.PI / 5.455,
-            ),
-            ring_m,
-          );
-          ufo_ring4.rotation.x = Math.PI / 2;
-          ufo_ring4.rotation.z = Math.PI / 10.65 + Math.PI;
-          ufo_ring4.position.y = 0.021 * 5;
-          const ufo_ring5 = new THREE.Mesh(
-            new THREE.TorusGeometry(
-              0.09085 * 5,
-              0.0025,
-              3,
-              144,
-              Math.PI / 5.455,
-            ),
-            ring_m,
-          );
-          ufo_ring5.rotation.x = Math.PI / 2;
-          ufo_ring5.rotation.z = Math.PI / 13.65 + (Math.PI * 4) / 3;
-          ufo_ring5.position.y = 0.021 * 5;
-          const ufo_ring6 = new THREE.Mesh(
-            new THREE.TorusGeometry(
-              0.09085 * 5,
-              0.0025,
-              3,
-              144,
-              Math.PI / 4.655,
-            ),
-            ring_m,
-          );
-          ufo_ring6.rotation.x = Math.PI / 2;
-          ufo_ring6.rotation.z = Math.PI / 18.65 + (Math.PI * 5) / 3;
-          ufo_ring6.position.y = 0.021 * 5;
-
-          const ufo_ring0 = new THREE.Mesh(
-            new THREE.TorusGeometry(0.0566 * 5, 0.06, 3, 72),
-            new THREE.MeshPhongMaterial({
-              color: 0x44e0ff,
-              specular: 0x44e0ff,
-              emissive: 0x44e0ff,
-            }),
-          );
-          ufo_top_light.position.set(0, 0.033 * 5, 0);
-          white_light.position.set(0, 0.036 * 5, 0);
-          white_light.scale.set(0.063 * 5, 0.0525 * 5);
-          ufo_light.position.set(0, -0.04, 0);
-          ufo_light.scale.set(0.05, 0.25);
-
-          const light_for_ufo = new THREE.PointLight(
-            0xffffee,
-            0.5,
-            (100 * ufo_scale) / 20,
-            0.75,
-          );
-          light_for_ufo.penumbra = 0.1;
-          light_for_ufo.castShadow = true;
-          light_for_ufo.shadow.mapSize.width = 512;
-          light_for_ufo.shadow.mapSize.height = 512;
-          light_for_ufo.shadow.camera.far = (100 * ufo_scale) / 20;
-          light_for_ufo.shadow.camera.near = (0.1 * ufo_scale) / 20;
-          light_for_ufo.shadow.radius = 3;
-          // light_for_ufo.shadowBias = -0.001;
-
-          light_for_ufo.position.set(0, 0.3, 0);
-
-          const light_for_ufo1 = new THREE.PointLight(
-            0xffffee,
-            1.5,
-            (30 * ufo_scale) / 20,
-            0.95,
-          );
-          light_for_ufo1.penumbra = 0.1;
-          light_for_ufo1.castShadow = true;
-          light_for_ufo1.shadow.mapSize.width = 512;
-          light_for_ufo1.shadow.mapSize.height = 512;
-          light_for_ufo1.shadow.camera.far = (30 * ufo_scale) / 20;
-          light_for_ufo1.shadow.camera.near = (0.1 * ufo_scale) / 20;
-          light_for_ufo1.shadow.radius = 3;
-          //light_for_ufo1.shadowBias = -0.001;
-
-          light_for_ufo1.position.set(0, 0, 0);
-
-          const ufo_ball = new THREE.Mesh(
-            new THREE.SphereGeometry(0.18, 30, 30),
-            new THREE.MeshPhongMaterial({
-              color: 0xffffff,
-              specular: 0xffffff,
-              emissive: 0xffffff,
-              transparent: true,
-              opacity: 0.95,
-            }),
-          );
-          ufo_ball.scale.y = 0.1;
-          ufo_ball.position.y = 0.065;
-          ufo_ring0.rotation.x = Math.PI / 2;
-          ufo_ring0.position.y = 0.0222 * 5;
-          root.children[2].material = new THREE.MeshBasicMaterial({
-            color: 0xff0000,
-          });
-          root.children[3].material = new THREE.MeshBasicMaterial({
-            color: 0xff0000,
-          });
-          root.children[5].material = ufo_material;
-          ufo.add(root);
-          ufo.add(ufo_light);
-          ufo.add(ufo_top_light);
-          ufo.add(white_light);
-          ufo.add(ufo_ring1);
-          ufo.add(ufo_ring2);
-          ufo.add(ufo_ring3);
-          ufo.add(ufo_ring4);
-          ufo.add(ufo_ring5);
-          ufo.add(ufo_ring6);
-          ufo.add(ufo_ring0);
-
-          ufo.add(light_for_ufo);
-          ufo.add(light_for_ufo1);
-          ufo.add(ufo_ball);
-
-          ufo.position.z -= 0.48 * 5;
-          ufo.position.y -= 0.12 * 5;
-        },
-        onProgress_obj,
-      );
+  initSharedUfo({
+    THREE,
+    scene,
+    ufo,
+    ufoScale: ufo_scale,
+    ufoLightTexture: ufolight,
+    littleStar: littlestar,
+    ufoMaterial: ufo_material,
+    onProgressObj: onProgress_obj,
+    onProgressMtl: onProgress_mtl,
+    ballSegments: 30,
+    mainLight: {
+      intensity: 0.5,
+      distanceDivisor: 20,
+      decay: 0.75,
+      castShadow: true,
+      shadowMapSize: 512,
+      shadowRadius: 3,
     },
-    onProgress_mtl,
-  );
-  ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
-  scene.add(ufo);
-  ufo.position.set(0, -1000, 0);
+    secondaryLight: {
+      intensity: 1.5,
+      distanceDivisor: 20,
+      decay: 0.95,
+      castShadow: true,
+      shadowMapSize: 512,
+      shadowRadius: 3,
+    },
+  });
 
   const village1 = obj_loader(
     'obj/village1/village_final',
@@ -1544,86 +1386,6 @@ function operation_method_1(delta, count) {
   );
 }
 
-function generate_meteoriteObject3D(size) {
-  size = size * (Math.random() * 0.6 + 0.7);
-  const osize = size;
-
-  const meteoriteObject3D = meteorite_Object3D.clone();
-
-  let x, y, z;
-  x = (Math.random() - 0.5) * METEOR_MAX_DISTANCE;
-  y = Math.random() * 4000 - 500;
-  z =
-    Math.sqrt(METEOR_MAX_DISTANCE_SQ - x * x - y * y) *
-    (Math.random() > 0.5 ? 1 : -1);
-
-  const v1 = new THREE.Vector3();
-  const toCenter = new THREE.Vector3();
-  let centerDot = 0;
-  while (true) {
-    v1.set(
-      Math.random() - 0.5,
-      Math.random() - 0.5,
-      Math.random() - 0.5,
-    ).normalize();
-    toCenter.set(-x, -y, -z).normalize();
-    centerDot = toCenter.dot(v1);
-    if (
-      !(
-        (v1.y < 0 && y < 500) ||
-        centerDot < 0.85 ||
-        centerDot > 0.851 ||
-        (z < 0 && v1.z < 0)
-      )
-    ) {
-      break;
-    }
-  }
-  const x1 = x;
-  const y1 = y;
-  const z1 = z;
-
-  for (let i = 0; i < 2; i++) {
-    const meteorite = i % 2 == 0 ? material.clone() : materialr.clone();
-    meteorite.position.set(x - x1, y - y1, z - z1);
-    meteorite.scale.set(size * 1.15, size * 1.15, 1);
-    meteoriteObject3D.add(meteorite);
-    x = x - (size * v1.x) / 3;
-    y = y - (size * v1.y) / 3;
-    z = z - (size * v1.z) / 3;
-  }
-  while (size > 1) {
-    const meteorite = material.clone();
-    const msize = Math.max(0.6, Math.pow(size / osize, 0.25));
-    meteorite.scale.set(size * msize, size * msize, 1);
-    meteorite.position.set(x - x1, y - y1, z - z1);
-    meteoriteObject3D.add(meteorite);
-
-    const meteoriteTail = material1.clone();
-    meteoriteTail.scale.set(size, size, 1);
-    meteoriteTail.position.set(x - x1, y - y1, z - z1);
-    meteoriteObject3D.add(meteoriteTail);
-
-    x = x - (size * v1.x) / 2.5;
-    y = y - (size * v1.y) / 2.5;
-    z = z - (size * v1.z) / 2.5;
-    size *= 0.985;
-  }
-  meteoriteObject3D.position.set(x1, y1, z1);
-  return [meteoriteObject3D, v1];
-}
-
-function meteorite_move(meteorite1) {
-  const meteorObject = meteorite1[0];
-  const meteorVelocity = meteorite1[1];
-  if (meteorObject.position.lengthSq() > METEOR_MAX_DISTANCE_SQ) {
-    scene.remove(meteorObject);
-    return true;
-  }
-  meteorObject.position.addScaledVector(meteorVelocity, METEOR_SPEED);
-  return false;
-}
-
 let action = false;
 function playOnClick(anim) {
   if (action) {
@@ -1784,16 +1546,7 @@ function animate() {
   frameAccumulator += delta;
   if (frameAccumulator > frameInterval) {
     //stats.update();
-    if (meteorites.length < 5) {
-      const meteorite1 = generate_meteoriteObject3D(10);
-      meteorites.push(meteorite1);
-      scene.add(meteorite1[0]);
-    }
-    for (let i = meteorites.length - 1; i >= 0; i--) {
-      if (meteorite_move(meteorites[i])) {
-        meteorites.splice(i, 1);
-      }
-    }
+    meteorSystem.updateMeteorites(meteorites, 20, 15);
 
     const scaleCount = count * 200;
     const ufoX = ufo.position.x;
