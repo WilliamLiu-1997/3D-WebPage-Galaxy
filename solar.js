@@ -215,6 +215,9 @@ const bumpRepeat = 30;
 const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(
   navigator.userAgent || '',
 );
+const MOBILE_RING_WIDTH_SCALE = isMobileDevice ? 1.8 : 1.0;
+const MOBILE_RING_ALPHA_TEST = isMobileDevice ? 0.02 : 0.0;
+const MOBILE_SATURN_RING_TEXTURE = './texture/ring1.gif';
 let sunShaderUniforms = null;
 const SUN_BASE_SIZE = 100;
 const SUN_RADIUS = SUN_BASE_SIZE * 0.8;
@@ -1014,7 +1017,18 @@ function obj(url, size, x, y, z, name) {
 
 function ring1(url, size, width, x, y, z) {
   size = size * 0.8;
-  const startTexture = textureLoader.load(url);
+  width = width * MOBILE_RING_WIDTH_SCALE;
+  const ringTextureUrl =
+    isMobileDevice && url.endsWith('ring1.png')
+      ? MOBILE_SATURN_RING_TEXTURE
+      : url;
+  const startTexture = textureLoader.load(ringTextureUrl);
+  if (isMobileDevice) {
+    startTexture.generateMipmaps = false;
+    startTexture.minFilter = THREE.LinearFilter;
+  }
+  startTexture.magFilter = THREE.LinearFilter;
+  startTexture.needsUpdate = true;
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -1025,11 +1039,16 @@ function ring1(url, size, width, x, y, z) {
   const starBall = new THREE.Mesh(
     r,
     new THREE.MeshBasicMaterial({
-      color: 0xffeecc,
+      color: isMobileDevice ? 0xffffff : 0xffeecc,
       map: startTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.2,
+      opacity: isMobileDevice ? 0.7 : 0.2,
+      alphaTest: isMobileDevice ? 0.0 : MOBILE_RING_ALPHA_TEST,
+      blending: isMobileDevice
+        ? THREE.AdditiveBlending
+        : THREE.NormalBlending,
+      depthWrite: false,
     }),
   );
   starBall.rotation.x = -Math.PI / 2;
@@ -1039,7 +1058,14 @@ function ring1(url, size, width, x, y, z) {
 }
 function ring2(url, size, width, x, y, z) {
   size = size * 0.8;
+  width = width * MOBILE_RING_WIDTH_SCALE;
   const startTexture = textureLoader.load(url);
+  if (isMobileDevice) {
+    startTexture.generateMipmaps = false;
+    startTexture.minFilter = THREE.LinearFilter;
+  }
+  startTexture.magFilter = THREE.LinearFilter;
+  startTexture.needsUpdate = true;
   const r = new THREE.RingGeometry(size, size + width, size * 10);
   const pos = r.attributes.position;
   const v3 = new THREE.Vector3();
@@ -1053,7 +1079,9 @@ function ring2(url, size, width, x, y, z) {
       map: startTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.1,
+      opacity: isMobileDevice ? 0.28 : 0.1,
+      alphaTest: MOBILE_RING_ALPHA_TEST,
+      depthWrite: false,
     }),
   );
   starBall.rotation.x = -Math.PI / 2;
