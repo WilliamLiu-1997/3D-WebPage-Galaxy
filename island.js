@@ -786,10 +786,6 @@ const onKeyDown = function (e) {
       ufo_scale = Math.min(6, ufo_scale);
       ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
       scaling = true;
-      document.getElementById('secondBlocker').innerHTML =
-        'Press Q or E to change the size of UFO. Current size: ' +
-        Math.floor(ufo_scale * 20 - 20).toString() +
-        '%';
       break;
 
     case 81:
@@ -804,10 +800,6 @@ const onKeyDown = function (e) {
       ufo_scale = Math.max(1.05, ufo_scale);
       ufo.scale.set(ufo_scale, ufo_scale, ufo_scale);
       scaling = true;
-      document.getElementById('secondBlocker').innerHTML =
-        'Press Q or E to change the size of UFO. Current size: ' +
-        Math.floor(ufo_scale * 20 - 20).toString() +
-        '%';
       break;
   }
 };
