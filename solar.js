@@ -1025,7 +1025,6 @@ function ring1(url, size, width, x, y, z) {
   const starBall = new THREE.Mesh(
     r,
     new THREE.MeshBasicMaterial({
-      color: 0xffeecc,
       map: startTexture,
       side: THREE.DoubleSide,
       transparent: true,
