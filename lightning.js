@@ -110,7 +110,7 @@ let splashDropLife,
 let splashDropCenterX = cameraPositionVec.x;
 let splashDropCenterZ = cameraPositionVec.z;
 const WATER_SURFACE_EFFECT_RADIUS = 400;
-const RING_TOTAL = 100000;
+const RING_TOTAL = 80000;
 const RING_GROUP_SIZE = 100;
 const RING_GROUP_COUNT = Math.ceil(RING_TOTAL / RING_GROUP_SIZE);
 const RING_BASE_Y = 0;
@@ -127,7 +127,7 @@ const RING_OPACITY_VARIANCE = 0.2;
 const RING_FADE_START = 300;
 const RING_FADE_END = 400;
 const RING_FADE_MIN_ALPHA = 0;
-const SPLASH_TOTAL_DROPS = 100000;
+const SPLASH_TOTAL_DROPS = 80000;
 const SPLASH_DROP_GROUP_SIZE = 100;
 const SPLASH_DROP_GROUP_COUNT = Math.ceil(
   SPLASH_TOTAL_DROPS / SPLASH_DROP_GROUP_SIZE,

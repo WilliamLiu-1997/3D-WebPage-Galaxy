@@ -70,10 +70,10 @@ let safe_dis = 2.25;
 let hit_open = false;
 const scaling = false;
 
-const SEPARATION = 70,
-  AMOUNTX = 48,
-  AMOUNTY = 16,
-  AMOUNTZ = 48;
+const SEPARATION = 100,
+  AMOUNTX = 33,
+  AMOUNTY = 11,
+  AMOUNTZ = 33;
 let starCount = 0;
 let starGeometry;
 let starPositions;
