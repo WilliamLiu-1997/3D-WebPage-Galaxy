@@ -216,7 +216,7 @@ const repeatT = 1.0;
 const noiseTexture = textureLoader.load('texture/cloud.png');
 noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
 // magnitude of noise effect
-const noiseScale = 0.0025;
+const noiseScale = 0.01;
 
 // texture to additively blend with base image texture
 const blendTexture = textureLoader.load('./texture/gstar-original.jpg');
@@ -232,9 +232,9 @@ bumpTexture.wrapS = bumpTexture.wrapT = THREE.RepeatWrapping;
 // multiplier for distortion speed
 const bumpSpeed = 0.025;
 // magnitude of normal displacement
-const bumpScale = 0.5;
-const noiseRepeat = 60;
-const bumpRepeat = 30;
+const bumpScale = 2;
+const noiseRepeat = 16;
+const bumpRepeat = 8;
 
 const isMobileDevice =
   /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') ||
