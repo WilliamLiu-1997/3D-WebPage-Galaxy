@@ -245,23 +245,22 @@ const SUN_BASE_SIZE = 100;
 const SUN_RADIUS = SUN_BASE_SIZE * 0.8;
 const SUN_EDGE_GLOW_RADIUS_SCALE = 1.2;
 
-function createSunShaderUniforms(mobileSafeMode = false) {
-  const qualityScale = mobileSafeMode ? 0.55 : 1;
+function createSunShaderUniforms() {
   return {
     baseTexture: { value: lavaTexture },
-    baseSpeed: { value: mobileSafeMode ? baseSpeed * 0.8 : baseSpeed },
+    baseSpeed: { value: baseSpeed },
     repeatS: { value: repeatS },
     repeatT: { value: repeatT },
-    noiseRepeat: { value: Math.max(12, noiseRepeat * qualityScale) },
-    bumpRepeat: { value: Math.max(8, bumpRepeat * qualityScale) },
+    noiseRepeat: { value: Math.max(12, noiseRepeat) },
+    bumpRepeat: { value: Math.max(8, bumpRepeat) },
     noiseTexture: { value: noiseTexture },
-    noiseScale: { value: mobileSafeMode ? noiseScale * 0.8 : noiseScale },
+    noiseScale: { value: noiseScale },
     blendTexture: { value: blendTexture },
-    blendSpeed: { value: mobileSafeMode ? blendSpeed * 0.8 : blendSpeed },
+    blendSpeed: { value: blendSpeed },
     blendOffset: { value: blendOffset },
     bumpTexture: { value: bumpTexture },
-    bumpSpeed: { value: mobileSafeMode ? bumpSpeed * 0.8 : bumpSpeed },
-    bumpScale: { value: mobileSafeMode ? bumpScale * 0.8 : bumpScale },
+    bumpSpeed: { value: bumpSpeed },
+    bumpScale: { value: bumpScale },
     alpha: { value: 1.0 },
     time: { value: 1.0 },
   };
@@ -1589,8 +1588,11 @@ function operation_method_1(delta) {
   }
   if (fast) maxSpeed = 0.75 * fpsScale;
   else maxSpeed = Math.max(maxSpeed - 0.03 * fpsScale, 0.6 * fpsScale);
-  const touchDrivenMove = isMobileDevice && touchControlState.move.touchId !== null;
-  const moveSpeedScale = touchDrivenMove ? Math.max(0.05, moveInputStrength) : 1;
+  const touchDrivenMove =
+    isMobileDevice && touchControlState.move.touchId !== null;
+  const moveSpeedScale = touchDrivenMove
+    ? Math.max(0.05, moveInputStrength)
+    : 1;
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = (maxSpeed / 2) * moveSpeedScale;
 
