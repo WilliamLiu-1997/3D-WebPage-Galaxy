@@ -363,8 +363,8 @@ function createSunEdgeGlow() {
   const glowMesh = new THREE.Mesh(
     new THREE.SphereGeometry(
       SUN_RADIUS * SUN_EDGE_GLOW_RADIUS_SCALE * 0.96,
-      72,
-      72,
+      64,
+      64,
     ),
     sunGlowMaterial,
   );
@@ -656,7 +656,7 @@ function init() {
     centerDotMax: 0.851,
     trailStepDivisor: 2.8,
   });
-  const skyGeometry = new THREE.SphereGeometry(5000, 100, 100);
+  const skyGeometry = new THREE.SphereGeometry(5000, 64, 64);
   const map = textureLoader.load('img/bg5.png');
   map.wrapS = THREE.RepeatWrapping;
   map.wrapT = THREE.RepeatWrapping;
@@ -988,7 +988,7 @@ function obj_lighting(url, size, x, y, z, name) {
   size = size * 0.8;
   const startTexture = textureLoader.load(url);
   const starBall = new THREE.Mesh(
-    new THREE.SphereGeometry(size, 100, 100),
+    new THREE.SphereGeometry(size, 64, 64),
     new THREE.MeshPhongMaterial({
       emissive: 0xffffff,
       emissiveMap: startTexture,
@@ -1002,7 +1002,7 @@ function obj(url, size, x, y, z, name) {
   size = size * 0.8;
   const startTexture = textureLoader.load(url);
   let starBall = new THREE.Mesh(
-    new THREE.SphereGeometry(size, 50, 50),
+    new THREE.SphereGeometry(size, 32, 32),
     new THREE.MeshPhongMaterial({ map: startTexture }),
   );
   if (name == 'star3') {
@@ -1016,7 +1016,7 @@ function obj(url, size, x, y, z, name) {
       startTexture.repeat.set(3, 3);
     }
     starBall = new THREE.Mesh(
-      new THREE.SphereGeometry(size, 50, 50),
+      new THREE.SphereGeometry(size, 32, 32),
       new THREE.MeshPhongMaterial({
         map: startTexture,
         normalMap: textureLoader.load(
