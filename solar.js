@@ -251,8 +251,8 @@ function createSunShaderUniforms() {
     baseSpeed: { value: baseSpeed },
     repeatS: { value: repeatS },
     repeatT: { value: repeatT },
-    noiseRepeat: { value: Math.max(12, noiseRepeat) },
-    bumpRepeat: { value: Math.max(8, bumpRepeat) },
+    noiseRepeat: { value: noiseRepeat },
+    bumpRepeat: { value: bumpRepeat },
     noiseTexture: { value: noiseTexture },
     noiseScale: { value: noiseScale },
     blendTexture: { value: blendTexture },
@@ -287,7 +287,7 @@ function createSunMaterialForRenderer(rendererRef) {
   }
 
   const mobileSafeMode = isMobileDevice;
-  const uniforms = createSunShaderUniforms(mobileSafeMode);
+  const uniforms = createSunShaderUniforms();
   const material = new THREE.ShaderMaterial({
     uniforms,
     vertexShader: document.getElementById('vertexShader').textContent,
