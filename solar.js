@@ -12,7 +12,7 @@ import { createMeteorSystem } from './JS/shared/meteor-system.js';
 
 const textureLoader = new THREE.TextureLoader();
 function goAlienBaseWithFade() {
-  navigateWithFade('alian_base.html');
+  navigateWithFade('alien_base.html');
 }
 function goIslandWithFade() {
   navigateWithFade('island.html');

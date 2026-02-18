@@ -32,7 +32,7 @@ export default defineConfig({
         solar: resolve(__dirname, 'solar.html'),
         island: resolve(__dirname, 'island.html'),
         lightning: resolve(__dirname, 'lightning.html'),
-        alienBase: resolve(__dirname, 'alian_base.html'),
+        alienBase: resolve(__dirname, 'alien_base.html'),
       },
     },
   },
