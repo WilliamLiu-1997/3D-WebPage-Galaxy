@@ -90,6 +90,78 @@
         width: 100%;
         cursor: wait;
       }
+
+      #touch-controls {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        pointer-events: none;
+      }
+
+      .touch-rocker {
+        position: absolute;
+        bottom: max(18px, env(safe-area-inset-bottom));
+        width: 146px;
+        height: 146px;
+        border-radius: 50%;
+        pointer-events: auto;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      #move-rocker {
+        left: max(18px, env(safe-area-inset-left));
+      }
+
+      #look-rocker {
+        right: max(18px, env(safe-area-inset-right));
+      }
+
+      .touch-rocker-base {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.2),
+          rgba(0, 0, 0, 0.12)
+        );
+      }
+
+      .touch-rocker-knob {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: transform 0.09s ease-out;
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.75),
+          rgba(135, 170, 210, 0.6)
+        );
+        box-shadow:
+          0 0 10px rgba(255, 255, 255, 0.25),
+          inset 0 0 8px rgba(255, 255, 255, 0.3);
+      }
+
+      @media (max-width: 880px) {
+        .touch-rocker {
+          width: 128px;
+          height: 128px;
+        }
+
+        .touch-rocker-knob {
+          width: 56px;
+          height: 56px;
+        }
+      }
     </style>
     <title>Alien Base</title>
   </head>
@@ -112,6 +184,16 @@
 
     <div id="aiming1">
       <img src="img/aiming4.png" width="21px" height="21px" />
+    </div>
+    <div id="touch-controls" aria-hidden="true">
+      <div id="move-rocker" class="touch-rocker">
+        <div class="touch-rocker-base"></div>
+        <div id="move-rocker-knob" class="touch-rocker-knob"></div>
+      </div>
+      <div id="look-rocker" class="touch-rocker">
+        <div class="touch-rocker-base"></div>
+        <div id="look-rocker-knob" class="touch-rocker-knob"></div>
+      </div>
     </div>
     <div id="secondBlocker" style="display: none"></div>
     <div id="blocker1"></div>

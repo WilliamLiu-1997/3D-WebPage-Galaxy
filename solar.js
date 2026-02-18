@@ -109,10 +109,11 @@ let down = 0;
 let left = 0;
 let right = 0;
 
-let maxSpeed = 0.3 * fpsScale;
+let maxSpeed = 0.6 * fpsScale;
 const acc = 3 * fpsScale;
 let currentSpeedForward = 0;
 let currentSpeedRight = 0;
+let moveInputStrength = 0;
 let Forward = true;
 let Right = true;
 const clock = new THREE.Clock();
@@ -149,6 +150,29 @@ const followablePlanetNames = [
   'star8',
   'star9',
 ];
+const TOUCH_TAP_MAX_DURATION = 280;
+const TOUCH_TAP_MAX_MOVE = 18;
+const TOUCH_MOVE_DEADZONE = 0.1;
+const TOUCH_LOOK_DEADZONE = 0.1;
+const TOUCH_LOOK_SCALE = 0.35;
+const TOUCH_ROCKER_TRAVEL_RATIO = 1;
+const touchControlState = {
+  initialized: false,
+  overlay: null,
+  move: {
+    stick: null,
+    knob: null,
+    touchId: null,
+    maxOffset: 1,
+  },
+  look: {
+    stick: null,
+    knob: null,
+    touchId: null,
+    maxOffset: 1,
+  },
+  tapCandidates: new Map(),
+};
 
 function isFollowTargetObject(object) {
   if (!object) return false;
@@ -212,31 +236,31 @@ const bumpScale = 0.5;
 const noiseRepeat = 60;
 const bumpRepeat = 30;
 
-const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(
-  navigator.userAgent || '',
-);
+const isMobileDevice =
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') ||
+  navigator.maxTouchPoints > 1 ||
+  window.matchMedia('(pointer: coarse)').matches;
 let sunShaderUniforms = null;
 const SUN_BASE_SIZE = 100;
 const SUN_RADIUS = SUN_BASE_SIZE * 0.8;
 const SUN_EDGE_GLOW_RADIUS_SCALE = 1.2;
 
-function createSunShaderUniforms(mobileSafeMode = false) {
-  const qualityScale = mobileSafeMode ? 0.55 : 1;
+function createSunShaderUniforms() {
   return {
     baseTexture: { value: lavaTexture },
-    baseSpeed: { value: mobileSafeMode ? baseSpeed * 0.8 : baseSpeed },
+    baseSpeed: { value: baseSpeed },
     repeatS: { value: repeatS },
     repeatT: { value: repeatT },
-    noiseRepeat: { value: Math.max(12, noiseRepeat * qualityScale) },
-    bumpRepeat: { value: Math.max(8, bumpRepeat * qualityScale) },
+    noiseRepeat: { value: Math.max(12, noiseRepeat) },
+    bumpRepeat: { value: Math.max(8, bumpRepeat) },
     noiseTexture: { value: noiseTexture },
-    noiseScale: { value: mobileSafeMode ? noiseScale * 0.8 : noiseScale },
+    noiseScale: { value: noiseScale },
     blendTexture: { value: blendTexture },
-    blendSpeed: { value: mobileSafeMode ? blendSpeed * 0.8 : blendSpeed },
+    blendSpeed: { value: blendSpeed },
     blendOffset: { value: blendOffset },
     bumpTexture: { value: bumpTexture },
-    bumpSpeed: { value: mobileSafeMode ? bumpSpeed * 0.8 : bumpSpeed },
-    bumpScale: { value: mobileSafeMode ? bumpScale * 0.8 : bumpScale },
+    bumpSpeed: { value: bumpSpeed },
+    bumpScale: { value: bumpScale },
     alpha: { value: 1.0 },
     time: { value: 1.0 },
   };
@@ -771,7 +795,11 @@ function init() {
 
   scene.add(camera);
 
-  document.addEventListener('mousemove', mouseMove, false);
+  if (!isMobileDevice) {
+    document.addEventListener('mousemove', mouseMove, false);
+  } else {
+    setupTouchControls();
+  }
 
   const onKeyDown = function (e) {
     switch (e.keyCode) {
@@ -1063,26 +1091,340 @@ function ring2(url, size, width) {
   return starBall;
 }
 
+function updatePointerFromClient(clientX, clientY) {
+  mouse.x = (clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+}
+
 function getMousePosition() {
   const x = document.getElementById('aiming1').offsetLeft + 10;
   const y = document.getElementById('aiming1').offsetTop + 10;
   return { x: x, y: y };
 }
+
+function setMoveInputFromAxis(axisX, axisY) {
+  const horizontal = Math.abs(axisX) > TOUCH_MOVE_DEADZONE ? axisX : 0;
+  const vertical = Math.abs(axisY) > TOUCH_MOVE_DEADZONE ? axisY : 0;
+  moveInputStrength = Math.min(1, Math.hypot(horizontal, vertical));
+
+  moveLeft = horizontal < 0;
+  moveRight = horizontal > 0;
+  moveForward = vertical < 0;
+  moveBackward = vertical > 0;
+
+  if (moveLeft || moveRight || moveForward || moveBackward) {
+    selected_object = false;
+  }
+}
+
+function setLookInputFromAxis(axisX, axisY) {
+  const horizontal = Math.abs(axisX) > TOUCH_LOOK_DEADZONE ? axisX : 0;
+  const vertical = Math.abs(axisY) > TOUCH_LOOK_DEADZONE ? axisY : 0;
+
+  left = Math.max(0, -horizontal) * TOUCH_LOOK_SCALE;
+  right = Math.max(0, horizontal) * TOUCH_LOOK_SCALE;
+  up = Math.max(0, -vertical) * TOUCH_LOOK_SCALE;
+  down = Math.max(0, vertical) * TOUCH_LOOK_SCALE;
+}
+
+function setRockerKnobPosition(knob, offsetX, offsetY) {
+  if (!knob) return;
+  knob.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+}
+
+function getRockerMaxOffset(stick) {
+  if (!stick) return 1;
+
+  const stickRect = stick.getBoundingClientRect();
+  let stickSize = Math.min(stickRect.width, stickRect.height);
+  if (!stickSize) {
+    const stickStyle = window.getComputedStyle(stick);
+    stickSize = Math.min(
+      parseFloat(stickStyle.width) || 0,
+      parseFloat(stickStyle.height) || 0,
+    );
+  }
+
+  if (!stickSize) return 1;
+  return Math.max(1, (stickSize / 2) * TOUCH_ROCKER_TRAVEL_RATIO);
+}
+
+function isGameplayActive() {
+  const content = document.getElementById('content');
+  return Boolean(content && content.style.display == 'none' && !esc);
+}
+
+function resetMoveTouchState() {
+  touchControlState.move.touchId = null;
+  setMoveInputFromAxis(0, 0);
+  setRockerKnobPosition(touchControlState.move.knob, 0, 0);
+}
+
+function resetLookTouchState() {
+  touchControlState.look.touchId = null;
+  setLookInputFromAxis(0, 0);
+  setRockerKnobPosition(touchControlState.look.knob, 0, 0);
+}
+
+function isTouchInsideElement(touch, element) {
+  if (!element) return false;
+  const rect = element.getBoundingClientRect();
+  return (
+    touch.clientX >= rect.left &&
+    touch.clientX <= rect.right &&
+    touch.clientY >= rect.top &&
+    touch.clientY <= rect.bottom
+  );
+}
+
+function setRockerAxisFromTouch(control, touch, applyAxis) {
+  if (!control.stick || !control.knob) return;
+  const rect = control.stick.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const deltaX = touch.clientX - centerX;
+  const deltaY = touch.clientY - centerY;
+  const distance = Math.hypot(deltaX, deltaY);
+  const maxOffset = control.maxOffset || 1;
+  const clampedScale = distance > maxOffset ? maxOffset / distance : 1;
+  const offsetX = deltaX * clampedScale;
+  const offsetY = deltaY * clampedScale;
+
+  setRockerKnobPosition(control.knob, offsetX, offsetY);
+  applyAxis(offsetX / maxOffset, offsetY / maxOffset);
+}
+
+function updateTouchControlLayout() {
+  if (!touchControlState.initialized) return;
+
+  const overlay = touchControlState.overlay;
+  if (overlay && overlay.style.display === 'none') {
+    return;
+  }
+
+  touchControlState.move.maxOffset = getRockerMaxOffset(
+    touchControlState.move.stick,
+  );
+  touchControlState.look.maxOffset = getRockerMaxOffset(
+    touchControlState.look.stick,
+  );
+}
+
+function updateTouchControlVisibility() {
+  if (!touchControlState.overlay) return;
+  const active = isGameplayActive();
+  const wasVisible = touchControlState.overlay.style.display === 'block';
+  touchControlState.overlay.style.display = active ? 'block' : 'none';
+  if (active && !wasVisible) {
+    requestAnimationFrame(updateTouchControlLayout);
+  }
+  if (!active) {
+    if (touchControlState.move.touchId !== null) {
+      resetMoveTouchState();
+    }
+    if (touchControlState.look.touchId !== null) {
+      resetLookTouchState();
+    }
+    touchControlState.tapCandidates.clear();
+  }
+}
+
+function registerTapCandidate(touch) {
+  touchControlState.tapCandidates.set(touch.identifier, {
+    startX: touch.clientX,
+    startY: touch.clientY,
+    startTime: performance.now(),
+    moved: false,
+  });
+}
+
+function updateTapCandidate(touch) {
+  const candidate = touchControlState.tapCandidates.get(touch.identifier);
+  if (!candidate) return;
+  const deltaX = touch.clientX - candidate.startX;
+  const deltaY = touch.clientY - candidate.startY;
+  if (Math.hypot(deltaX, deltaY) > TOUCH_TAP_MAX_MOVE) {
+    candidate.moved = true;
+  }
+}
+
+function clearTapCandidate(touch, allowSelection) {
+  const candidate = touchControlState.tapCandidates.get(touch.identifier);
+  if (!candidate) return false;
+
+  touchControlState.tapCandidates.delete(touch.identifier);
+  if (!allowSelection) return false;
+
+  const elapsed = performance.now() - candidate.startTime;
+  const deltaX = touch.clientX - candidate.startX;
+  const deltaY = touch.clientY - candidate.startY;
+  const moved =
+    candidate.moved || Math.hypot(deltaX, deltaY) > TOUCH_TAP_MAX_MOVE;
+  if (moved || elapsed > TOUCH_TAP_MAX_DURATION) return false;
+
+  onMouseClick({ clientX: touch.clientX, clientY: touch.clientY });
+  return true;
+}
+
+function handleTouchStart(event) {
+  if (!touchControlState.initialized || !isGameplayActive()) return;
+  updateTouchControlLayout();
+
+  let consumed = false;
+  for (let i = 0; i < event.changedTouches.length; i++) {
+    const touch = event.changedTouches[i];
+    const inMoveRocker = isTouchInsideElement(
+      touch,
+      touchControlState.move.stick,
+    );
+    const inLookRocker = isTouchInsideElement(
+      touch,
+      touchControlState.look.stick,
+    );
+
+    if (inMoveRocker && touchControlState.move.touchId === null) {
+      touchControlState.move.touchId = touch.identifier;
+      setRockerAxisFromTouch(
+        touchControlState.move,
+        touch,
+        setMoveInputFromAxis,
+      );
+      consumed = true;
+      continue;
+    }
+
+    if (inLookRocker && touchControlState.look.touchId === null) {
+      touchControlState.look.touchId = touch.identifier;
+      setRockerAxisFromTouch(
+        touchControlState.look,
+        touch,
+        setLookInputFromAxis,
+      );
+      consumed = true;
+      continue;
+    }
+
+    if (!inMoveRocker && !inLookRocker) {
+      registerTapCandidate(touch);
+    }
+  }
+
+  if (consumed) {
+    event.preventDefault();
+  }
+}
+
+function handleTouchMove(event) {
+  if (!touchControlState.initialized) return;
+
+  let consumed = false;
+  for (let i = 0; i < event.changedTouches.length; i++) {
+    const touch = event.changedTouches[i];
+    if (touch.identifier === touchControlState.move.touchId) {
+      setRockerAxisFromTouch(
+        touchControlState.move,
+        touch,
+        setMoveInputFromAxis,
+      );
+      consumed = true;
+      continue;
+    }
+
+    if (touch.identifier === touchControlState.look.touchId) {
+      setRockerAxisFromTouch(
+        touchControlState.look,
+        touch,
+        setLookInputFromAxis,
+      );
+      consumed = true;
+      continue;
+    }
+
+    updateTapCandidate(touch);
+  }
+
+  if (consumed || isGameplayActive()) {
+    event.preventDefault();
+  }
+}
+
+function handleTouchEndInternal(event, allowSelection) {
+  if (!touchControlState.initialized) return;
+
+  let consumed = false;
+  for (let i = 0; i < event.changedTouches.length; i++) {
+    const touch = event.changedTouches[i];
+    if (touch.identifier === touchControlState.move.touchId) {
+      resetMoveTouchState();
+      consumed = true;
+      continue;
+    }
+
+    if (touch.identifier === touchControlState.look.touchId) {
+      resetLookTouchState();
+      consumed = true;
+      continue;
+    }
+
+    const selected = clearTapCandidate(
+      touch,
+      allowSelection && isGameplayActive(),
+    );
+    consumed = consumed || selected;
+  }
+
+  if (consumed || isGameplayActive()) {
+    event.preventDefault();
+  }
+}
+
+function handleTouchEnd(event) {
+  handleTouchEndInternal(event, true);
+}
+
+function handleTouchCancel(event) {
+  handleTouchEndInternal(event, false);
+}
+
+function setupTouchControls() {
+  if (touchControlState.initialized) return;
+
+  touchControlState.overlay = document.getElementById('touch-controls');
+  touchControlState.move.stick = document.getElementById('move-rocker');
+  touchControlState.move.knob = document.getElementById('move-rocker-knob');
+  touchControlState.look.stick = document.getElementById('look-rocker');
+  touchControlState.look.knob = document.getElementById('look-rocker-knob');
+
+  if (
+    !touchControlState.overlay ||
+    !touchControlState.move.stick ||
+    !touchControlState.move.knob ||
+    !touchControlState.look.stick ||
+    !touchControlState.look.knob
+  ) {
+    return;
+  }
+
+  touchControlState.initialized = true;
+  updateTouchControlLayout();
+  resetMoveTouchState();
+  resetLookTouchState();
+  updateTouchControlVisibility();
+
+  window.addEventListener('resize', updateTouchControlLayout);
+  window.addEventListener('touchstart', handleTouchStart, { passive: false });
+  window.addEventListener('touchmove', handleTouchMove, { passive: false });
+  window.addEventListener('touchend', handleTouchEnd, { passive: false });
+  window.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+}
+
 function mouseMove(e) {
-  mouse.x =
-    ((document.getElementById('aiming1').offsetLeft + 10) / window.innerWidth) *
-      2 -
-    1;
-  mouse.y =
-    -(
-      (document.getElementById('aiming1').offsetTop + 10) /
-      window.innerHeight
-    ) *
-      2 +
-    1;
+  if (isMobileDevice) return;
 
   document.getElementById('aiming1').style.left = e.clientX - 10 + 'px';
   document.getElementById('aiming1').style.top = e.clientY - 10 + 'px';
+  updatePointerFromClient(e.clientX, e.clientY);
+
   if (esc) {
     mouseP = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   } else {
@@ -1169,6 +1511,14 @@ function crash_detect(a, b, i) {
 }
 
 function onMouseClick(event) {
+  if (
+    event &&
+    typeof event.clientX === 'number' &&
+    typeof event.clientY === 'number'
+  ) {
+    updatePointerFromClient(event.clientX, event.clientY);
+  }
+
   if (document.getElementById('content').style.display == 'none' && !esc) {
     raycaster1.setFromCamera(mouse, camera);
     raycaster1.near = 0.1;
@@ -1193,7 +1543,9 @@ function onMouseClick(event) {
   }
 }
 
-window.addEventListener('mousedown', onMouseClick, false);
+if (!isMobileDevice) {
+  window.addEventListener('mousedown', onMouseClick, false);
+}
 
 function operation_method_1(delta) {
   if (!ufo || !ufo.children || !ufo.children[10]) return;
@@ -1234,8 +1586,15 @@ function operation_method_1(delta) {
   if (document.getElementById('content').style.display == 'none') {
     esc = false;
   }
-  if (fast) maxSpeed = 0.6 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.03 * fpsScale, 0.3 * fpsScale);
+  if (fast) maxSpeed = 0.75 * fpsScale;
+  else maxSpeed = Math.max(maxSpeed - 0.03 * fpsScale, 0.6 * fpsScale);
+  const touchDrivenMove =
+    isMobileDevice && touchControlState.move.touchId !== null;
+  const moveSpeedScale = touchDrivenMove
+    ? Math.max(0.05, moveInputStrength)
+    : 1;
+  const maxSpeedForward = maxSpeed * moveSpeedScale;
+  const maxSpeedRight = (maxSpeed / 2) * moveSpeedScale;
 
   if ((moveForward || moveBackward || moveRight || moveLeft) && !fast) {
     ufo.children[1].scale.y =
@@ -1284,7 +1643,7 @@ function operation_method_1(delta) {
       cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
       cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
       currentSpeedForward = Math.min(
-        maxSpeed,
+        maxSpeedForward,
         currentSpeedForward + delta * acc,
       );
       Forward = true;
@@ -1300,7 +1659,7 @@ function operation_method_1(delta) {
       cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
       cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
       currentSpeedForward = Math.min(
-        maxSpeed,
+        maxSpeedForward,
         currentSpeedForward + delta * acc,
       );
       Forward = false;
@@ -1316,7 +1675,7 @@ function operation_method_1(delta) {
       cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
       cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
       currentSpeedRight = Math.min(
-        maxSpeed / 2,
+        maxSpeedRight,
         currentSpeedRight + delta * acc,
       );
       Right = true;
@@ -1330,7 +1689,7 @@ function operation_method_1(delta) {
       cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
       cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
       currentSpeedRight = Math.min(
-        maxSpeed / 2,
+        maxSpeedRight,
         currentSpeedRight + delta * acc,
       );
       Right = false;
@@ -1360,15 +1719,15 @@ function operation_method_1(delta) {
       currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
     }
   }
-  angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fpsScale;
+  angleX += (left / 24 / Math.PI - right / 24 / Math.PI) * fpsScale;
   cameraDirectionVec.x -= (Math.sin(angleX) * ufo_scale) / 2;
   cameraDirectionVec.z -= (Math.cos(angleX) * ufo_scale) / 2;
 
   if (cameraDirectionVec.y < 0.85 * ufo_scale && !scaling) {
-    angleY += (up / 600 / Math.PI) * fpsScale * ufo_scale;
+    angleY += (up / 1400 / Math.PI) * fpsScale * ufo_scale;
   }
   if (cameraDirectionVec.y > -0.8 * ufo_scale && !scaling) {
-    angleY -= (down / 500 / Math.PI) * fpsScale * ufo_scale;
+    angleY -= (down / 1250 / Math.PI) * fpsScale * ufo_scale;
   }
   //console.log(angleY)
   cameraDirectionVec.y = Math.sin(angleY) * 60;
@@ -1568,7 +1927,10 @@ function operation_method_1(delta) {
 }
 
 function animate() {
-  toggleAimingCursor(esc);
+  toggleAimingCursor(esc || isMobileDevice);
+  if (isMobileDevice) {
+    updateTouchControlVisibility();
+  }
 
   const delta = clock.getDelta();
   requestAnimationFrame(animate);
