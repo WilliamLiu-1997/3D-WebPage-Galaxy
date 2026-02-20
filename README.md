@@ -19,7 +19,10 @@ Video
 
 ## Live Demo
 
-https://3-d-web-page-galaxy.vercel.app/
+https://3-d-web-page-galaxy.vercel.app/solar.html
+https://3-d-web-page-galaxy.vercel.app/lightning.html
+https://3-d-web-page-galaxy.vercel.app/alien_base.html
+https://3-d-web-page-galaxy.vercel.app/island.html
 
 **A RTX2060 or better GPU is highly recommended for this program!**
 
