@@ -4,15 +4,6 @@ const DEFAULT_METEOR_CONFIG = {
   trailStepDivisor: 1,
 };
 
-function resolveSpriteMaterial(spriteOrMaterial) {
-  if (!spriteOrMaterial) return null;
-  if (spriteOrMaterial.isMaterial) return spriteOrMaterial;
-  if (spriteOrMaterial.material && spriteOrMaterial.material.isMaterial) {
-    return spriteOrMaterial.material;
-  }
-  return null;
-}
-
 function createMeteorPointTexture(THREE) {
   const size = 64;
   const canvas = document.createElement('canvas');
@@ -106,18 +97,6 @@ export function createMeteorSystem({
   ) {
     return null;
   }
-
-  const headMaterialRef = resolveSpriteMaterial(meteorHeadMaterial);
-  const tailMaterialRef = resolveSpriteMaterial(meteorTailMaterial);
-  if (!headMaterialRef || !tailMaterialRef) {
-    return null;
-  }
-
-  const headColor = new THREE.Color(0xffffff);
-  const tailColor = new THREE.Color(0xffffff);
-  if (headMaterialRef.color) headColor.copy(headMaterialRef.color);
-  if (tailMaterialRef.color) tailColor.copy(tailMaterialRef.color);
-
   const meteorRenderOrder = Math.max(
     meteorHeadMaterial.renderOrder ?? 0,
     meteorTailMaterial.renderOrder ?? 0,
@@ -200,11 +179,11 @@ export function createMeteorSystem({
     const pointColors = [];
     let maxMeteorLengthSq = 0;
 
-    const pushPoint = (px, py, pz, psize, palpha, r, g, b) => {
+    const pushPoint = (px, py, pz, psize, palpha) => {
       positions.push(px, py, pz);
       pointSizes.push(psize);
       pointAlphas.push(palpha);
-      pointColors.push(r, g, b);
+      pointColors.push(1, 1, 1);
       const pointDistanceSq = px * px + py * py + pz * pz;
       if (pointDistanceSq > maxMeteorLengthSq) {
         maxMeteorLengthSq = pointDistanceSq;
@@ -217,21 +196,13 @@ export function createMeteorSystem({
       const bodySizeMultiplier = 1 + (sizeFactor - 1);
       const progress = (originalSize - size) / trailDenominator;
       const fade = 1 - progress;
-      const blend = Math.min(1, progress * 0.9 + 0.1);
-
-      const mixedR = headColor.r + (tailColor.r - headColor.r) * blend;
-      const mixedG = headColor.g + (tailColor.g - headColor.g) * blend;
-      const mixedB = headColor.b + (tailColor.b - headColor.b) * blend;
 
       pushPoint(
         x - originX,
         y - originY,
         z - originZ,
         size * bodySizeMultiplier,
-        Math.max(0.08, fade * fade * 0.9),
-        mixedR,
-        mixedG,
-        mixedB,
+        Math.max(0.1, fade * 0.8),
       );
 
       x -= (size * velocity.x) / trailStepDivisor;

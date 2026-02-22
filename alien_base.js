@@ -12,6 +12,27 @@ import {
 import { initSharedUfo } from './JS/shared/ufo-factory.js';
 import { createMeteorSystem } from './JS/shared/meteor-system.js';
 import { createStarfieldSystem } from './JS/shared/starfield-system.js';
+import {
+  computeLookInputFromMousePosition,
+  getAimingMousePosition,
+  isContentHidden,
+  isGameplayActive,
+  updatePointerFromClient,
+} from './JS/shared/input-common.js';
+import {
+  createFollowTargetFilter,
+  pickFollowTargetFromScene,
+} from './JS/shared/follow-click.js';
+import { createTouchRockerControls } from './JS/shared/touch-rocker-controls.js';
+import {
+  applyUfoHitEffect,
+  setUfoIndicatorColor,
+  stepUfoStarlight,
+  updateUfoControlState,
+  updateUfoFollowThrustEffect,
+  updateUfoIdleThrustEffect,
+  updateUfoThrustEffect,
+} from './JS/shared/ufo-control.js';
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -120,41 +141,43 @@ const raycaster = new THREE.Raycaster();
 const raycaster1 = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let selected_object = false;
-const TOUCH_TAP_MAX_DURATION = 280;
-const TOUCH_TAP_MAX_MOVE = 18;
-const TOUCH_MOVE_DEADZONE = 0.1;
-const TOUCH_LOOK_DEADZONE = 0.1;
-const TOUCH_LOOK_SCALE = 0.35;
-const TOUCH_ROCKER_TRAVEL_RATIO = 1;
-const touchControlState = {
-  initialized: false,
-  overlay: null,
-  move: {
-    stick: null,
-    knob: null,
-    touchId: null,
-    maxOffset: 1,
+const touchControls = createTouchRockerControls({
+  moveDeadzone: 0.1,
+  lookDeadzone: 0.1,
+  lookScale: 0.35,
+  rockerTravelRatio: 1,
+  tapMaxDuration: 280,
+  tapMaxMove: 18,
+  isGameplayActive: () => isGameplayActive('content', esc),
+  onMoveAxis: (horizontal, vertical, strength) => {
+    moveInputStrength = strength;
+    moveLeft = horizontal < 0;
+    moveRight = horizontal > 0;
+    moveForward = vertical < 0;
+    moveBackward = vertical > 0;
+
+    if (moveLeft || moveRight || moveForward || moveBackward) {
+      selected_object = false;
+    }
   },
-  look: {
-    stick: null,
-    knob: null,
-    touchId: null,
-    maxOffset: 1,
+  onLookAxis: (horizontal, vertical) => {
+    left = Math.max(0, -horizontal);
+    right = Math.max(0, horizontal);
+    up = Math.max(0, -vertical);
+    down = Math.max(0, vertical);
   },
-  tapCandidates: new Map(),
-};
+  onTap: (clientX, clientY) => {
+    onMouseClick({ clientX, clientY });
+  },
+});
 const isMobileDevice =
   /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') ||
   navigator.maxTouchPoints > 1 ||
   window.matchMedia('(pointer: coarse)').matches;
 
-function isFollowTargetObject(object) {
-  if (!object) return false;
-  if (object.userData && object.userData.ignoreClickFollow) return false;
-  if (object.type === 'Sprite' || object.type === 'Points') return false;
-  if (object.name === 'ring' || object.name === 'Sky') return false;
-  return true;
-}
+const isFollowTargetObject = createFollowTargetFilter({
+  excludedNames: ['ring', 'Sky'],
+});
 
 function getStarConeMinY(x, z) {
   const radialDistance = Math.sqrt(x * x + z * z);
@@ -387,7 +410,7 @@ function init() {
   if (!isMobileDevice) {
     document.addEventListener('mousemove', mouseMove, false);
   } else {
-    setupTouchControls();
+    touchControls.setup();
   }
 
   const onKeyDown = function (e) {
@@ -716,365 +739,28 @@ function obj_loader(url, url1, scale, double = true) {
   return newobj;
 }
 
-function updatePointerFromClient(clientX, clientY) {
-  mouse.x = (clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-}
-
-function getMousePosition() {
-  const x = document.getElementById('aiming1').offsetLeft + 10;
-  const y = document.getElementById('aiming1').offsetTop + 10;
-  return { x: x, y: y };
-}
-
-function setMoveInputFromAxis(axisX, axisY) {
-  const horizontal = Math.abs(axisX) > TOUCH_MOVE_DEADZONE ? axisX : 0;
-  const vertical = Math.abs(axisY) > TOUCH_MOVE_DEADZONE ? axisY : 0;
-  moveInputStrength = Math.min(1, Math.hypot(horizontal, vertical));
-
-  moveLeft = horizontal < 0;
-  moveRight = horizontal > 0;
-  moveForward = vertical < 0;
-  moveBackward = vertical > 0;
-
-  if (moveLeft || moveRight || moveForward || moveBackward) {
-    selected_object = false;
-  }
-}
-
-function setLookInputFromAxis(axisX, axisY) {
-  const horizontal = Math.abs(axisX) > TOUCH_LOOK_DEADZONE ? axisX : 0;
-  const vertical = Math.abs(axisY) > TOUCH_LOOK_DEADZONE ? axisY : 0;
-
-  left = Math.max(0, -horizontal) * TOUCH_LOOK_SCALE;
-  right = Math.max(0, horizontal) * TOUCH_LOOK_SCALE;
-  up = Math.max(0, -vertical) * TOUCH_LOOK_SCALE;
-  down = Math.max(0, vertical) * TOUCH_LOOK_SCALE;
-}
-
-function setRockerKnobPosition(knob, offsetX, offsetY) {
-  if (!knob) return;
-  knob.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
-}
-
-function getRockerMaxOffset(stick) {
-  if (!stick) return 1;
-
-  const stickRect = stick.getBoundingClientRect();
-  let stickSize = Math.min(stickRect.width, stickRect.height);
-  if (!stickSize) {
-    const stickStyle = window.getComputedStyle(stick);
-    stickSize = Math.min(
-      parseFloat(stickStyle.width) || 0,
-      parseFloat(stickStyle.height) || 0,
-    );
-  }
-
-  if (!stickSize) return 1;
-  return Math.max(1, (stickSize / 2) * TOUCH_ROCKER_TRAVEL_RATIO);
-}
-
-function isGameplayActive() {
-  const content = document.getElementById('content');
-  return Boolean(content && content.style.display == 'none' && !esc);
-}
-
-function resetMoveTouchState() {
-  touchControlState.move.touchId = null;
-  setMoveInputFromAxis(0, 0);
-  setRockerKnobPosition(touchControlState.move.knob, 0, 0);
-}
-
-function resetLookTouchState() {
-  touchControlState.look.touchId = null;
-  setLookInputFromAxis(0, 0);
-  setRockerKnobPosition(touchControlState.look.knob, 0, 0);
-}
-
-function isTouchInsideElement(touch, element) {
-  if (!element) return false;
-  const rect = element.getBoundingClientRect();
-  return (
-    touch.clientX >= rect.left &&
-    touch.clientX <= rect.right &&
-    touch.clientY >= rect.top &&
-    touch.clientY <= rect.bottom
-  );
-}
-
-function setRockerAxisFromTouch(control, touch, applyAxis) {
-  if (!control.stick || !control.knob) return;
-  const rect = control.stick.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const deltaX = touch.clientX - centerX;
-  const deltaY = touch.clientY - centerY;
-  const distance = Math.hypot(deltaX, deltaY);
-  const maxOffset = control.maxOffset || 1;
-  const clampedScale = distance > maxOffset ? maxOffset / distance : 1;
-  const offsetX = deltaX * clampedScale;
-  const offsetY = deltaY * clampedScale;
-
-  setRockerKnobPosition(control.knob, offsetX, offsetY);
-  applyAxis(offsetX / maxOffset, offsetY / maxOffset);
-}
-
-function updateTouchControlLayout() {
-  if (!touchControlState.initialized) return;
-
-  const overlay = touchControlState.overlay;
-  if (overlay && overlay.style.display === 'none') {
-    return;
-  }
-
-  touchControlState.move.maxOffset = getRockerMaxOffset(
-    touchControlState.move.stick,
-  );
-  touchControlState.look.maxOffset = getRockerMaxOffset(
-    touchControlState.look.stick,
-  );
-}
-
-function updateTouchControlVisibility() {
-  if (!touchControlState.overlay) return;
-  const active = isGameplayActive();
-  const wasVisible = touchControlState.overlay.style.display === 'block';
-  touchControlState.overlay.style.display = active ? 'block' : 'none';
-  if (active && !wasVisible) {
-    requestAnimationFrame(updateTouchControlLayout);
-  }
-  if (!active) {
-    if (touchControlState.move.touchId !== null) {
-      resetMoveTouchState();
-    }
-    if (touchControlState.look.touchId !== null) {
-      resetLookTouchState();
-    }
-    touchControlState.tapCandidates.clear();
-  }
-}
-
-function registerTapCandidate(touch) {
-  touchControlState.tapCandidates.set(touch.identifier, {
-    startX: touch.clientX,
-    startY: touch.clientY,
-    startTime: performance.now(),
-    moved: false,
-  });
-}
-
-function updateTapCandidate(touch) {
-  const candidate = touchControlState.tapCandidates.get(touch.identifier);
-  if (!candidate) return;
-  const deltaX = touch.clientX - candidate.startX;
-  const deltaY = touch.clientY - candidate.startY;
-  if (Math.hypot(deltaX, deltaY) > TOUCH_TAP_MAX_MOVE) {
-    candidate.moved = true;
-  }
-}
-
-function clearTapCandidate(touch, allowSelection) {
-  const candidate = touchControlState.tapCandidates.get(touch.identifier);
-  if (!candidate) return false;
-
-  touchControlState.tapCandidates.delete(touch.identifier);
-  if (!allowSelection) return false;
-
-  const elapsed = performance.now() - candidate.startTime;
-  const deltaX = touch.clientX - candidate.startX;
-  const deltaY = touch.clientY - candidate.startY;
-  const moved =
-    candidate.moved || Math.hypot(deltaX, deltaY) > TOUCH_TAP_MAX_MOVE;
-  if (moved || elapsed > TOUCH_TAP_MAX_DURATION) return false;
-
-  onMouseClick({ clientX: touch.clientX, clientY: touch.clientY });
-  return true;
-}
-
-function handleTouchStart(event) {
-  if (!touchControlState.initialized || !isGameplayActive()) return;
-  updateTouchControlLayout();
-
-  let consumed = false;
-  for (let i = 0; i < event.changedTouches.length; i++) {
-    const touch = event.changedTouches[i];
-    const inMoveRocker = isTouchInsideElement(
-      touch,
-      touchControlState.move.stick,
-    );
-    const inLookRocker = isTouchInsideElement(
-      touch,
-      touchControlState.look.stick,
-    );
-
-    if (inMoveRocker && touchControlState.move.touchId === null) {
-      touchControlState.move.touchId = touch.identifier;
-      setRockerAxisFromTouch(
-        touchControlState.move,
-        touch,
-        setMoveInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    if (inLookRocker && touchControlState.look.touchId === null) {
-      touchControlState.look.touchId = touch.identifier;
-      setRockerAxisFromTouch(
-        touchControlState.look,
-        touch,
-        setLookInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    if (!inMoveRocker && !inLookRocker) {
-      registerTapCandidate(touch);
-    }
-  }
-
-  if (consumed) {
-    event.preventDefault();
-  }
-}
-
-function handleTouchMove(event) {
-  if (!touchControlState.initialized) return;
-
-  let consumed = false;
-  for (let i = 0; i < event.changedTouches.length; i++) {
-    const touch = event.changedTouches[i];
-    if (touch.identifier === touchControlState.move.touchId) {
-      setRockerAxisFromTouch(
-        touchControlState.move,
-        touch,
-        setMoveInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    if (touch.identifier === touchControlState.look.touchId) {
-      setRockerAxisFromTouch(
-        touchControlState.look,
-        touch,
-        setLookInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    updateTapCandidate(touch);
-  }
-
-  if (consumed || isGameplayActive()) {
-    event.preventDefault();
-  }
-}
-
-function handleTouchEndInternal(event, allowSelection) {
-  if (!touchControlState.initialized) return;
-
-  let consumed = false;
-  for (let i = 0; i < event.changedTouches.length; i++) {
-    const touch = event.changedTouches[i];
-    if (touch.identifier === touchControlState.move.touchId) {
-      resetMoveTouchState();
-      consumed = true;
-      continue;
-    }
-
-    if (touch.identifier === touchControlState.look.touchId) {
-      resetLookTouchState();
-      consumed = true;
-      continue;
-    }
-
-    const selected = clearTapCandidate(
-      touch,
-      allowSelection && isGameplayActive(),
-    );
-    consumed = consumed || selected;
-  }
-
-  if (consumed || isGameplayActive()) {
-    event.preventDefault();
-  }
-}
-
-function handleTouchEnd(event) {
-  handleTouchEndInternal(event, true);
-}
-
-function handleTouchCancel(event) {
-  handleTouchEndInternal(event, false);
-}
-
-function setupTouchControls() {
-  if (touchControlState.initialized) return;
-
-  touchControlState.overlay = document.getElementById('touch-controls');
-  touchControlState.move.stick = document.getElementById('move-rocker');
-  touchControlState.move.knob = document.getElementById('move-rocker-knob');
-  touchControlState.look.stick = document.getElementById('look-rocker');
-  touchControlState.look.knob = document.getElementById('look-rocker-knob');
-
-  if (
-    !touchControlState.overlay ||
-    !touchControlState.move.stick ||
-    !touchControlState.move.knob ||
-    !touchControlState.look.stick ||
-    !touchControlState.look.knob
-  ) {
-    return;
-  }
-
-  touchControlState.initialized = true;
-  updateTouchControlLayout();
-  resetMoveTouchState();
-  resetLookTouchState();
-  updateTouchControlVisibility();
-
-  window.addEventListener('resize', updateTouchControlLayout);
-  window.addEventListener('touchstart', handleTouchStart, { passive: false });
-  window.addEventListener('touchmove', handleTouchMove, { passive: false });
-  window.addEventListener('touchend', handleTouchEnd, { passive: false });
-  window.addEventListener('touchcancel', handleTouchCancel, { passive: false });
-}
-
 function mouseMove(e) {
   if (isMobileDevice) return;
 
   document.getElementById('aiming1').style.left = e.clientX - 10 + 'px';
   document.getElementById('aiming1').style.top = e.clientY - 10 + 'px';
-  updatePointerFromClient(e.clientX, e.clientY);
+  updatePointerFromClient(mouse, e.clientX, e.clientY);
 
   if (esc) {
     mouseP = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   } else {
-    mouseP = getMousePosition();
+    mouseP = getAimingMousePosition('aiming1', 10);
   }
-  if (mouseP['y'] / window.innerHeight < 0.5) {
-    up = 0.5 - mouseP['y'] / window.innerHeight;
-  } else {
-    up = 0;
-  }
-  if (mouseP['y'] / window.innerHeight > 0.62) {
-    down = mouseP['y'] / window.innerHeight - 0.62;
-  } else {
-    down = 0;
-  }
-  if (mouseP['x'] / window.innerWidth < 0.47) {
-    left = 0.47 - mouseP['x'] / window.innerWidth;
-  } else {
-    left = 0;
-  }
-  if (mouseP['x'] / window.innerWidth > 0.53) {
-    right = mouseP['x'] / window.innerWidth - 0.53;
-  } else {
-    right = 0;
-  }
+  const lookInput = computeLookInputFromMousePosition(
+    mouseP.x,
+    mouseP.y,
+    window.innerWidth,
+    window.innerHeight,
+  );
+  up = lookInput.up;
+  down = lookInput.down;
+  left = lookInput.left;
+  right = lookInput.right;
 }
 
 function bounder_detect() {
@@ -1170,24 +856,20 @@ function onMouseClick(event) {
     typeof event.clientX === 'number' &&
     typeof event.clientY === 'number'
   ) {
-    updatePointerFromClient(event.clientX, event.clientY);
+    updatePointerFromClient(mouse, event.clientX, event.clientY);
   }
 
-  if (document.getElementById('content').style.display == 'none' && !esc) {
-    raycaster1.setFromCamera(mouse, camera);
-    raycaster1.near = 0.1;
-    raycaster1.far = 10000;
-    const intersects = raycaster1.intersectObjects(scene.children, true);
-    let hitIndex = -1;
-    for (let i = 0; i < intersects.length; i++) {
-      if (isFollowTargetObject(intersects[i].object)) {
-        hitIndex = i;
-        break;
-      }
-    }
-    if (hitIndex !== -1) {
+  if (isGameplayActive('content', esc)) {
+    const selectedHit = pickFollowTargetFromScene({
+      mouse,
+      camera,
+      scene,
+      raycaster: raycaster1,
+      isFollowTargetObject,
+    });
+    if (selectedHit) {
       arrived = 50;
-      selected_object = intersects[hitIndex];
+      selected_object = selectedHit;
       catchspeed = 0;
       t_in = true;
     } else {
@@ -1208,43 +890,34 @@ function operation_method_1(delta) {
     hit_frame = 500;
     chasingFrame = 0;
   }
-  if (hit_frame > 0) {
+  const hitState = applyUfoHitEffect({
+    ufo,
+    cameraPositionVec,
+    hitDirectionVec,
+    hitFrame: hit_frame,
+    rotatespeed,
+    knockbackDivisor: 100000,
+    fpsScale,
+    speed,
+  });
+
+  if (hitState.active) {
     moveForward = moveLeft = moveRight = moveBackward = false;
     currentSpeedForward = 0;
     currentSpeedRight = 0;
-    cameraPositionVec.x +=
-      (hitDirectionVec.x * hit_frame * rotatespeed) / 100000;
-    cameraPositionVec.y +=
-      (hitDirectionVec.y * hit_frame * rotatespeed) / 100000;
-    cameraPositionVec.z +=
-      (hitDirectionVec.z * hit_frame * rotatespeed) / 100000;
-
-    ufo.rotation.x = Math.cos((hit_frame * Math.PI) / 7) * (hit_frame / 3000);
-    ufo.rotation.z = Math.sin((hit_frame * Math.PI) / 7) * (hit_frame / 3000);
-    ufo.children[1].scale.set(0, 0);
-    ufo.children[1].material.opacity = 0;
-    ufo.children[1].position.y = 0.15;
-
-    ufo.children[10].material.color.set(0xff2222);
-    ufo.children[10].material.specular.set(0xff2222);
-    ufo.children[10].material.emissive.set(0xff2222);
-
-    hit_frame -= fpsScale;
-    speed = -speed / 20 + speed;
+    hit_frame = hitState.hitFrame;
+    speed = hitState.speed;
     selected_object = false;
   } else {
     ufo.rotation.x = 0;
-    ufo.children[10].material.color.set(0x44e0ff);
-    ufo.children[10].material.specular.set(0x44e0ff);
-    ufo.children[10].material.emissive.set(0x44e0ff);
+    setUfoIndicatorColor({ ufo, color: 0x44e0ff });
   }
-  if (document.getElementById('content').style.display == 'none') {
+  if (isContentHidden('content')) {
     esc = false;
   }
   if (fast) maxSpeed = 0.12 * fpsScale;
   else maxSpeed = Math.max(maxSpeed - 0.002 * fpsScale, 0.05 * fpsScale);
-  const touchDrivenMove =
-    isMobileDevice && touchControlState.move.touchId !== null;
+  const touchDrivenMove = isMobileDevice && touchControls.isMoveTouchActive();
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
     : 1;
@@ -1252,155 +925,60 @@ function operation_method_1(delta) {
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = maxSpeed * moveSpeedScale;
 
-  if ((moveForward || moveBackward || moveRight || moveLeft) && !fast) {
-    ufo.children[1].scale.y =
-      ((0.4 - ufo.children[1].scale.y) / 50) * fpsScale +
-      ufo.children[1].scale.y;
-    ufo.children[1].material.opacity =
-      ((0.8 - ufo.children[1].material.opacity) / 50) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.09 - ufo.children[1].position.y) / 50) * fpsScale +
-      ufo.children[1].position.y;
-    speed = (2 - speed) / 50 + speed;
-  } else if ((moveForward || moveBackward || moveRight || moveLeft) && fast) {
-    ufo.children[1].scale.y =
-      ((0.6 - ufo.children[1].scale.y) / 50) * fpsScale +
-      ufo.children[1].scale.y;
-    ufo.children[1].material.opacity =
-      ((0.95 - ufo.children[1].material.opacity) / 50) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.15 - ufo.children[1].position.y) / 50) * fpsScale +
-      ufo.children[1].position.y;
-    speed = (4 - speed) / 50 + speed;
-  } else {
-    ufo.children[1].scale.y =
-      ((0.25 - ufo.children[1].scale.y) / 50) * fpsScale +
-      ufo.children[1].scale.y;
-    ufo.children[1].material.opacity =
-      ((0.7 - ufo.children[1].material.opacity) / 50) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.04 - ufo.children[1].position.y) / 50) * fpsScale +
-      ufo.children[1].position.y;
-    speed = (1 - speed) / 50 + speed;
-  }
-  // Mouse Move
+  if (hit_frame <= 0) {
+    speed = updateUfoThrustEffect({
+      ufo,
+      moveForward,
+      moveBackward,
+      moveLeft,
+      moveRight,
+      fast,
+      fpsScale,
+      speed,
+    });
+    // Mouse Move
 
-  if (moveForward && !moveBackward) {
-    if (!Forward && currentSpeedForward != 0) {
-      cameraPositionVec.z -= cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    } else {
-      cameraPositionVec.z += cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.min(
-        maxSpeedForward,
-        currentSpeedForward + delta * acc,
-      );
-      Forward = true;
-    }
-  } else if (moveBackward && !moveForward) {
-    if (Forward && currentSpeedForward != 0) {
-      cameraPositionVec.z += cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    } else {
-      cameraPositionVec.z -= cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.min(
-        maxSpeedForward,
-        currentSpeedForward + delta * acc,
-      );
-      Forward = false;
-    }
+    const controlState = updateUfoControlState({
+      moveForward,
+      moveBackward,
+      moveLeft,
+      moveRight,
+      cameraPositionVec,
+      cameraDirectionVec,
+      currentSpeedForward,
+      currentSpeedRight,
+      forwardDirection: Forward,
+      rightDirection: Right,
+      delta,
+      acceleration: acc,
+      maxSpeedForward,
+      maxSpeedRight,
+      leftInput: left,
+      rightInput: right,
+      upInput: up,
+      downInput: down,
+      angleX,
+      angleY,
+      fpsScale,
+      ufoScale: ufo_scale,
+      scaling,
+      yawDivisor: 15,
+      pitchUpDivisor: 600,
+      pitchDownDivisor: 500,
+    });
+    currentSpeedForward = controlState.currentSpeedForward;
+    currentSpeedRight = controlState.currentSpeedRight;
+    Forward = controlState.forwardDirection;
+    Right = controlState.rightDirection;
+    angleX = controlState.angleX;
+    angleY = controlState.angleY;
   }
 
-  if (moveRight && !moveLeft) {
-    if (!Right && currentSpeedRight != 0) {
-      cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    } else {
-      cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.min(
-        maxSpeedRight,
-        currentSpeedRight + delta * acc,
-      );
-      Right = true;
-    }
-  } else if (moveLeft && !moveRight) {
-    if (Right && currentSpeedRight != 0) {
-      cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    } else {
-      cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.min(
-        maxSpeedRight,
-        currentSpeedRight + delta * acc,
-      );
-      Right = false;
-    }
-  }
-  if ((!moveBackward && !moveForward) || (moveBackward && moveForward)) {
-    if (Forward) {
-      cameraPositionVec.z += cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    } else {
-      cameraPositionVec.z -= cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    }
-  }
-  if ((!moveRight && !moveLeft) || (moveRight && moveLeft)) {
-    if (Right) {
-      cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    } else {
-      cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    }
-  }
-
-  angleX += (left / 15 / Math.PI - right / 15 / Math.PI) * fpsScale;
-  cameraDirectionVec.x -= (Math.sin(angleX) * ufo_scale) / 2;
-  cameraDirectionVec.z -= (Math.cos(angleX) * ufo_scale) / 2;
-
-  if (cameraDirectionVec.y < 0.85 * ufo_scale && !scaling) {
-    angleY += (up / 600 / Math.PI) * fpsScale * ufo_scale;
-  }
-  if (cameraDirectionVec.y > -0.8 * ufo_scale && !scaling) {
-    angleY -= (down / 500 / Math.PI) * fpsScale * ufo_scale;
-  }
-  //console.log(angleY)
-  cameraDirectionVec.y = Math.sin(angleY) * 60;
-  cameraDirectionVec.setLength(2.4 * ufo_scale);
-
-  if (
-    arrived > 0 &&
-    selected_object &&
-    document.getElementById('content').style.display == 'none'
-  ) {
+  if (arrived > 0 && selected_object && isContentHidden('content')) {
     //console.log(selected_object.point)
     safe_dis = 2 * ufo_scale;
     chasingFrame = 50;
-    ufo.children[10].material.color.set(0xffff33);
-    ufo.children[10].material.specular.set(0xffff33);
-    ufo.children[10].material.emissive.set(0xffff33);
+    setUfoIndicatorColor({ ufo, color: 0xffff33 });
     catchspeed = Math.min(catchspeed + 0.01 * fpsScale, 1.2 * fpsScale);
 
     const distance =
@@ -1435,34 +1013,22 @@ function operation_method_1(delta) {
       t_in = false;
     }
     if (t_in) {
-      ufo_starlight = Math.min(ufo_starlight + 0.0002 * fpsScale, 0.08);
-      ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-      ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-      ufo.children[12].intensity = ufo_starlight * 20 + 1;
-      ufo.children[1].scale.y =
-        ((0.9 - ufo.children[1].scale.y) / 50) * fpsScale +
-        ufo.children[1].scale.y;
-      ufo.children[1].material.opacity =
-        ((1 - ufo.children[1].material.opacity) / 50) * fpsScale +
-        ufo.children[1].material.opacity;
-      ufo.children[1].position.y =
-        ((-0.2 - ufo.children[1].position.y) / 50) * fpsScale +
-        ufo.children[1].position.y;
+      ufo_starlight = stepUfoStarlight({
+        ufo,
+        ufoStarlight: ufo_starlight,
+        fpsScale,
+        increase: true,
+      });
+      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
       transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
     } else {
-      ufo_starlight = Math.max(ufo_starlight - 0.0002 * fpsScale, 0.06);
-      ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-      ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-      ufo.children[12].intensity = ufo_starlight * 20 + 1;
-      ufo.children[1].scale.y =
-        ((0.25 - ufo.children[1].scale.y) / 100) * fpsScale +
-        ufo.children[1].scale.y;
-      ufo.children[1].material.opacity =
-        ((0.7 - ufo.children[1].material.opacity) / 100) * fpsScale +
-        ufo.children[1].material.opacity;
-      ufo.children[1].position.y =
-        ((-0.04 - ufo.children[1].position.y) / 100) * fpsScale +
-        ufo.children[1].position.y;
+      ufo_starlight = stepUfoStarlight({
+        ufo,
+        ufoStarlight: ufo_starlight,
+        fpsScale,
+        increase: false,
+      });
+      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
       transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
       arrived -= 1;
     }
@@ -1473,30 +1039,20 @@ function operation_method_1(delta) {
     cameraPositionVec.z += (chasing.z * catchspeed) / 50;
   } else {
     if (hit_frame <= 0) {
-      ufo.children[10].material.color.set(0x44e0ff);
-      ufo.children[10].material.specular.set(0x44e0ff);
-      ufo.children[10].material.emissive.set(0x44e0ff);
+      setUfoIndicatorColor({ ufo, color: 0x44e0ff });
       cameraPositionVec.x += ((chasing.x * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.y += ((chasing.y * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.z += ((chasing.z * catchspeed) / 2500) * chasingFrame;
       if (chasingFrame > 0) chasingFrame -= fpsScale;
       else chasingFrame = 0;
     }
-    ufo_starlight = Math.max(ufo_starlight - 0.0002 * fpsScale, 0.06);
-    ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-    ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-    ufo.children[12].intensity = ufo_starlight * 20 + 1;
-    ufo.children[1].scale.set(
-      ((0.05 - ufo.children[1].scale.x) / 100) * fpsScale +
-        ufo.children[1].scale.x,
-      (0.25 - ufo.children[1].scale.y) / 100 + ufo.children[1].scale.y,
-    );
-    ufo.children[1].material.opacity =
-      ((0.7 - ufo.children[1].material.opacity) / 100) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.04 - ufo.children[1].position.y) / 100) * fpsScale +
-      ufo.children[1].position.y;
+    ufo_starlight = stepUfoStarlight({
+      ufo,
+      ufoStarlight: ufo_starlight,
+      fpsScale,
+      increase: false,
+    });
+    updateUfoIdleThrustEffect({ ufo, fpsScale });
     transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
   }
 
@@ -1533,7 +1089,7 @@ function operation_method_1(delta) {
 function animate() {
   toggleAimingCursor(esc || isMobileDevice);
   if (isMobileDevice) {
-    updateTouchControlVisibility();
+    touchControls.updateVisibility();
   }
 
   requestAnimationFrame(animate);
