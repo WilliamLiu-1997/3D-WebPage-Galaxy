@@ -82,8 +82,8 @@ let starColors;
 let star_dx, star_dy, star_dz, star_dsx, star_dsy, star_dsz, star_s_speed;
 let count = 0;
 const STAR_GROUP_SIZE = 50;
-const STAR_POINT_BASE_SIZE = 8;
-const STAR_MOVE_DIVISOR = 10;
+const STAR_POINT_BASE_SIZE = 10;
+const STAR_MOVE_DIVISOR = 20;
 const STAR_COLOR_TINTS = [
   [0.7, 0.7, 1.0],
   [0.7, 0.7, 1.0],
