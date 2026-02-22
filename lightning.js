@@ -621,6 +621,8 @@ function init() {
     blending: THREE.AdditiveBlending,
     map: starball,
     color: 0xffffff,
+    depthTest: true,
+    depthWrite: false,
   });
   const littlestar = new THREE.Sprite(material);
   // let i = 0;
@@ -1663,8 +1665,11 @@ function operation_method_1(delta, count) {
   }
   if (fast) maxSpeed = 0.05 * fpsScale;
   else maxSpeed = Math.max(maxSpeed - 0.003 * fpsScale, 0.03 * fpsScale);
-  const touchDrivenMove = isMobileDevice && touchControlState.move.touchId !== null;
-  const moveSpeedScale = touchDrivenMove ? Math.max(0.05, moveInputStrength) : 1;
+  const touchDrivenMove =
+    isMobileDevice && touchControlState.move.touchId !== null;
+  const moveSpeedScale = touchDrivenMove
+    ? Math.max(0.05, moveInputStrength)
+    : 1;
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = (maxSpeed / 2) * moveSpeedScale;
 
