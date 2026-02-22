@@ -1100,7 +1100,7 @@ function animate() {
   frameAccumulator += delta;
   if (frameAccumulator > frameInterval) {
     //stats.update();
-    meteorSystem.updateMeteorites(meteorites, 30, 5);
+    meteorSystem.updateMeteorites(meteorites, 30, 6);
 
     //all_obj2.children[0].rotation.y -= 0.02
 

@@ -1341,7 +1341,7 @@ function animate() {
   frameAccumulator += delta;
   if (frameAccumulator > frameInterval) {
     //stats.update();
-    meteorSystem.updateMeteorites(meteorites, 30, 5);
+    meteorSystem.updateMeteorites(meteorites, 30, 6);
 
     starfieldSystem.update(ufo.position, count);
     count += 0.0005 * fpsScale;

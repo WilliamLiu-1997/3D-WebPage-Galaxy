@@ -1646,7 +1646,7 @@ function animate() {
     }
 
     starfieldSystem.update(ufo.position, count);
-    meteorSystem.updateMeteorites(meteorites, 30, 5);
+    meteorSystem.updateMeteorites(meteorites, 30, 6);
     count += 0.0005 * fpsScale;
 
     operation_method_1(delta);

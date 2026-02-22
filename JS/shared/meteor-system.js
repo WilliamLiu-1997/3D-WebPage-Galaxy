@@ -1,6 +1,6 @@
 const DEFAULT_METEOR_CONFIG = {
   trailEndSize: 1,
-  trailScaleFalloff: 0.996,
+  trailScaleFalloff: 0.994,
   trailStepDivisor: 1,
 };
 
