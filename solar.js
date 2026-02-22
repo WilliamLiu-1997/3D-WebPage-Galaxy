@@ -952,7 +952,7 @@ function init() {
   document.addEventListener('keydown', onKeyDown, false);
   document.addEventListener('keyup', onKeyUp, false);
 
-  scene.add(new THREE.AmbientLight(0x111111));
+  scene.add(new THREE.AmbientLight(0x111111, 1.5));
   if (add_solar) {
     const light = new THREE.PointLight(
       0xffeecc,
