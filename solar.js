@@ -46,7 +46,7 @@ let moveRight = false;
 let fast = false;
 let esc = true;
 const meteorites = [];
-const METEOR_MAX_DISTANCE = 8000;
+const METEOR_MAX_DISTANCE = 5000;
 const METEOR_SPEED = 8 * fpsScale;
 let arrived = 50;
 const ufo_scale = 0.5;
@@ -243,7 +243,6 @@ const isMobileDevice =
 let sunShaderUniforms = null;
 const SUN_BASE_SIZE = 100;
 const SUN_RADIUS = SUN_BASE_SIZE * 0.8;
-const SUN_EDGE_GLOW_RADIUS_SCALE = 1.2;
 
 function createSunShaderUniforms() {
   return {
@@ -300,24 +299,28 @@ function createSunMaterialForRenderer(rendererRef) {
   };
 }
 
-function createSunEdgeGlow() {
+function createSunEdgeGlow(
+  peakPosition = 0.2,
+  solidEnd = 0.21,
+  sunEdgeGlowRadiusScale = 1.2,
+  outerFadePower = 2.5,
+  glowOpacity = 1.0,
+  color = 0xff9a27,
+) {
   const sunGlowMaterial = new THREE.ShaderMaterial({
     uniforms: {
-      glowColor: { value: new THREE.Color(0xff9a27) },
-      peakPosition: { value: 0.2 },
-      solidEnd: { value: 0.21 },
-      glowOpacity: { value: 1.0 },
-      innerRadiusRatio: { value: 1 / SUN_EDGE_GLOW_RADIUS_SCALE },
-      outerFadePower: { value: 2.5 },
+      glowColor: { value: new THREE.Color(color) },
+      peakPosition: { value: peakPosition },
+      solidEnd: { value: solidEnd },
+      glowOpacity: { value: glowOpacity },
+      innerRadiusRatio: { value: 1 / sunEdgeGlowRadiusScale },
+      outerFadePower: { value: outerFadePower },
     },
     vertexShader: `
-      varying vec3 vNormal;
-      varying vec3 vViewPosition;
+      varying vec2 vUv;
       void main() {
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        vViewPosition = -mvPosition.xyz;
-        vNormal = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * mvPosition;
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
@@ -327,13 +330,12 @@ function createSunEdgeGlow() {
       uniform float glowOpacity;
       uniform float innerRadiusRatio;
       uniform float outerFadePower;
-      varying vec3 vNormal;
-      varying vec3 vViewPosition;
+      varying vec2 vUv;
       void main() {
-        vec3 n = normalize(vNormal);
-        vec3 v = normalize(vViewPosition);
-        float cosView = clamp(abs(dot(n, v)), 0.0, 1.0);
-        float radial = sqrt(max(1.0 - cosView * cosView, 0.0));
+        // Radial distance from quad center (0 = center, 1 = edge)
+        vec2 centered = vUv * 2.0 - 1.0;
+        float radial = length(centered);
+        if (radial > 1.0) discard;
         float innerRatio = clamp(innerRadiusRatio, 0.0, 0.9999);
         float haloT = clamp(
           (radial - innerRatio) / max(1.0 - innerRatio, 0.0001),
@@ -354,33 +356,30 @@ function createSunEdgeGlow() {
         gl_FragColor = vec4(glowColor, alpha);
       }
     `,
-    side: THREE.BackSide,
-    blending: THREE.NormalBlending,
+    side: THREE.FrontSide,
+    blending: THREE.AdditiveBlending,
     transparent: true,
+    depthTest: true,
     depthWrite: false,
   });
 
+  const size = SUN_RADIUS * sunEdgeGlowRadiusScale * 0.96 * 2.0;
   const glowMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(
-      SUN_RADIUS * SUN_EDGE_GLOW_RADIUS_SCALE * 0.96,
-      64,
-      64,
-    ),
+    new THREE.PlaneGeometry(size, size),
     sunGlowMaterial,
   );
   glowMesh.name = 'sunEdgeGlow';
   glowMesh.userData.ignoreClickFollow = true;
+  // Billboard: always face the camera
+  glowMesh.onBeforeRender = function (renderer, scene, camera) {
+    glowMesh.quaternion.copy(camera.quaternion);
+  };
   return glowMesh;
 }
 
-const sunlight = textureLoader.load('img/lensflare2.png');
-
 const ufolight = textureLoader.load('img/ufo_light1.png');
-let sunbackground;
-let sunbackground1;
-let sunbackground2;
-let sunbackground3;
 let sunEdgeGlow;
+let sunEdgeGlow1;
 let sun;
 let star1;
 let star2;
@@ -402,29 +401,6 @@ let ring8;
 let star9;
 
 if (add_solar) {
-  const sunmaterial = new THREE.SpriteMaterial({
-    blending: THREE.AdditiveBlending,
-    map: sunlight,
-    transparent: true,
-    opacity: 0.1,
-    depthTest: false,
-    depthWrite: false,
-  });
-  sunbackground = new THREE.Sprite(sunmaterial);
-  sunbackground.position.set(0, 0, 0);
-  sunbackground.scale.set(500, 400, 1);
-  const sunlight1 = textureLoader.load('img/ball.png');
-  const sunmaterial1 = new THREE.SpriteMaterial({
-    blending: THREE.AdditiveBlending,
-    map: sunlight1,
-    transparent: true,
-    opacity: 0.1,
-    depthTest: false,
-    depthWrite: false,
-  });
-  sunbackground1 = new THREE.Sprite(sunmaterial1);
-  sunbackground1.position.set(0, 0, 0);
-  sunbackground1.scale.set(500, 400, 1);
   sun = obj_lighting(
     './texture/fluid1-original.png',
     SUN_BASE_SIZE,
@@ -435,6 +411,8 @@ if (add_solar) {
   );
   sunEdgeGlow = createSunEdgeGlow();
   sunEdgeGlow.position.set(0, 0, 0);
+  sunEdgeGlow1 = createSunEdgeGlow(0, 0, 5, 4, 0.25, 0xffbb88);
+  sunEdgeGlow1.position.set(0, 0, 0);
   star1 = obj('./texture/j022.jpg', 4, 180, 0, 0, 'star1');
   star2 = obj('./texture/j028.jpg', 8, 240, 0, 0, 'star2');
   star3 = obj(
@@ -542,30 +520,6 @@ const meteoriteball = textureLoader.load('img/star0.png');
 const meteoritetail = textureLoader.load('img/start0.png');
 
 const meteoriteballr = textureLoader.load('img/star00.png');
-const textureFlare0a = textureLoader.load('img/lensflare0a.png');
-const textureFlare0b = textureLoader.load('img/lensflare0b.png');
-if (add_solar) {
-  const sunmaterial2 = new THREE.SpriteMaterial({
-    map: textureFlare0a,
-    transparent: true,
-    opacity: 0.1,
-    depthTest: false,
-    depthWrite: false,
-  });
-  sunbackground2 = new THREE.Sprite(sunmaterial2);
-  sunbackground2.position.set(0, 0, 0);
-  sunbackground2.scale.set(600, 600, 0.1);
-  const sunmaterial3 = new THREE.SpriteMaterial({
-    map: textureFlare0b,
-    transparent: true,
-    opacity: 0.1,
-    depthTest: false,
-    depthWrite: false,
-  });
-  sunbackground3 = new THREE.Sprite(sunmaterial3);
-  sunbackground3.position.set(0, 0, 0);
-  sunbackground3.scale.set(900, 900, 0.1);
-}
 
 const material = new THREE.Sprite(
   new THREE.SpriteMaterial({
@@ -728,6 +682,8 @@ function init() {
     blending: THREE.AdditiveBlending,
     map: starball,
     color: 0xffffff,
+    depthTest: true,
+    depthWrite: false,
   });
   const littlestar = new THREE.Sprite(whiteLightMaterial);
   let i = 0;
@@ -892,10 +848,8 @@ function init() {
     light.shadow.camera.near = 100 * 1 /*ufo_scale/100*/;
     all_obj4.add(light);
 
-    all_obj4.add(sunbackground);
-    all_obj4.add(sunbackground1);
-    all_obj4.add(sunbackground2);
-    all_obj4.add(sunbackground3);
+    all_obj4.add(sunEdgeGlow);
+    all_obj4.add(sunEdgeGlow1);
 
     all_obj3.add(sun);
     all_obj3.add(star1);
@@ -917,8 +871,6 @@ function init() {
     all_obj3.add(star8);
     all_obj4.add(ring8);
     all_obj3.add(star9);
-
-    all_obj4.add(sunEdgeGlow);
   }
 
   totalLoadItems += 2;

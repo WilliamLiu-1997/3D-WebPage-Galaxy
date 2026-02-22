@@ -163,6 +163,8 @@ export function initSharedUfo({
             map: ufoLightTexture,
             transparent: true,
             opacity: 0.5,
+            depthTest: true,
+            depthWrite: false,
           });
           const ufoLight = new THREE.Sprite(ufoLightMaterial);
           if (typeof ufoLightRenderOrder === 'number') {
@@ -173,6 +175,12 @@ export function initSharedUfo({
             new THREE.MeshBasicMaterial({ color: LIGHT_COLOR }),
           );
           const whiteLight = littleStar.clone();
+          if (whiteLight.material && whiteLight.material.isMaterial) {
+            whiteLight.material = whiteLight.material.clone();
+            whiteLight.material.depthTest = true;
+            whiteLight.material.depthWrite = false;
+            whiteLight.material.transparent = true;
+          }
           if (typeof whiteLightRenderOrder === 'number') {
             whiteLight.renderOrder = whiteLightRenderOrder;
           }

@@ -1,8 +1,7 @@
 const DEFAULT_METEOR_CONFIG = {
   sizeScaleMin: 0.7,
   sizeScaleRange: 0.6,
-  spawnYMin: -500,
-  spawnYRange: 4000,
+  spawnCooldownMs: 300,
   centerDotMin: 0.85,
   centerDotMax: 0.851,
   initialHeadCount: 2,
@@ -60,6 +59,8 @@ function createMeteorPointsMaterial(THREE, pointTexture) {
     transparent: true,
     opacity: 1,
     alphaTest: 0.1,
+    depthTest: true,
+    depthWrite: false,
     blending: THREE.AdditiveBlending,
     vertexColors: true,
     fog: false,
@@ -101,8 +102,7 @@ export function createMeteorSystem({
   speed,
   sizeScaleMin = DEFAULT_METEOR_CONFIG.sizeScaleMin,
   sizeScaleRange = DEFAULT_METEOR_CONFIG.sizeScaleRange,
-  spawnYMin = DEFAULT_METEOR_CONFIG.spawnYMin,
-  spawnYRange = DEFAULT_METEOR_CONFIG.spawnYRange,
+  spawnCooldownMs = DEFAULT_METEOR_CONFIG.spawnCooldownMs,
   centerDotMin = DEFAULT_METEOR_CONFIG.centerDotMin,
   centerDotMax = DEFAULT_METEOR_CONFIG.centerDotMax,
   initialHeadCount = DEFAULT_METEOR_CONFIG.initialHeadCount,
@@ -149,7 +149,12 @@ export function createMeteorSystem({
   const meteorPointsMaterial = createMeteorPointsMaterial(THREE, pointTexture);
 
   const maxDistanceSq = maxDistance * maxDistance;
-  const toCenter = new THREE.Vector3();
+  const minClosestDistance = maxDistance * 0.7;
+  const maxClosestDistance = maxDistance * 0.9;
+  const minClosestDistanceSq = minClosestDistance * minClosestDistance;
+  const maxClosestDistanceSq = maxClosestDistance * maxClosestDistance;
+  const minSpawnIntervalMs = Math.max(0, Number(spawnCooldownMs) || 0);
+  let nextAllowedSpawnTime = 0;
 
   function spawnMeteor(baseSize) {
     const spacingScale = 0.8;
@@ -161,26 +166,40 @@ export function createMeteorSystem({
     const originalSize = size;
     const meteorObject3D = meteorTemplate.clone();
 
-    let x = (Math.random() - 0.5) * maxDistance;
-    let y = Math.random() * spawnYRange + spawnYMin;
-    const radialRemainingSq = Math.max(0, maxDistanceSq - x * x - y * y);
-    let z = Math.sqrt(radialRemainingSq) * (Math.random() > 0.5 ? 1 : -1);
+    let x = 0;
+    let y = 0;
+    let z = 0;
+    // Spawn inside the valid annulus so the trajectory constraint is solvable.
+    do {
+      x = (Math.random() * 2 - 1) * maxDistance;
+      y = (Math.random() * 2 - 1) * maxDistance;
+      z = (Math.random() * 2 - 1) * maxDistance;
+    } while (
+      x * x + y * y + z * z > maxDistanceSq ||
+      x * x + y * y + z * z < minClosestDistanceSq
+    );
 
     const velocity = new THREE.Vector3();
-    let centerDot = 0;
+    const originDistanceSq = x * x + y * y + z * z;
     while (true) {
       velocity
         .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
         .normalize();
-      toCenter.set(-x, -y, -z).normalize();
-      centerDot = toCenter.dot(velocity);
+
+      // Closest distance from the meteor ray p(t)=origin+t*velocity (t>=0) to world origin.
+      const originDotVelocity =
+        x * velocity.x + y * velocity.y + z * velocity.z;
+      let closestDistanceSq = originDistanceSq;
+      if (originDotVelocity < 0) {
+        closestDistanceSq = Math.max(
+          0,
+          originDistanceSq - originDotVelocity * originDotVelocity,
+        );
+      }
+
       if (
-        !(
-          (velocity.y < 0 && y < 500) ||
-          centerDot < centerDotMin ||
-          centerDot > centerDotMax ||
-          (z < 0 && velocity.z < 0)
-        )
+        closestDistanceSq >= minClosestDistanceSq &&
+        closestDistanceSq <= maxClosestDistanceSq
       ) {
         break;
       }
@@ -193,18 +212,22 @@ export function createMeteorSystem({
     const pointSizes = [];
     const pointAlphas = [];
     const pointColors = [];
+    let maxMeteorLengthSq = 0;
 
     const pushPoint = (px, py, pz, psize, palpha, r, g, b) => {
       positions.push(px, py, pz);
       pointSizes.push(psize);
       pointAlphas.push(palpha);
       pointColors.push(r, g, b);
+      const pointDistanceSq = px * px + py * py + pz * pz;
+      if (pointDistanceSq > maxMeteorLengthSq) {
+        maxMeteorLengthSq = pointDistanceSq;
+      }
     };
 
     for (let i = 0; i < initialHeadCount; i++) {
       const isPrimaryHead = i % 2 === 0;
-      const headSizeMultiplier =
-        1 + ((1.15 - i * 0.08) - 1) * sizeVariationScale;
+      const headSizeMultiplier = 1 + (1.15 - i * 0.08 - 1) * sizeVariationScale;
       pushPoint(
         x - originX,
         y - originY,
@@ -290,6 +313,7 @@ export function createMeteorSystem({
     meteorPoints.position.set(0, 0, 0);
     meteorObject3D.add(meteorPoints);
     meteorObject3D.position.set(originX, originY, originZ);
+    meteorObject3D.userData.meteorLength = Math.sqrt(maxMeteorLengthSq);
 
     return [meteorObject3D, velocity];
   }
@@ -297,7 +321,12 @@ export function createMeteorSystem({
   function moveMeteor(meteorEntry) {
     const meteorObject = meteorEntry[0];
     const meteorVelocity = meteorEntry[1];
-    if (meteorObject.position.lengthSq() > maxDistanceSq) {
+    const meteorLength = Number(meteorObject.userData.meteorLength) || 0;
+    const maxDistanceWithLength = maxDistance + meteorLength;
+    if (
+      meteorObject.position.lengthSq() >
+      maxDistanceWithLength * maxDistanceWithLength
+    ) {
       scene.remove(meteorObject);
       meteorObject.traverse((node) => {
         if (node.geometry && typeof node.geometry.dispose === 'function') {
@@ -306,18 +335,24 @@ export function createMeteorSystem({
       });
       return true;
     }
-    meteorObject.position.addScaledVector(meteorVelocity, speed);
+    meteorObject.position.addScaledVector(meteorVelocity, speed * 2);
     return false;
   }
 
   function updateMeteorites(meteorites, maxCount, spawnSize) {
     const targetCount = Math.max(0, Math.floor(Number(maxCount) || 0));
     const nextSpawnSize = Number(spawnSize) || 0;
+    const now = performance.now();
 
-    if (meteorites.length < targetCount && nextSpawnSize > 0) {
+    if (
+      meteorites.length < targetCount &&
+      nextSpawnSize > 0 &&
+      now >= nextAllowedSpawnTime
+    ) {
       const meteorEntry = spawnMeteor(nextSpawnSize);
       meteorites.push(meteorEntry);
       scene.add(meteorEntry[0]);
+      nextAllowedSpawnTime = now + minSpawnIntervalMs;
     }
 
     for (let i = meteorites.length - 1; i >= 0; i--) {
