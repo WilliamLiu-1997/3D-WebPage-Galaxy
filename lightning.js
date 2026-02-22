@@ -400,8 +400,8 @@ let down = 0;
 let left = 0;
 let right = 0;
 
-let maxSpeed = 0.03 * fpsScale;
-const acc = 0.3 * fpsScale;
+let maxSpeed = 0.06 * fpsScale;
+const acc = 0.6 * fpsScale;
 let currentSpeedForward = 0;
 let currentSpeedRight = 0;
 let moveInputStrength = 0;
@@ -1663,8 +1663,8 @@ function operation_method_1(delta, count) {
   if (document.getElementById('content').style.display == 'none') {
     esc = false;
   }
-  if (fast) maxSpeed = 0.05 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.003 * fpsScale, 0.03 * fpsScale);
+  if (fast) maxSpeed = 0.1 * fpsScale;
+  else maxSpeed = Math.max(maxSpeed - 0.006 * fpsScale, 0.06 * fpsScale);
   const touchDrivenMove =
     isMobileDevice && touchControlState.move.touchId !== null;
   const moveSpeedScale = touchDrivenMove

@@ -76,8 +76,8 @@ let starColors;
 let star_dx, star_dy, star_dz, star_dsx, star_dsy, star_dsz, star_s_speed;
 let count = 0;
 const STAR_GROUP_SIZE = 50;
-const STAR_POINT_BASE_SIZE = 10;
-const STAR_MOVE_DIVISOR = 10;
+const STAR_POINT_BASE_SIZE = 15;
+const STAR_MOVE_DIVISOR = 20;
 const STAR_COLOR_TINTS = [
   [0.7, 0.7, 1.0],
   [0.7, 0.7, 1.0],
@@ -108,8 +108,8 @@ let down = 0;
 let left = 0;
 let right = 0;
 
-let maxSpeed = 0.025 * fpsScale;
-const acc = 0.25 * fpsScale;
+let maxSpeed = 0.05 * fpsScale;
+const acc = 0.5 * fpsScale;
 let currentSpeedForward = 0;
 let currentSpeedRight = 0;
 let moveInputStrength = 0;
@@ -1355,13 +1355,14 @@ function operation_method_1(delta) {
   if (document.getElementById('content').style.display == 'none') {
     esc = false;
   }
-  if (fast) maxSpeed = 0.06 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.001 * fpsScale, 0.025 * fpsScale);
+  if (fast) maxSpeed = 0.12 * fpsScale;
+  else maxSpeed = Math.max(maxSpeed - 0.002 * fpsScale, 0.05 * fpsScale);
   const touchDrivenMove =
     isMobileDevice && touchControlState.move.touchId !== null;
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
     : 1;
+
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = maxSpeed * moveSpeedScale;
 
@@ -1657,7 +1658,7 @@ function animate() {
   frameAccumulator += delta;
   if (frameAccumulator > frameInterval) {
     //stats.update();
-    meteorSystem.updateMeteorites(meteorites, 20, 15);
+    meteorSystem.updateMeteorites(meteorites, 30, 5);
 
     //all_obj2.children[0].rotation.y -= 0.02
 

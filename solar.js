@@ -82,8 +82,8 @@ let starColors;
 let star_dx, star_dy, star_dz, star_dsx, star_dsy, star_dsz, star_s_speed;
 let count = 0;
 const STAR_GROUP_SIZE = 50;
-const STAR_POINT_BASE_SIZE = 8;
-const STAR_MOVE_DIVISOR = 10;
+const STAR_POINT_BASE_SIZE = 10;
+const STAR_MOVE_DIVISOR = 20;
 const STAR_COLOR_TINTS = [
   [0.7, 0.7, 1.0],
   [0.7, 0.7, 1.0],
@@ -109,8 +109,8 @@ let down = 0;
 let left = 0;
 let right = 0;
 
-let maxSpeed = 0.6 * fpsScale;
-const acc = 3 * fpsScale;
+let maxSpeed = 1.2 * fpsScale;
+const acc = 6 * fpsScale;
 let currentSpeedForward = 0;
 let currentSpeedRight = 0;
 let moveInputStrength = 0;
@@ -952,7 +952,7 @@ function init() {
   document.addEventListener('keydown', onKeyDown, false);
   document.addEventListener('keyup', onKeyUp, false);
 
-  scene.add(new THREE.AmbientLight(0x111111));
+  scene.add(new THREE.AmbientLight(0x111111, 1.5));
   if (add_solar) {
     const light = new THREE.PointLight(
       0xffeecc,
@@ -1659,8 +1659,8 @@ function operation_method_1(delta) {
   if (document.getElementById('content').style.display == 'none') {
     esc = false;
   }
-  if (fast) maxSpeed = 0.75 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.03 * fpsScale, 0.6 * fpsScale);
+  if (fast) maxSpeed = 1.5 * fpsScale;
+  else maxSpeed = Math.max(maxSpeed - 0.06 * fpsScale, 1.2 * fpsScale);
   const touchDrivenMove =
     isMobileDevice && touchControlState.move.touchId !== null;
   const moveSpeedScale = touchDrivenMove
@@ -2289,7 +2289,7 @@ function animate() {
     starGeometry.attributes.position.needsUpdate = true;
     starGeometry.attributes.pointSize.needsUpdate = true;
     starGeometry.attributes.pointAlpha.needsUpdate = true;
-    meteorSystem.updateMeteorites(meteorites, 20, 15);
+    meteorSystem.updateMeteorites(meteorites, 30, 5);
     count += 0.0005 * fpsScale;
 
     operation_method_1(delta);
