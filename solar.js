@@ -9,6 +9,28 @@ import {
 } from './JS/shared/scene-common.js';
 import { initSharedUfo } from './JS/shared/ufo-factory.js';
 import { createMeteorSystem } from './JS/shared/meteor-system.js';
+import { createStarfieldSystem } from './JS/shared/starfield-system.js';
+import {
+  computeLookInputFromMousePosition,
+  getAimingMousePosition,
+  isContentHidden,
+  isGameplayActive,
+  updatePointerFromClient,
+} from './JS/shared/input-common.js';
+import {
+  createFollowTargetFilter,
+  pickFollowTargetFromScene,
+} from './JS/shared/follow-click.js';
+import { createTouchRockerControls } from './JS/shared/touch-rocker-controls.js';
+import {
+  applyUfoHitEffect,
+  setUfoIndicatorColor,
+  stepUfoStarlight,
+  updateUfoControlState,
+  updateUfoFollowThrustEffect,
+  updateUfoIdleThrustEffect,
+  updateUfoThrustEffect,
+} from './JS/shared/ufo-control.js';
 
 const textureLoader = new THREE.TextureLoader();
 function goAlienBaseWithFade() {
@@ -73,14 +95,8 @@ const SEPARATION = 100,
   AMOUNTX = 33,
   AMOUNTY = 11,
   AMOUNTZ = 33;
-let starCount = 0;
-let starGeometry;
-let starPositions;
-let starSizes;
-let starAlphas;
-let starColors;
-let star_dx, star_dy, star_dz, star_dsx, star_dsy, star_dsz, star_s_speed;
 let count = 0;
+let starfieldSystem;
 const STAR_GROUP_SIZE = 50;
 const STAR_POINT_BASE_SIZE = 10;
 const STAR_MOVE_DIVISOR = 20;
@@ -92,13 +108,6 @@ const STAR_COLOR_TINTS = [
 ];
 const STAR_FADE_START_DISTANCE = 1000;
 const STAR_FADE_END_DISTANCE = 800;
-const STAR_FADE_RANGE = STAR_FADE_START_DISTANCE - STAR_FADE_END_DISTANCE;
-const STAR_FADE_START_DISTANCE_SQ =
-  STAR_FADE_START_DISTANCE * STAR_FADE_START_DISTANCE;
-const STAR_FADE_END_DISTANCE_SQ =
-  STAR_FADE_END_DISTANCE * STAR_FADE_END_DISTANCE;
-let starGroupCount = 0;
-let starGroupOrder;
 
 let angle = 0;
 
@@ -150,59 +159,40 @@ const followablePlanetNames = [
   'star8',
   'star9',
 ];
-const TOUCH_TAP_MAX_DURATION = 280;
-const TOUCH_TAP_MAX_MOVE = 18;
-const TOUCH_MOVE_DEADZONE = 0.1;
-const TOUCH_LOOK_DEADZONE = 0.1;
-const TOUCH_LOOK_SCALE = 0.35;
-const TOUCH_ROCKER_TRAVEL_RATIO = 1;
-const touchControlState = {
-  initialized: false,
-  overlay: null,
-  move: {
-    stick: null,
-    knob: null,
-    touchId: null,
-    maxOffset: 1,
+const touchControls = createTouchRockerControls({
+  moveDeadzone: 0.1,
+  lookDeadzone: 0.1,
+  lookScale: 0.35,
+  rockerTravelRatio: 1,
+  tapMaxDuration: 280,
+  tapMaxMove: 18,
+  isGameplayActive: () => isGameplayActive('content', esc),
+  onMoveAxis: (horizontal, vertical, strength) => {
+    moveInputStrength = strength;
+    moveLeft = horizontal < 0;
+    moveRight = horizontal > 0;
+    moveForward = vertical < 0;
+    moveBackward = vertical > 0;
+
+    if (moveLeft || moveRight || moveForward || moveBackward) {
+      selected_object = false;
+    }
   },
-  look: {
-    stick: null,
-    knob: null,
-    touchId: null,
-    maxOffset: 1,
+  onLookAxis: (horizontal, vertical) => {
+    left = Math.max(0, -horizontal);
+    right = Math.max(0, horizontal);
+    up = Math.max(0, -vertical);
+    down = Math.max(0, vertical);
   },
-  tapCandidates: new Map(),
-};
+  onTap: (clientX, clientY) => {
+    onMouseClick({ clientX, clientY });
+  },
+});
 
-function isFollowTargetObject(object) {
-  if (!object) return false;
-  if (object.userData && object.userData.ignoreClickFollow) return false;
-  if (object.type === 'Sprite' || object.type === 'Points') return false;
-  if (object.name === 'ring' || object.name === 'Sky') return false;
-  return true;
-}
-
-function buildRandomStarGroupOrder(count) {
-  const order = new Uint32Array(count);
-  for (let i = 0; i < count; i++) {
-    order[i] = i;
-  }
-  for (let i = count - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const temp = order[i];
-    order[i] = order[j];
-    order[j] = temp;
-  }
-  return order;
-}
-
-function assignRandomBrightStarColor(colors, colorIndex) {
-  const tint =
-    STAR_COLOR_TINTS[Math.floor(Math.random() * STAR_COLOR_TINTS.length)];
-  colors[colorIndex] = tint[0] + (1 - tint[0]) * Math.random();
-  colors[colorIndex + 1] = tint[1] + (1 - tint[1]) * Math.random();
-  colors[colorIndex + 2] = tint[2] + (1 - tint[2]) * Math.random();
-}
+const isFollowTargetObject = createFollowTargetFilter({
+  excludedNames: ['ring', 'Sky'],
+  excludedNamePrefixes: ['ring'],
+});
 
 const lavaTexture = textureLoader.load('./texture/sun.jpg');
 lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
@@ -594,6 +584,9 @@ if (add_solar) {
   star7.name = 'star7';
   star8.name = 'star8';
   ring8.name = 'ring8';
+
+  ring4.userData.ignoreClickFollow = true;
+  ring8.userData.ignoreClickFollow = true;
   star9.name = 'star9';
 
   star1.castShadow = true;
@@ -754,50 +747,6 @@ function init() {
     10000, // far
   );
 
-  starCount = AMOUNTX * AMOUNTY * AMOUNTZ;
-  starPositions = new Float32Array(starCount * 3);
-  star_dx = new Float32Array(starCount);
-  star_dy = new Float32Array(starCount);
-  star_dz = new Float32Array(starCount);
-  star_dsx = new Float32Array(starCount);
-  star_dsy = new Float32Array(starCount);
-  star_dsz = new Float32Array(starCount);
-  star_s_speed = new Float32Array(starCount);
-  starSizes = new Float32Array(starCount);
-  starAlphas = new Float32Array(starCount);
-  starColors = new Float32Array(starCount * 3);
-  const starPointMaterial = new THREE.PointsMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    map: starball,
-    color: 0xffffff,
-    vertexColors: true,
-    size: STAR_POINT_BASE_SIZE,
-    sizeAttenuation: true,
-    depthWrite: false,
-    alphaTest: 0.01,
-  });
-  starPointMaterial.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        'uniform float size;',
-        'uniform float size;\nattribute float pointSize;\nattribute float pointAlpha;\nvarying float vPointAlpha;',
-      )
-      .replace(
-        'gl_PointSize = size;',
-        'gl_PointSize = pointSize;\nvPointAlpha = pointAlpha;',
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nvarying float vPointAlpha;',
-      )
-      .replace(
-        'vec4 diffuseColor = vec4( diffuse, opacity );',
-        'vec4 diffuseColor = vec4( diffuse, opacity * vPointAlpha );',
-      );
-  };
-  starPointMaterial.needsUpdate = true;
   const whiteLightMaterial = new THREE.SpriteMaterial({
     transparent: true,
     blending: THREE.AdditiveBlending,
@@ -807,57 +756,22 @@ function init() {
     depthWrite: false,
   });
   const littlestar = new THREE.Sprite(whiteLightMaterial);
-  let i = 0;
-  for (let ix = 0; ix < AMOUNTX; ix++) {
-    for (let iy = 0; iy < AMOUNTY; iy++) {
-      for (let iz = 0; iz < AMOUNTZ; iz++) {
-        star_dx[i] = Math.random() - 0.5;
-        star_dy[i] = Math.random() - 0.5;
-        star_dz[i] = Math.random() - 0.5;
-        star_dsx[i] = Math.random() - 0.5;
-        star_dsy[i] = Math.random() - 0.5;
-        star_dsz[i] = Math.random() - 0.5;
-        star_s_speed[i] = Math.random() - 0.5;
-        starSizes[i] = STAR_POINT_BASE_SIZE;
-        starAlphas[i] = 1;
-        assignRandomBrightStarColor(starColors, i * 3);
-        const positionIndex = i * 3;
-        starPositions[positionIndex] =
-          ix * SEPARATION -
-          (AMOUNTX * SEPARATION) / 2 +
-          (Math.random() - 0.5) * SEPARATION * 16;
-        starPositions[positionIndex + 1] =
-          (iy * SEPARATION) / 2 -
-          (AMOUNTY * SEPARATION) / 4 +
-          (Math.random() - 0.5) * SEPARATION * 16;
-        starPositions[positionIndex + 2] =
-          iz * SEPARATION -
-          (AMOUNTZ * SEPARATION) / 2 +
-          (Math.random() - 0.5) * SEPARATION * 16;
-        i++;
-      }
-    }
-  }
-  starCount = i;
-  starGroupOrder = buildRandomStarGroupOrder(starCount);
-  starGeometry = new THREE.BufferGeometry();
-  const starPositionAttribute = new THREE.BufferAttribute(starPositions, 3);
-  starPositionAttribute.setUsage(THREE.DynamicDrawUsage);
-  const starSizeAttribute = new THREE.BufferAttribute(starSizes, 1);
-  starSizeAttribute.setUsage(THREE.DynamicDrawUsage);
-  const starAlphaAttribute = new THREE.BufferAttribute(starAlphas, 1);
-  starAlphaAttribute.setUsage(THREE.DynamicDrawUsage);
-  const starColorAttribute = new THREE.BufferAttribute(starColors, 3);
-  starGeometry.setAttribute('position', starPositionAttribute);
-  starGeometry.setAttribute('pointSize', starSizeAttribute);
-  starGeometry.setAttribute('pointAlpha', starAlphaAttribute);
-  starGeometry.setAttribute('color', starColorAttribute);
-  starGeometry.computeBoundingSphere();
-  const starPoints = new THREE.Points(starGeometry, starPointMaterial);
-  starPoints.userData.ignoreClickFollow = true;
-  starPoints.frustumCulled = false;
-  scene.add(starPoints);
-  starGroupCount = Math.ceil(starCount / STAR_GROUP_SIZE);
+  starfieldSystem = createStarfieldSystem({
+    THREE,
+    scene,
+    starTexture: starball,
+    separation: SEPARATION,
+    amountX: AMOUNTX,
+    amountY: AMOUNTY,
+    amountZ: AMOUNTZ,
+    pointBaseSize: STAR_POINT_BASE_SIZE,
+    groupSize: STAR_GROUP_SIZE,
+    moveDivisor: STAR_MOVE_DIVISOR,
+    colorTints: STAR_COLOR_TINTS,
+    fadeStartDistance: STAR_FADE_START_DISTANCE,
+    fadeEndDistance: STAR_FADE_END_DISTANCE,
+    yBaseOffset: -(AMOUNTY * SEPARATION) / 4,
+  });
 
   camera.position.set(
     cameraPositionVec.x,
@@ -875,7 +789,7 @@ function init() {
   if (!isMobileDevice) {
     document.addEventListener('mousemove', mouseMove, false);
   } else {
-    setupTouchControls();
+    touchControls.setup();
   }
 
   const onKeyDown = function (e) {
@@ -1164,365 +1078,28 @@ function ring2(url, size, width) {
   return starBall;
 }
 
-function updatePointerFromClient(clientX, clientY) {
-  mouse.x = (clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-}
-
-function getMousePosition() {
-  const x = document.getElementById('aiming1').offsetLeft + 10;
-  const y = document.getElementById('aiming1').offsetTop + 10;
-  return { x: x, y: y };
-}
-
-function setMoveInputFromAxis(axisX, axisY) {
-  const horizontal = Math.abs(axisX) > TOUCH_MOVE_DEADZONE ? axisX : 0;
-  const vertical = Math.abs(axisY) > TOUCH_MOVE_DEADZONE ? axisY : 0;
-  moveInputStrength = Math.min(1, Math.hypot(horizontal, vertical));
-
-  moveLeft = horizontal < 0;
-  moveRight = horizontal > 0;
-  moveForward = vertical < 0;
-  moveBackward = vertical > 0;
-
-  if (moveLeft || moveRight || moveForward || moveBackward) {
-    selected_object = false;
-  }
-}
-
-function setLookInputFromAxis(axisX, axisY) {
-  const horizontal = Math.abs(axisX) > TOUCH_LOOK_DEADZONE ? axisX : 0;
-  const vertical = Math.abs(axisY) > TOUCH_LOOK_DEADZONE ? axisY : 0;
-
-  left = Math.max(0, -horizontal) * TOUCH_LOOK_SCALE;
-  right = Math.max(0, horizontal) * TOUCH_LOOK_SCALE;
-  up = Math.max(0, -vertical) * TOUCH_LOOK_SCALE;
-  down = Math.max(0, vertical) * TOUCH_LOOK_SCALE;
-}
-
-function setRockerKnobPosition(knob, offsetX, offsetY) {
-  if (!knob) return;
-  knob.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
-}
-
-function getRockerMaxOffset(stick) {
-  if (!stick) return 1;
-
-  const stickRect = stick.getBoundingClientRect();
-  let stickSize = Math.min(stickRect.width, stickRect.height);
-  if (!stickSize) {
-    const stickStyle = window.getComputedStyle(stick);
-    stickSize = Math.min(
-      parseFloat(stickStyle.width) || 0,
-      parseFloat(stickStyle.height) || 0,
-    );
-  }
-
-  if (!stickSize) return 1;
-  return Math.max(1, (stickSize / 2) * TOUCH_ROCKER_TRAVEL_RATIO);
-}
-
-function isGameplayActive() {
-  const content = document.getElementById('content');
-  return Boolean(content && content.style.display == 'none' && !esc);
-}
-
-function resetMoveTouchState() {
-  touchControlState.move.touchId = null;
-  setMoveInputFromAxis(0, 0);
-  setRockerKnobPosition(touchControlState.move.knob, 0, 0);
-}
-
-function resetLookTouchState() {
-  touchControlState.look.touchId = null;
-  setLookInputFromAxis(0, 0);
-  setRockerKnobPosition(touchControlState.look.knob, 0, 0);
-}
-
-function isTouchInsideElement(touch, element) {
-  if (!element) return false;
-  const rect = element.getBoundingClientRect();
-  return (
-    touch.clientX >= rect.left &&
-    touch.clientX <= rect.right &&
-    touch.clientY >= rect.top &&
-    touch.clientY <= rect.bottom
-  );
-}
-
-function setRockerAxisFromTouch(control, touch, applyAxis) {
-  if (!control.stick || !control.knob) return;
-  const rect = control.stick.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const deltaX = touch.clientX - centerX;
-  const deltaY = touch.clientY - centerY;
-  const distance = Math.hypot(deltaX, deltaY);
-  const maxOffset = control.maxOffset || 1;
-  const clampedScale = distance > maxOffset ? maxOffset / distance : 1;
-  const offsetX = deltaX * clampedScale;
-  const offsetY = deltaY * clampedScale;
-
-  setRockerKnobPosition(control.knob, offsetX, offsetY);
-  applyAxis(offsetX / maxOffset, offsetY / maxOffset);
-}
-
-function updateTouchControlLayout() {
-  if (!touchControlState.initialized) return;
-
-  const overlay = touchControlState.overlay;
-  if (overlay && overlay.style.display === 'none') {
-    return;
-  }
-
-  touchControlState.move.maxOffset = getRockerMaxOffset(
-    touchControlState.move.stick,
-  );
-  touchControlState.look.maxOffset = getRockerMaxOffset(
-    touchControlState.look.stick,
-  );
-}
-
-function updateTouchControlVisibility() {
-  if (!touchControlState.overlay) return;
-  const active = isGameplayActive();
-  const wasVisible = touchControlState.overlay.style.display === 'block';
-  touchControlState.overlay.style.display = active ? 'block' : 'none';
-  if (active && !wasVisible) {
-    requestAnimationFrame(updateTouchControlLayout);
-  }
-  if (!active) {
-    if (touchControlState.move.touchId !== null) {
-      resetMoveTouchState();
-    }
-    if (touchControlState.look.touchId !== null) {
-      resetLookTouchState();
-    }
-    touchControlState.tapCandidates.clear();
-  }
-}
-
-function registerTapCandidate(touch) {
-  touchControlState.tapCandidates.set(touch.identifier, {
-    startX: touch.clientX,
-    startY: touch.clientY,
-    startTime: performance.now(),
-    moved: false,
-  });
-}
-
-function updateTapCandidate(touch) {
-  const candidate = touchControlState.tapCandidates.get(touch.identifier);
-  if (!candidate) return;
-  const deltaX = touch.clientX - candidate.startX;
-  const deltaY = touch.clientY - candidate.startY;
-  if (Math.hypot(deltaX, deltaY) > TOUCH_TAP_MAX_MOVE) {
-    candidate.moved = true;
-  }
-}
-
-function clearTapCandidate(touch, allowSelection) {
-  const candidate = touchControlState.tapCandidates.get(touch.identifier);
-  if (!candidate) return false;
-
-  touchControlState.tapCandidates.delete(touch.identifier);
-  if (!allowSelection) return false;
-
-  const elapsed = performance.now() - candidate.startTime;
-  const deltaX = touch.clientX - candidate.startX;
-  const deltaY = touch.clientY - candidate.startY;
-  const moved =
-    candidate.moved || Math.hypot(deltaX, deltaY) > TOUCH_TAP_MAX_MOVE;
-  if (moved || elapsed > TOUCH_TAP_MAX_DURATION) return false;
-
-  onMouseClick({ clientX: touch.clientX, clientY: touch.clientY });
-  return true;
-}
-
-function handleTouchStart(event) {
-  if (!touchControlState.initialized || !isGameplayActive()) return;
-  updateTouchControlLayout();
-
-  let consumed = false;
-  for (let i = 0; i < event.changedTouches.length; i++) {
-    const touch = event.changedTouches[i];
-    const inMoveRocker = isTouchInsideElement(
-      touch,
-      touchControlState.move.stick,
-    );
-    const inLookRocker = isTouchInsideElement(
-      touch,
-      touchControlState.look.stick,
-    );
-
-    if (inMoveRocker && touchControlState.move.touchId === null) {
-      touchControlState.move.touchId = touch.identifier;
-      setRockerAxisFromTouch(
-        touchControlState.move,
-        touch,
-        setMoveInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    if (inLookRocker && touchControlState.look.touchId === null) {
-      touchControlState.look.touchId = touch.identifier;
-      setRockerAxisFromTouch(
-        touchControlState.look,
-        touch,
-        setLookInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    if (!inMoveRocker && !inLookRocker) {
-      registerTapCandidate(touch);
-    }
-  }
-
-  if (consumed) {
-    event.preventDefault();
-  }
-}
-
-function handleTouchMove(event) {
-  if (!touchControlState.initialized) return;
-
-  let consumed = false;
-  for (let i = 0; i < event.changedTouches.length; i++) {
-    const touch = event.changedTouches[i];
-    if (touch.identifier === touchControlState.move.touchId) {
-      setRockerAxisFromTouch(
-        touchControlState.move,
-        touch,
-        setMoveInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    if (touch.identifier === touchControlState.look.touchId) {
-      setRockerAxisFromTouch(
-        touchControlState.look,
-        touch,
-        setLookInputFromAxis,
-      );
-      consumed = true;
-      continue;
-    }
-
-    updateTapCandidate(touch);
-  }
-
-  if (consumed || isGameplayActive()) {
-    event.preventDefault();
-  }
-}
-
-function handleTouchEndInternal(event, allowSelection) {
-  if (!touchControlState.initialized) return;
-
-  let consumed = false;
-  for (let i = 0; i < event.changedTouches.length; i++) {
-    const touch = event.changedTouches[i];
-    if (touch.identifier === touchControlState.move.touchId) {
-      resetMoveTouchState();
-      consumed = true;
-      continue;
-    }
-
-    if (touch.identifier === touchControlState.look.touchId) {
-      resetLookTouchState();
-      consumed = true;
-      continue;
-    }
-
-    const selected = clearTapCandidate(
-      touch,
-      allowSelection && isGameplayActive(),
-    );
-    consumed = consumed || selected;
-  }
-
-  if (consumed || isGameplayActive()) {
-    event.preventDefault();
-  }
-}
-
-function handleTouchEnd(event) {
-  handleTouchEndInternal(event, true);
-}
-
-function handleTouchCancel(event) {
-  handleTouchEndInternal(event, false);
-}
-
-function setupTouchControls() {
-  if (touchControlState.initialized) return;
-
-  touchControlState.overlay = document.getElementById('touch-controls');
-  touchControlState.move.stick = document.getElementById('move-rocker');
-  touchControlState.move.knob = document.getElementById('move-rocker-knob');
-  touchControlState.look.stick = document.getElementById('look-rocker');
-  touchControlState.look.knob = document.getElementById('look-rocker-knob');
-
-  if (
-    !touchControlState.overlay ||
-    !touchControlState.move.stick ||
-    !touchControlState.move.knob ||
-    !touchControlState.look.stick ||
-    !touchControlState.look.knob
-  ) {
-    return;
-  }
-
-  touchControlState.initialized = true;
-  updateTouchControlLayout();
-  resetMoveTouchState();
-  resetLookTouchState();
-  updateTouchControlVisibility();
-
-  window.addEventListener('resize', updateTouchControlLayout);
-  window.addEventListener('touchstart', handleTouchStart, { passive: false });
-  window.addEventListener('touchmove', handleTouchMove, { passive: false });
-  window.addEventListener('touchend', handleTouchEnd, { passive: false });
-  window.addEventListener('touchcancel', handleTouchCancel, { passive: false });
-}
-
 function mouseMove(e) {
   if (isMobileDevice) return;
 
   document.getElementById('aiming1').style.left = e.clientX - 10 + 'px';
   document.getElementById('aiming1').style.top = e.clientY - 10 + 'px';
-  updatePointerFromClient(e.clientX, e.clientY);
+  updatePointerFromClient(mouse, e.clientX, e.clientY);
 
   if (esc) {
     mouseP = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   } else {
-    mouseP = getMousePosition();
+    mouseP = getAimingMousePosition('aiming1', 10);
   }
-  if (mouseP['y'] / window.innerHeight < 0.5) {
-    up = 0.5 - mouseP['y'] / window.innerHeight;
-  } else {
-    up = 0;
-  }
-  if (mouseP['y'] / window.innerHeight > 0.62) {
-    down = mouseP['y'] / window.innerHeight - 0.62;
-  } else {
-    down = 0;
-  }
-  if (mouseP['x'] / window.innerWidth < 0.47) {
-    left = 0.47 - mouseP['x'] / window.innerWidth;
-  } else {
-    left = 0;
-  }
-  if (mouseP['x'] / window.innerWidth > 0.53) {
-    right = mouseP['x'] / window.innerWidth - 0.53;
-  } else {
-    right = 0;
-  }
+  const lookInput = computeLookInputFromMousePosition(
+    mouseP.x,
+    mouseP.y,
+    window.innerWidth,
+    window.innerHeight,
+  );
+  up = lookInput.up;
+  down = lookInput.down;
+  left = lookInput.left;
+  right = lookInput.right;
 }
 
 function bounder_detect() {
@@ -1589,24 +1166,20 @@ function onMouseClick(event) {
     typeof event.clientX === 'number' &&
     typeof event.clientY === 'number'
   ) {
-    updatePointerFromClient(event.clientX, event.clientY);
+    updatePointerFromClient(mouse, event.clientX, event.clientY);
   }
 
-  if (document.getElementById('content').style.display == 'none' && !esc) {
-    raycaster1.setFromCamera(mouse, camera);
-    raycaster1.near = 0.1;
-    raycaster1.far = 10000;
-    const intersects = raycaster1.intersectObjects(scene.children, true);
-    let hitIndex = -1;
-    for (let i = 0; i < intersects.length; i++) {
-      if (isFollowTargetObject(intersects[i].object)) {
-        hitIndex = i;
-        break;
-      }
-    }
-    if (hitIndex !== -1) {
+  if (isGameplayActive('content', esc)) {
+    const selectedHit = pickFollowTargetFromScene({
+      mouse,
+      camera,
+      scene,
+      raycaster: raycaster1,
+      isFollowTargetObject,
+    });
+    if (selectedHit) {
       arrived = 50;
-      selected_object = intersects[hitIndex];
+      selected_object = selectedHit;
       catchspeed = 0;
       t_in = true;
     } else {
@@ -1626,199 +1199,100 @@ function operation_method_1(delta) {
     hit_frame = 500;
     chasingFrame = 0;
   }
-  if (hit_frame > 0) {
+  const hitState = applyUfoHitEffect({
+    ufo,
+    cameraPositionVec,
+    hitDirectionVec,
+    hitFrame: hit_frame,
+    rotatespeed,
+    knockbackDivisor: 10000,
+    fpsScale,
+    speed,
+  });
+
+  if (hitState.active) {
     moveForward = moveLeft = moveRight = moveBackward = false;
     currentSpeedForward = 0;
     currentSpeedRight = 0;
-    cameraPositionVec.x +=
-      (hitDirectionVec.x * hit_frame * rotatespeed) / 10000;
-    cameraPositionVec.y +=
-      (hitDirectionVec.y * hit_frame * rotatespeed) / 10000;
-    cameraPositionVec.z +=
-      (hitDirectionVec.z * hit_frame * rotatespeed) / 10000;
-
-    ufo.rotation.x = Math.cos((hit_frame * Math.PI) / 7) * (hit_frame / 3000);
-    ufo.rotation.z = Math.sin((hit_frame * Math.PI) / 7) * (hit_frame / 3000);
-    ufo.children[1].scale.set(0, 0);
-    ufo.children[1].material.opacity = 0;
-    ufo.children[1].position.y = 0.15;
-
-    ufo.children[10].material.color.set(0xff2222);
-    ufo.children[10].material.specular.set(0xff2222);
-    ufo.children[10].material.emissive.set(0xff2222);
-
-    hit_frame -= fpsScale;
-    speed = -speed / 20 + speed;
+    hit_frame = hitState.hitFrame;
+    speed = hitState.speed;
     selected_object = false;
   } else {
     ufo.rotation.x = 0;
-    ufo.children[10].material.color.set(0x44e0ff);
-    ufo.children[10].material.specular.set(0x44e0ff);
-    ufo.children[10].material.emissive.set(0x44e0ff);
+    setUfoIndicatorColor({ ufo, color: 0x44e0ff });
   }
-  if (document.getElementById('content').style.display == 'none') {
+  if (isContentHidden('content')) {
     esc = false;
   }
   if (fast) maxSpeed = 1.5 * fpsScale;
   else maxSpeed = Math.max(maxSpeed - 0.06 * fpsScale, 1.2 * fpsScale);
-  const touchDrivenMove =
-    isMobileDevice && touchControlState.move.touchId !== null;
+  const touchDrivenMove = isMobileDevice && touchControls.isMoveTouchActive();
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
     : 1;
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = (maxSpeed / 2) * moveSpeedScale;
 
-  if ((moveForward || moveBackward || moveRight || moveLeft) && !fast) {
-    ufo.children[1].scale.y =
-      ((0.4 - ufo.children[1].scale.y) / 50) * fpsScale +
-      ufo.children[1].scale.y;
-    ufo.children[1].material.opacity =
-      ((0.8 - ufo.children[1].material.opacity) / 50) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.09 - ufo.children[1].position.y) / 50) * fpsScale +
-      ufo.children[1].position.y;
-    speed = (2 - speed) / 50 + speed;
-  } else if ((moveForward || moveBackward || moveRight || moveLeft) && fast) {
-    ufo.children[1].scale.y =
-      ((0.6 - ufo.children[1].scale.y) / 50) * fpsScale +
-      ufo.children[1].scale.y;
-    ufo.children[1].material.opacity =
-      ((0.95 - ufo.children[1].material.opacity) / 50) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.15 - ufo.children[1].position.y) / 50) * fpsScale +
-      ufo.children[1].position.y;
-    speed = (4 - speed) / 50 + speed;
-  } else {
-    ufo.children[1].scale.y =
-      ((0.25 - ufo.children[1].scale.y) / 50) * fpsScale +
-      ufo.children[1].scale.y;
-    ufo.children[1].material.opacity =
-      ((0.7 - ufo.children[1].material.opacity) / 50) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.04 - ufo.children[1].position.y) / 50) * fpsScale +
-      ufo.children[1].position.y;
-    speed = (1 - speed) / 50 + speed;
-  }
-  // Mouse Move
+  if (hit_frame <= 0) {
+    speed = updateUfoThrustEffect({
+      ufo,
+      moveForward,
+      moveBackward,
+      moveLeft,
+      moveRight,
+      fast,
+      fpsScale,
+      speed,
+    });
+    // Mouse Move
 
-  if (moveForward && !moveBackward) {
-    if (!Forward && currentSpeedForward != 0) {
-      cameraPositionVec.z -= cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    } else {
-      cameraPositionVec.z += cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.min(
-        maxSpeedForward,
-        currentSpeedForward + delta * acc,
-      );
-      Forward = true;
-    }
-  } else if (moveBackward && !moveForward) {
-    if (Forward && currentSpeedForward != 0) {
-      cameraPositionVec.z += cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    } else {
-      cameraPositionVec.z -= cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.min(
-        maxSpeedForward,
-        currentSpeedForward + delta * acc,
-      );
-      Forward = false;
-    }
+    const controlState = updateUfoControlState({
+      moveForward,
+      moveBackward,
+      moveLeft,
+      moveRight,
+      cameraPositionVec,
+      cameraDirectionVec,
+      currentSpeedForward,
+      currentSpeedRight,
+      forwardDirection: Forward,
+      rightDirection: Right,
+      delta,
+      acceleration: acc,
+      maxSpeedForward,
+      maxSpeedRight,
+      leftInput: left,
+      rightInput: right,
+      upInput: up,
+      downInput: down,
+      angleX,
+      angleY,
+      fpsScale,
+      ufoScale: ufo_scale,
+      scaling,
+      yawDivisor: 24,
+      pitchUpDivisor: 1400,
+      pitchDownDivisor: 1250,
+    });
+    currentSpeedForward = controlState.currentSpeedForward;
+    currentSpeedRight = controlState.currentSpeedRight;
+    Forward = controlState.forwardDirection;
+    Right = controlState.rightDirection;
+    angleX = controlState.angleX;
+    angleY = controlState.angleY;
   }
-
-  if (moveRight && !moveLeft) {
-    if (!Right && currentSpeedRight != 0) {
-      cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    } else {
-      cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.min(
-        maxSpeedRight,
-        currentSpeedRight + delta * acc,
-      );
-      Right = true;
-    }
-  } else if (moveLeft && !moveRight) {
-    if (Right && currentSpeedRight != 0) {
-      cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    } else {
-      cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.min(
-        maxSpeedRight,
-        currentSpeedRight + delta * acc,
-      );
-      Right = false;
-    }
-  }
-  if ((!moveBackward && !moveForward) || (moveBackward && moveForward)) {
-    if (Forward) {
-      cameraPositionVec.z += cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y += cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x += cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    } else {
-      cameraPositionVec.z -= cameraDirectionVec.z * currentSpeedForward;
-      cameraPositionVec.y -= cameraDirectionVec.y * currentSpeedForward;
-      cameraPositionVec.x -= cameraDirectionVec.x * currentSpeedForward;
-      currentSpeedForward = Math.max(0, currentSpeedForward - delta * acc);
-    }
-  }
-  if ((!moveRight && !moveLeft) || (moveRight && moveLeft)) {
-    if (Right) {
-      cameraPositionVec.x -= cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z += cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    } else {
-      cameraPositionVec.x += cameraDirectionVec.z * currentSpeedRight;
-      cameraPositionVec.z -= cameraDirectionVec.x * currentSpeedRight;
-      currentSpeedRight = Math.max(0, currentSpeedRight - delta * acc);
-    }
-  }
-  angleX += (left / 24 / Math.PI - right / 24 / Math.PI) * fpsScale;
-  cameraDirectionVec.x -= (Math.sin(angleX) * ufo_scale) / 2;
-  cameraDirectionVec.z -= (Math.cos(angleX) * ufo_scale) / 2;
-
-  if (cameraDirectionVec.y < 0.85 * ufo_scale && !scaling) {
-    angleY += (up / 1400 / Math.PI) * fpsScale * ufo_scale;
-  }
-  if (cameraDirectionVec.y > -0.8 * ufo_scale && !scaling) {
-    angleY -= (down / 1250 / Math.PI) * fpsScale * ufo_scale;
-  }
-  //console.log(angleY)
-  cameraDirectionVec.y = Math.sin(angleY) * 60;
-  cameraDirectionVec.setLength(2.4 * ufo_scale);
 
   if (
     add_solar &&
     selected_object &&
     followablePlanetNames.includes(selected_object.object.name) &&
-    document.getElementById('content').style.display == 'none'
+    isContentHidden('content')
   ) {
     safe_dis = 1 * ufo_scale;
     if (selected_object.object.name == 'sun') safe_dis = 10;
 
     chasingFrame = 50;
-    ufo.children[10].material.color.set(0xffff33);
-    ufo.children[10].material.specular.set(0xffff33);
-    ufo.children[10].material.emissive.set(0xffff33);
+    setUfoIndicatorColor({ ufo, color: 0xffff33 });
     catchspeed = Math.min(
       catchspeed + 0.01 * fpsScale,
       1.2 * fpsScale * ufo_scale,
@@ -1836,34 +1310,22 @@ function operation_method_1(delta) {
       t_in = false;
     }
     if (t_in) {
-      ufo_starlight = Math.min(ufo_starlight + 0.0002 * fpsScale, 0.08);
-      ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-      ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-      ufo.children[12].intensity = ufo_starlight * 20 + 1;
-      ufo.children[1].scale.y =
-        ((0.9 - ufo.children[1].scale.y) / 50) * fpsScale +
-        ufo.children[1].scale.y;
-      ufo.children[1].material.opacity =
-        ((1 - ufo.children[1].material.opacity) / 50) * fpsScale +
-        ufo.children[1].material.opacity;
-      ufo.children[1].position.y =
-        ((-0.2 - ufo.children[1].position.y) / 50) * fpsScale +
-        ufo.children[1].position.y;
+      ufo_starlight = stepUfoStarlight({
+        ufo,
+        ufoStarlight: ufo_starlight,
+        fpsScale,
+        increase: true,
+      });
+      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
       transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
     } else {
-      ufo_starlight = Math.max(ufo_starlight - 0.0002 * fpsScale, 0.06);
-      ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-      ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-      ufo.children[12].intensity = ufo_starlight * 20 + 1;
-      ufo.children[1].scale.y =
-        ((0.25 - ufo.children[1].scale.y) / 100) * fpsScale +
-        ufo.children[1].scale.y;
-      ufo.children[1].material.opacity =
-        ((0.7 - ufo.children[1].material.opacity) / 100) * fpsScale +
-        ufo.children[1].material.opacity;
-      ufo.children[1].position.y =
-        ((-0.04 - ufo.children[1].position.y) / 100) * fpsScale +
-        ufo.children[1].position.y;
+      ufo_starlight = stepUfoStarlight({
+        ufo,
+        ufoStarlight: ufo_starlight,
+        fpsScale,
+        increase: false,
+      });
+      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
       transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
       arrived -= 1;
     }
@@ -1876,17 +1338,11 @@ function operation_method_1(delta) {
       cameraPositionVec.y += (chasing.y * catchspeed) / 20;
       cameraPositionVec.z += (chasing.z * catchspeed) / 20;
     }
-  } else if (
-    arrived > 0 &&
-    selected_object &&
-    document.getElementById('content').style.display == 'none'
-  ) {
+  } else if (arrived > 0 && selected_object && isContentHidden('content')) {
     ////console.log(selected_object.point)
     safe_dis = 1 * ufo_scale;
     chasingFrame = 50;
-    ufo.children[10].material.color.set(0xffff33);
-    ufo.children[10].material.specular.set(0xffff33);
-    ufo.children[10].material.emissive.set(0xffff33);
+    setUfoIndicatorColor({ ufo, color: 0xffff33 });
     catchspeed = Math.min(catchspeed + 0.01 * fpsScale, 1.2 * fpsScale);
     const delx =
       Math.max(-1500, Math.min(1500, selected_object.point.x)) -
@@ -1905,34 +1361,22 @@ function operation_method_1(delta) {
       t_in = false;
     }
     if (t_in) {
-      ufo_starlight = Math.min(ufo_starlight + 0.0002 * fpsScale, 0.08);
-      ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-      ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-      ufo.children[12].intensity = ufo_starlight * 20 + 1;
-      ufo.children[1].scale.y =
-        ((0.9 - ufo.children[1].scale.y) / 50) * fpsScale +
-        ufo.children[1].scale.y;
-      ufo.children[1].material.opacity =
-        ((1 - ufo.children[1].material.opacity) / 50) * fpsScale +
-        ufo.children[1].material.opacity;
-      ufo.children[1].position.y =
-        ((-0.2 - ufo.children[1].position.y) / 50) * fpsScale +
-        ufo.children[1].position.y;
+      ufo_starlight = stepUfoStarlight({
+        ufo,
+        ufoStarlight: ufo_starlight,
+        fpsScale,
+        increase: true,
+      });
+      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
       transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
     } else {
-      ufo_starlight = Math.max(ufo_starlight - 0.0002 * fpsScale, 0.06);
-      ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-      ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-      ufo.children[12].intensity = ufo_starlight * 20 + 1;
-      ufo.children[1].scale.y =
-        ((0.25 - ufo.children[1].scale.y) / 100) * fpsScale +
-        ufo.children[1].scale.y;
-      ufo.children[1].material.opacity =
-        ((0.7 - ufo.children[1].material.opacity) / 100) * fpsScale +
-        ufo.children[1].material.opacity;
-      ufo.children[1].position.y =
-        ((-0.04 - ufo.children[1].position.y) / 100) * fpsScale +
-        ufo.children[1].position.y;
+      ufo_starlight = stepUfoStarlight({
+        ufo,
+        ufoStarlight: ufo_starlight,
+        fpsScale,
+        increase: false,
+      });
+      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
       transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
       arrived -= 1;
     }
@@ -1942,30 +1386,20 @@ function operation_method_1(delta) {
     cameraPositionVec.z += (chasing.z * catchspeed) / 50;
   } else {
     if (hit_frame <= 0) {
-      ufo.children[10].material.color.set(0x44e0ff);
-      ufo.children[10].material.specular.set(0x44e0ff);
-      ufo.children[10].material.emissive.set(0x44e0ff);
+      setUfoIndicatorColor({ ufo, color: 0x44e0ff });
       cameraPositionVec.x += ((chasing.x * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.y += ((chasing.y * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.z += ((chasing.z * catchspeed) / 2500) * chasingFrame;
       if (chasingFrame > 0) chasingFrame -= fpsScale;
       else chasingFrame = 0;
     }
-    ufo_starlight = Math.max(ufo_starlight - 0.0002 * fpsScale, 0.06);
-    ufo.children[3].scale.set(ufo_starlight * 5, (ufo_starlight * 25) / 6);
-    ufo.children[11].intensity = ufo_starlight * 20 - 0.5;
-    ufo.children[12].intensity = ufo_starlight * 20 + 1;
-    ufo.children[1].scale.set(
-      ((0.05 - ufo.children[1].scale.x) / 100) * fpsScale +
-        ufo.children[1].scale.x,
-      (0.25 - ufo.children[1].scale.y) / 100 + ufo.children[1].scale.y,
-    );
-    ufo.children[1].material.opacity =
-      ((0.7 - ufo.children[1].material.opacity) / 100) * fpsScale +
-      ufo.children[1].material.opacity;
-    ufo.children[1].position.y =
-      ((-0.04 - ufo.children[1].position.y) / 100) * fpsScale +
-      ufo.children[1].position.y;
+    ufo_starlight = stepUfoStarlight({
+      ufo,
+      ufoStarlight: ufo_starlight,
+      fpsScale,
+      increase: false,
+    });
+    updateUfoIdleThrustEffect({ ufo, fpsScale });
     transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
   }
 
@@ -2002,7 +1436,7 @@ function operation_method_1(delta) {
 function animate() {
   toggleAimingCursor(esc || isMobileDevice);
   if (isMobileDevice) {
-    updateTouchControlVisibility();
+    touchControls.updateVisibility();
   }
 
   const delta = clock.getDelta();
@@ -2211,85 +1645,8 @@ function animate() {
       star9.position.z = Math.cos(position9) * 1200;
     }
 
-    //Ball Maving
-    const scaleCount = count * 200;
-    const ufoX = ufo.position.x;
-    const ufoY = ufo.position.y;
-    const ufoZ = ufo.position.z;
-    for (let groupIndex = 0; groupIndex < starGroupCount; groupIndex++) {
-      const groupStart = groupIndex * STAR_GROUP_SIZE;
-      if (groupStart >= starCount) break;
-      const leaderIndex = starGroupOrder[groupStart];
-      const leaderOffset = leaderIndex * 3;
-      const oldSize = starSizes[leaderIndex];
-      const targetSize =
-        ((Math.sin(star_s_speed[leaderIndex] * scaleCount) + 3) *
-          STAR_POINT_BASE_SIZE) /
-        3;
-      const deltaX =
-        (star_dx[leaderIndex] * Math.cos(star_dsx[leaderIndex] * count)) /
-        STAR_MOVE_DIVISOR;
-      const deltaY =
-        (star_dy[leaderIndex] * Math.cos(star_dsy[leaderIndex] * count)) /
-        STAR_MOVE_DIVISOR;
-      const deltaZ =
-        (star_dz[leaderIndex] * Math.cos(star_dsz[leaderIndex] * count)) /
-        STAR_MOVE_DIVISOR;
-      starSizes[leaderIndex] = targetSize;
-      starPositions[leaderOffset] += deltaX;
-      starPositions[leaderOffset + 1] += deltaY;
-      starPositions[leaderOffset + 2] += deltaZ;
-      const leaderDxUfo = starPositions[leaderOffset] - ufoX;
-      const leaderDyUfo = starPositions[leaderOffset + 1] - ufoY;
-      const leaderDzUfo = starPositions[leaderOffset + 2] - ufoZ;
-      const leaderDistSq =
-        leaderDxUfo * leaderDxUfo +
-        leaderDyUfo * leaderDyUfo +
-        leaderDzUfo * leaderDzUfo;
-      if (leaderDistSq <= STAR_FADE_END_DISTANCE_SQ) {
-        starAlphas[leaderIndex] = 0;
-      } else if (leaderDistSq >= STAR_FADE_START_DISTANCE_SQ) {
-        starAlphas[leaderIndex] = 1;
-      } else {
-        const leaderDist = Math.sqrt(leaderDistSq);
-        starAlphas[leaderIndex] =
-          (leaderDist - STAR_FADE_END_DISTANCE) / STAR_FADE_RANGE;
-      }
-      const deltaSize = targetSize - oldSize;
-
-      for (
-        let member = 1;
-        member < STAR_GROUP_SIZE && groupStart + member < starCount;
-        member++
-      ) {
-        const memberIndex = starGroupOrder[groupStart + member];
-        const memberOffset = memberIndex * 3;
-        starSizes[memberIndex] += deltaSize;
-        starPositions[memberOffset] += deltaX;
-        starPositions[memberOffset + 1] += deltaY;
-        starPositions[memberOffset + 2] += deltaZ;
-        const memberDxUfo = starPositions[memberOffset] - ufoX;
-        const memberDyUfo = starPositions[memberOffset + 1] - ufoY;
-        const memberDzUfo = starPositions[memberOffset + 2] - ufoZ;
-        const memberDistSq =
-          memberDxUfo * memberDxUfo +
-          memberDyUfo * memberDyUfo +
-          memberDzUfo * memberDzUfo;
-        if (memberDistSq <= STAR_FADE_END_DISTANCE_SQ) {
-          starAlphas[memberIndex] = 0;
-        } else if (memberDistSq >= STAR_FADE_START_DISTANCE_SQ) {
-          starAlphas[memberIndex] = 1;
-        } else {
-          const memberDist = Math.sqrt(memberDistSq);
-          starAlphas[memberIndex] =
-            (memberDist - STAR_FADE_END_DISTANCE) / STAR_FADE_RANGE;
-        }
-      }
-    }
-    starGeometry.attributes.position.needsUpdate = true;
-    starGeometry.attributes.pointSize.needsUpdate = true;
-    starGeometry.attributes.pointAlpha.needsUpdate = true;
-    meteorSystem.updateMeteorites(meteorites, 30, 5);
+    starfieldSystem.update(ufo.position, count);
+    meteorSystem.updateMeteorites(meteorites, 30, 6);
     count += 0.0005 * fpsScale;
 
     operation_method_1(delta);
