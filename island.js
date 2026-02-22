@@ -1902,7 +1902,7 @@ function animate() {
   frameAccumulator += delta;
   if (frameAccumulator > frameInterval) {
     //stats.update();
-    meteorSystem.updateMeteorites(meteorites, 20, 15);
+    meteorSystem.updateMeteorites(meteorites, 30, 5);
 
     const scaleCount = count * 200;
     const ufoX = ufo.position.x;

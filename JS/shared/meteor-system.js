@@ -1,15 +1,7 @@
 const DEFAULT_METEOR_CONFIG = {
-  sizeScaleMin: 0.7,
-  sizeScaleRange: 0.6,
-  spawnCooldownMs: 300,
-  centerDotMin: 0.85,
-  centerDotMax: 0.851,
-  initialHeadCount: 2,
-  initialStepDivisor: 3,
   trailEndSize: 1,
-  trailMinScaleFactor: 0.6,
-  trailScaleFalloff: 0.985,
-  trailStepDivisor: 2.5,
+  trailScaleFalloff: 0.996,
+  trailStepDivisor: 1,
 };
 
 function resolveSpriteMaterial(spriteOrMaterial) {
@@ -58,7 +50,7 @@ function createMeteorPointsMaterial(THREE, pointTexture) {
     map: pointTexture,
     transparent: true,
     opacity: 1,
-    alphaTest: 0.1,
+    alphaTest: 0.05,
     depthTest: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -96,19 +88,10 @@ export function createMeteorSystem({
   scene,
   meteorTemplate,
   meteorHeadMaterial,
-  meteorHeadAltMaterial,
   meteorTailMaterial,
   maxDistance,
   speed,
-  sizeScaleMin = DEFAULT_METEOR_CONFIG.sizeScaleMin,
-  sizeScaleRange = DEFAULT_METEOR_CONFIG.sizeScaleRange,
-  spawnCooldownMs = DEFAULT_METEOR_CONFIG.spawnCooldownMs,
-  centerDotMin = DEFAULT_METEOR_CONFIG.centerDotMin,
-  centerDotMax = DEFAULT_METEOR_CONFIG.centerDotMax,
-  initialHeadCount = DEFAULT_METEOR_CONFIG.initialHeadCount,
-  initialStepDivisor = DEFAULT_METEOR_CONFIG.initialStepDivisor,
   trailEndSize = DEFAULT_METEOR_CONFIG.trailEndSize,
-  trailMinScaleFactor = DEFAULT_METEOR_CONFIG.trailMinScaleFactor,
   trailScaleFalloff = DEFAULT_METEOR_CONFIG.trailScaleFalloff,
   trailStepDivisor = DEFAULT_METEOR_CONFIG.trailStepDivisor,
 }) {
@@ -117,7 +100,6 @@ export function createMeteorSystem({
     !scene ||
     !meteorTemplate ||
     !meteorHeadMaterial ||
-    !meteorHeadAltMaterial ||
     !meteorTailMaterial ||
     !Number.isFinite(maxDistance) ||
     !Number.isFinite(speed)
@@ -126,22 +108,18 @@ export function createMeteorSystem({
   }
 
   const headMaterialRef = resolveSpriteMaterial(meteorHeadMaterial);
-  const headAltMaterialRef = resolveSpriteMaterial(meteorHeadAltMaterial);
   const tailMaterialRef = resolveSpriteMaterial(meteorTailMaterial);
-  if (!headMaterialRef || !headAltMaterialRef || !tailMaterialRef) {
+  if (!headMaterialRef || !tailMaterialRef) {
     return null;
   }
 
   const headColor = new THREE.Color(0xffffff);
-  const headAltColor = new THREE.Color(0xffffff);
   const tailColor = new THREE.Color(0xffffff);
   if (headMaterialRef.color) headColor.copy(headMaterialRef.color);
-  if (headAltMaterialRef.color) headAltColor.copy(headAltMaterialRef.color);
   if (tailMaterialRef.color) tailColor.copy(tailMaterialRef.color);
 
   const meteorRenderOrder = Math.max(
     meteorHeadMaterial.renderOrder ?? 0,
-    meteorHeadAltMaterial.renderOrder ?? 0,
     meteorTailMaterial.renderOrder ?? 0,
   );
 
@@ -153,23 +131,11 @@ export function createMeteorSystem({
   const maxClosestDistance = maxDistance * 0.9;
   const minClosestDistanceSq = minClosestDistance * minClosestDistance;
   const maxClosestDistanceSq = maxClosestDistance * maxClosestDistance;
-  const minSpawnIntervalMs = Math.max(0, Number(spawnCooldownMs) || 0);
-  let nextAllowedSpawnTime = 0;
 
-  function spawnMeteor(baseSize) {
-    const spacingScale = 0.8;
-    const sizeVariationScale = 0.8;
-    const adjustedTrailFalloff =
-      1 - (1 - trailScaleFalloff) * sizeVariationScale;
-
-    let size = baseSize * (Math.random() * sizeScaleRange + sizeScaleMin);
-    const originalSize = size;
-    const meteorObject3D = meteorTemplate.clone();
-
+  function createSpawnState() {
     let x = 0;
     let y = 0;
     let z = 0;
-    // Spawn inside the valid annulus so the trajectory constraint is solvable.
     do {
       x = (Math.random() * 2 - 1) * maxDistance;
       y = (Math.random() * 2 - 1) * maxDistance;
@@ -186,7 +152,6 @@ export function createMeteorSystem({
         .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
         .normalize();
 
-      // Closest distance from the meteor ray p(t)=origin+t*velocity (t>=0) to world origin.
       const originDotVelocity =
         x * velocity.x + y * velocity.y + z * velocity.z;
       let closestDistanceSq = originDistanceSq;
@@ -204,6 +169,27 @@ export function createMeteorSystem({
         break;
       }
     }
+
+    return {
+      x,
+      y,
+      z,
+      velocity,
+    };
+  }
+
+  function spawnMeteor(baseSize) {
+    const adjustedTrailFalloff = 1 - (1 - trailScaleFalloff);
+
+    let size = baseSize;
+    const originalSize = size;
+    const meteorObject3D = meteorTemplate.clone();
+
+    const spawnState = createSpawnState();
+    let x = spawnState.x;
+    let y = spawnState.y;
+    let z = spawnState.z;
+    const velocity = spawnState.velocity;
 
     const originX = x;
     const originY = y;
@@ -225,32 +211,10 @@ export function createMeteorSystem({
       }
     };
 
-    for (let i = 0; i < initialHeadCount; i++) {
-      const isPrimaryHead = i % 2 === 0;
-      const headSizeMultiplier = 1 + (1.15 - i * 0.08 - 1) * sizeVariationScale;
-      pushPoint(
-        x - originX,
-        y - originY,
-        z - originZ,
-        size * headSizeMultiplier,
-        1 - i * 0.08,
-        isPrimaryHead ? headColor.r : headAltColor.r,
-        isPrimaryHead ? headColor.g : headAltColor.g,
-        isPrimaryHead ? headColor.b : headAltColor.b,
-      );
-
-      x -= ((size * velocity.x) / initialStepDivisor) * spacingScale;
-      y -= ((size * velocity.y) / initialStepDivisor) * spacingScale;
-      z -= ((size * velocity.z) / initialStepDivisor) * spacingScale;
-    }
-
     const trailDenominator = Math.max(0.0001, originalSize - trailEndSize);
     while (size > trailEndSize) {
-      const sizeFactor = Math.max(
-        trailMinScaleFactor,
-        Math.pow(size / originalSize, 0.25),
-      );
-      const bodySizeMultiplier = 1 + (sizeFactor - 1) * sizeVariationScale;
+      const sizeFactor = Math.pow(size / originalSize, 0.25);
+      const bodySizeMultiplier = 1 + (sizeFactor - 1);
       const progress = (originalSize - size) / trailDenominator;
       const fade = 1 - progress;
       const blend = Math.min(1, progress * 0.9 + 0.1);
@@ -270,21 +234,9 @@ export function createMeteorSystem({
         mixedB,
       );
 
-      const tailSizeMultiplier = 1 + (1.02 - 1) * sizeVariationScale;
-      pushPoint(
-        x - originX,
-        y - originY,
-        z - originZ,
-        size * tailSizeMultiplier,
-        Math.max(0.03, fade * fade * 0.35),
-        tailColor.r,
-        tailColor.g,
-        tailColor.b,
-      );
-
-      x -= ((size * velocity.x) / trailStepDivisor) * spacingScale;
-      y -= ((size * velocity.y) / trailStepDivisor) * spacingScale;
-      z -= ((size * velocity.z) / trailStepDivisor) * spacingScale;
+      x -= (size * velocity.x) / trailStepDivisor;
+      y -= (size * velocity.y) / trailStepDivisor;
+      z -= (size * velocity.z) / trailStepDivisor;
       size *= adjustedTrailFalloff;
     }
 
@@ -313,9 +265,31 @@ export function createMeteorSystem({
     meteorPoints.position.set(0, 0, 0);
     meteorObject3D.add(meteorPoints);
     meteorObject3D.position.set(originX, originY, originZ);
+    meteorObject3D.quaternion.identity();
     meteorObject3D.userData.meteorLength = Math.sqrt(maxMeteorLengthSq);
+    meteorObject3D.userData.referenceDirection = velocity.clone().normalize();
 
     return [meteorObject3D, velocity];
+  }
+
+  function resetMeteor(meteorEntry) {
+    const meteorObject = meteorEntry[0];
+    const meteorVelocity = meteorEntry[1];
+    const spawnState = createSpawnState();
+
+    meteorObject.position.set(spawnState.x, spawnState.y, spawnState.z);
+    meteorVelocity.copy(spawnState.velocity);
+
+    const referenceDirection = meteorObject.userData.referenceDirection;
+    if (referenceDirection && referenceDirection.lengthSq() > 0) {
+      const resetRotation = new THREE.Quaternion().setFromUnitVectors(
+        referenceDirection,
+        spawnState.velocity,
+      );
+      meteorObject.quaternion.copy(resetRotation);
+    } else {
+      meteorObject.quaternion.identity();
+    }
   }
 
   function moveMeteor(meteorEntry) {
@@ -327,13 +301,8 @@ export function createMeteorSystem({
       meteorObject.position.lengthSq() >
       maxDistanceWithLength * maxDistanceWithLength
     ) {
-      scene.remove(meteorObject);
-      meteorObject.traverse((node) => {
-        if (node.geometry && typeof node.geometry.dispose === 'function') {
-          node.geometry.dispose();
-        }
-      });
-      return true;
+      resetMeteor(meteorEntry);
+      return false;
     }
     meteorObject.position.addScaledVector(meteorVelocity, speed * 2);
     return false;
@@ -342,23 +311,28 @@ export function createMeteorSystem({
   function updateMeteorites(meteorites, maxCount, spawnSize) {
     const targetCount = Math.max(0, Math.floor(Number(maxCount) || 0));
     const nextSpawnSize = Number(spawnSize) || 0;
-    const now = performance.now();
 
-    if (
-      meteorites.length < targetCount &&
-      nextSpawnSize > 0 &&
-      now >= nextAllowedSpawnTime
-    ) {
+    while (meteorites.length < targetCount && nextSpawnSize > 0) {
       const meteorEntry = spawnMeteor(nextSpawnSize);
       meteorites.push(meteorEntry);
       scene.add(meteorEntry[0]);
-      nextAllowedSpawnTime = now + minSpawnIntervalMs;
     }
 
-    for (let i = meteorites.length - 1; i >= 0; i--) {
-      if (moveMeteor(meteorites[i])) {
+    if (meteorites.length > targetCount) {
+      for (let i = meteorites.length - 1; i >= targetCount; i--) {
+        const meteorEntry = meteorites[i];
+        scene.remove(meteorEntry[0]);
+        meteorEntry[0].traverse((node) => {
+          if (node.geometry && typeof node.geometry.dispose === 'function') {
+            node.geometry.dispose();
+          }
+        });
         meteorites.splice(i, 1);
       }
+    }
+
+    for (let i = 0; i < meteorites.length; i++) {
+      moveMeteor(meteorites[i]);
     }
   }
 
