@@ -178,7 +178,12 @@ function isFollowTargetObject(object) {
   if (!object) return false;
   if (object.userData && object.userData.ignoreClickFollow) return false;
   if (object.type === 'Sprite' || object.type === 'Points') return false;
-  if (object.name === 'ring' || object.name === 'Sky') return false;
+  if (
+    object.name === 'ring' ||
+    object.name === 'Sky' ||
+    (typeof object.name === 'string' && object.name.startsWith('ring'))
+  )
+    return false;
   return true;
 }
 
@@ -594,6 +599,9 @@ if (add_solar) {
   star7.name = 'star7';
   star8.name = 'star8';
   ring8.name = 'ring8';
+
+  ring4.userData.ignoreClickFollow = true;
+  ring8.userData.ignoreClickFollow = true;
   star9.name = 'star9';
 
   star1.castShadow = true;
