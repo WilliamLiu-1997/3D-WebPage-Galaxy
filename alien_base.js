@@ -108,8 +108,8 @@ let down = 0;
 let left = 0;
 let right = 0;
 
-let maxSpeed = 0.025 * fpsScale;
-const acc = 0.25 * fpsScale;
+let maxSpeed = 0.05 * fpsScale;
+const acc = 0.5 * fpsScale;
 let currentSpeedForward = 0;
 let currentSpeedRight = 0;
 let moveInputStrength = 0;
@@ -1355,13 +1355,14 @@ function operation_method_1(delta) {
   if (document.getElementById('content').style.display == 'none') {
     esc = false;
   }
-  if (fast) maxSpeed = 0.06 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.001 * fpsScale, 0.025 * fpsScale);
+  if (fast) maxSpeed = 0.12 * fpsScale;
+  else maxSpeed = Math.max(maxSpeed - 0.002 * fpsScale, 0.05 * fpsScale);
   const touchDrivenMove =
     isMobileDevice && touchControlState.move.touchId !== null;
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
     : 1;
+
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = maxSpeed * moveSpeedScale;
 
