@@ -302,8 +302,8 @@ function createSunMaterialForRenderer(rendererRef) {
 function createSunEdgeGlow(
   peakPosition = 0.2,
   solidEnd = 0.21,
-  sunEdgeGlowRadiusScale = 1.2,
-  outerFadePower = 2.5,
+  sunEdgeGlowRadiusScale = 1.25,
+  outerFadePower = 4,
   glowOpacity = 1.0,
   color = 0xff9a27,
 ) {
@@ -370,9 +370,41 @@ function createSunEdgeGlow(
   );
   glowMesh.name = 'sunEdgeGlow';
   glowMesh.userData.ignoreClickFollow = true;
-  // Billboard: always face the camera
+  const worldGlowPosition = new THREE.Vector3();
+  const baseHalfSize = size * 0.5;
+  const targetSunEdgeRadius = SUN_RADIUS;
+  const maxDynamicScale = 10;
+  // Billboard direction is derived from (camera.position - glow.position).
   glowMesh.onBeforeRender = function (renderer, scene, camera) {
-    glowMesh.quaternion.copy(camera.quaternion);
+    glowMesh.getWorldPosition(worldGlowPosition);
+    const distanceToCamera = worldGlowPosition.distanceTo(camera.position);
+    const innerRatio = THREE.MathUtils.clamp(
+      sunGlowMaterial.uniforms.innerRadiusRatio.value,
+      0.001,
+      0.9999,
+    );
+    const safeDistance = Math.max(
+      distanceToCamera,
+      targetSunEdgeRadius + 0.001,
+    );
+    const denom = Math.sqrt(
+      Math.max(
+        safeDistance * safeDistance - targetSunEdgeRadius * targetSunEdgeRadius,
+        0.000001,
+      ),
+    );
+    // Keep the glow inner edge aligned to the sun limb in screen space:
+    // innerRatio * halfSize projects to the same angular radius as the sun sphere.
+    const requiredHalfSize =
+      (safeDistance * targetSunEdgeRadius) / (innerRatio * denom);
+    const dynamicScale =
+      THREE.MathUtils.clamp(
+        requiredHalfSize / baseHalfSize,
+        1,
+        maxDynamicScale,
+      ) * 0.96;
+    glowMesh.scale.set(dynamicScale, dynamicScale, 1);
+    glowMesh.lookAt(camera.position);
   };
   return glowMesh;
 }
