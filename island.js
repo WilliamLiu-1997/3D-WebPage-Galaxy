@@ -459,8 +459,8 @@ function init() {
 
   light_white1.penumbra = 0.3;
   light_white1.castShadow = true;
-  light_white1.shadow.mapSize.width = 2024;
-  light_white1.shadow.mapSize.height = 2024;
+  light_white1.shadow.mapSize.width = 2048;
+  light_white1.shadow.mapSize.height = 2048;
   light_white1.shadow.camera.far = 200;
   light_white1.shadow.camera.near = 1.5;
   light_white1.shadow.radius = 100;
