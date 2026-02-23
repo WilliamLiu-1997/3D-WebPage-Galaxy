@@ -1,8 +1,8 @@
 const DEFAULT_METEOR_CONFIG = {
-  trailEndSize: 1.5,
-  alphaTest: 0.035,
-  trailScaleFalloff: 0.995,
-  trailStepDivisor: 1,
+  trailEndSize: 2,
+  alphaTest: 0.05,
+  trailScaleFalloff: 0.997,
+  trailStepDivisor: 2.8,
 };
 
 function createMeteorPointTexture(THREE) {
@@ -203,9 +203,9 @@ export function createMeteorSystem({
         Math.max(0.1, fade * 0.8),
       );
 
-      x -= velocity.x / trailStepDivisor;
-      y -= velocity.y / trailStepDivisor;
-      z -= velocity.z / trailStepDivisor;
+      x -= (velocity.x * size) / trailStepDivisor;
+      y -= (velocity.y * size) / trailStepDivisor;
+      z -= (velocity.z * size) / trailStepDivisor;
       size *= adjustedTrailFalloff;
     }
 
