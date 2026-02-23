@@ -1345,6 +1345,7 @@ function operation_method_1(delta, count, frameScale = 1) {
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
     : 1;
+  const fastAnimation = fast || (touchDrivenMove && moveInputStrength >= 0.7);
   const maxSpeedForward = maxSpeed * moveSpeedScale;
   const maxSpeedRight = (maxSpeed / 2) * moveSpeedScale;
 
@@ -1355,7 +1356,7 @@ function operation_method_1(delta, count, frameScale = 1) {
       moveBackward,
       moveLeft,
       moveRight,
-      fast,
+      fast: fastAnimation,
       fpsScale: logicFpsScale,
       speed,
     });
