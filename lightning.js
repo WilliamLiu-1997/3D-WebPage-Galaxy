@@ -1178,7 +1178,7 @@ function init() {
       distanceDivisor: 10,
       decay: 0.75,
       castShadow: true,
-      shadowMapSize: 512,
+      shadowMapSize: 256,
       shadowRadius: 3,
     },
     secondaryLight: {
@@ -1186,7 +1186,7 @@ function init() {
       distanceDivisor: 10,
       decay: 0.95,
       castShadow: true,
-      shadowMapSize: 512,
+      shadowMapSize: 256,
       shadowRadius: 3,
     },
   });

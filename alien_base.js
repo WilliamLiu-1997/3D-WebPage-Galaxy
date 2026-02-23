@@ -510,7 +510,7 @@ function init() {
       distanceDivisor: 10,
       decay: 0.75,
       castShadow: true,
-      shadowMapSize: 512,
+      shadowMapSize: 256,
       shadowRadius: 3,
       shadowBias: -0.001,
     },
@@ -519,7 +519,7 @@ function init() {
       distanceDivisor: 10,
       decay: 0.95,
       castShadow: true,
-      shadowMapSize: 512,
+      shadowMapSize: 256,
       shadowRadius: 3,
       shadowBias: -0.001,
     },
@@ -550,8 +550,8 @@ function init() {
   );
   light_white1.penumbra = 0.3;
   light_white1.castShadow = true;
-  light_white1.shadow.mapSize.width = 512;
-  light_white1.shadow.mapSize.height = 512;
+  light_white1.shadow.mapSize.width = 256;
+  light_white1.shadow.mapSize.height = 256;
   light_white1.shadow.camera.far = 700 * 1 /*ufo_scale/100*/;
   light_white1.shadow.camera.near = 5 * 1 /*ufo_scale/100*/;
   light_white1.shadowBias = -0.001;
