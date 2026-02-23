@@ -1,8 +1,8 @@
 const DEFAULT_METEOR_CONFIG = {
-  trailEndSize: 2,
-  alphaTest: 0.05,
+  trailEndSize: 1,
+  alphaTest: 0.01,
   trailScaleFalloff: 0.997,
-  trailStepDivisor: 2.8,
+  trailStepDivisor: 3,
 };
 
 function createMeteorPointTexture(THREE) {
@@ -193,14 +193,14 @@ export function createMeteorSystem({
       const sizeFactor = Math.pow(size / originalSize, 0.25);
       const bodySizeMultiplier = 1 + (sizeFactor - 1);
       const progress = (originalSize - size) / trailDenominator;
-      const fade = 1 - progress;
+      const fade = (1 - progress) * (1 - progress);
 
       pushPoint(
         x - originX,
         y - originY,
         z - originZ,
         size * bodySizeMultiplier,
-        Math.max(0.1, fade * 0.8),
+        fade,
       );
 
       x -= (velocity.x * size) / trailStepDivisor;
