@@ -68,7 +68,13 @@ function createCenterRingMaterial(THREE, ringDoubleSide) {
   return new THREE.MeshPhongMaterial(options);
 }
 
-function createUfoPointLight(THREE, ufoScale, baseDistance, config, defaultPosition) {
+function createUfoPointLight(
+  THREE,
+  ufoScale,
+  baseDistance,
+  config,
+  defaultPosition,
+) {
   const intensity = config.intensity ?? 0.5;
   const distanceDivisor = config.distanceDivisor ?? 20;
   const decay = config.decay ?? 0.75;
@@ -83,13 +89,14 @@ function createUfoPointLight(THREE, ufoScale, baseDistance, config, defaultPosit
 
   if (config.castShadow) {
     light.castShadow = true;
-    const shadowMapSize = config.shadowMapSize ?? 512;
+    const shadowMapSize = config.shadowMapSize ?? 256;
     light.shadow.mapSize.width = shadowMapSize;
     light.shadow.mapSize.height = shadowMapSize;
 
     const shadowFarBaseDistance = config.shadowFarBaseDistance ?? baseDistance;
     const shadowFarDivisor = config.shadowFarDivisor ?? distanceDivisor;
-    light.shadow.camera.far = (shadowFarBaseDistance * ufoScale) / shadowFarDivisor;
+    light.shadow.camera.far =
+      (shadowFarBaseDistance * ufoScale) / shadowFarDivisor;
 
     const shadowNearBaseDistance = config.shadowNearBaseDistance ?? 0.1;
     const shadowNearDivisor = config.shadowNearDivisor ?? distanceDivisor;
