@@ -91,10 +91,10 @@ const STAR_GROUP_SIZE = 50;
 const STAR_POINT_BASE_SIZE = 10;
 const STAR_MOVE_DIVISOR = 20;
 const STAR_COLOR_TINTS = [
-  [0.7, 0.7, 1.0],
-  [0.7, 0.7, 1.0],
-  [0.7, 0.7, 1.0],
-  [1.0, 1.0, 0.7],
+  [0.75, 0.75, 1.0],
+  [0.75, 0.75, 1.0],
+  [0.75, 0.75, 1.0],
+  [1.0, 1.0, 0.75],
 ];
 const STAR_FADE_START_DISTANCE = 1200;
 const STAR_FADE_END_DISTANCE = 1000;
@@ -220,16 +220,8 @@ const meteorSystem = createMeteorSystem({
   THREE,
   scene,
   meteorTemplate: meteorite_Object3D,
-  meteorHeadMaterial: material,
-  meteorHeadAltMaterial: materialr,
-  meteorTailMaterial: material1,
   maxDistance: METEOR_MAX_DISTANCE,
   speed: METEOR_SPEED,
-  sizeScaleMin: 0.7,
-  sizeScaleRange: 0.6,
-  centerDotMin: 0.85,
-  centerDotMax: 0.851,
-  trailStepDivisor: 2.5,
 });
 const waterGeometry = new THREE.CircleGeometry(5000, 100);
 
@@ -973,7 +965,8 @@ if (!isMobileDevice) {
   window.addEventListener('mousedown', onMouseClick, false);
 }
 
-function operation_method_1(delta, count) {
+function operation_method_1(delta, count, frameScale = 1) {
+  const logicFpsScale = fpsScale * frameScale;
   if (!ufo || !ufo.children || !ufo.children[10]) return;
   bounder_detect();
   if (hit_detect(count) && hit_frame < 490) {
@@ -987,7 +980,7 @@ function operation_method_1(delta, count) {
     hitFrame: hit_frame,
     rotatespeed,
     knockbackDivisor: 500000,
-    fpsScale,
+    fpsScale: logicFpsScale,
     speed,
   });
 
@@ -1005,8 +998,9 @@ function operation_method_1(delta, count) {
   if (isContentHidden('content')) {
     esc = false;
   }
-  if (fast) maxSpeed = 0.04 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.002 * fpsScale, 0.02 * fpsScale);
+  if (fast) maxSpeed = 0.04 * logicFpsScale;
+  else
+    maxSpeed = Math.max(maxSpeed - 0.002 * logicFpsScale, 0.02 * logicFpsScale);
   const touchDrivenMove = isMobileDevice && touchControls.isMoveTouchActive();
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
@@ -1022,7 +1016,7 @@ function operation_method_1(delta, count) {
       moveLeft,
       moveRight,
       fast,
-      fpsScale,
+      fpsScale: logicFpsScale,
       speed,
     });
     // Mouse Move
@@ -1048,7 +1042,7 @@ function operation_method_1(delta, count) {
       downInput: down,
       angleX,
       angleY,
-      fpsScale,
+      fpsScale: logicFpsScale,
       ufoScale: ufo_scale,
       scaling,
       yawDivisor: 15,
@@ -1068,7 +1062,10 @@ function operation_method_1(delta, count) {
     safe_dis = 2 * ufo_scale;
     chasingFrame = 50;
     setUfoIndicatorColor({ ufo, color: 0xffff33 });
-    catchspeed = Math.min(catchspeed + 0.01 * fpsScale, 1.2 * fpsScale);
+    catchspeed = Math.min(
+      catchspeed + 0.01 * logicFpsScale,
+      1.2 * logicFpsScale,
+    );
     const distance =
       Math.sqrt(
         selected_object.point.x * selected_object.point.x +
@@ -1104,20 +1101,28 @@ function operation_method_1(delta, count) {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: true,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
-      transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: true,
+      });
+      transferSpeed = Math.min(transferSpeed + 1 * logicFpsScale, 10 / speed);
     } else {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: false,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
-      transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: false,
+      });
+      transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
       arrived -= 1;
     }
 
@@ -1132,17 +1137,17 @@ function operation_method_1(delta, count) {
       cameraPositionVec.x += ((chasing.x * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.y += ((chasing.y * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.z += ((chasing.z * catchspeed) / 2500) * chasingFrame;
-      if (chasingFrame > 0) chasingFrame -= fpsScale;
+      if (chasingFrame > 0) chasingFrame -= logicFpsScale;
       else chasingFrame = 0;
     }
     ufo_starlight = stepUfoStarlight({
       ufo,
       ufoStarlight: ufo_starlight,
-      fpsScale,
+      fpsScale: logicFpsScale,
       increase: false,
     });
-    updateUfoIdleThrustEffect({ ufo, fpsScale });
-    transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+    updateUfoIdleThrustEffect({ ufo, fpsScale: logicFpsScale });
+    transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
   }
 
   //ufo.position.set((cameraPositionVec.x-ufo.position.x)/follow+ufo.position.x, (cameraPositionVec.y-ufo.position.y)/follow+ufo.position.y, (cameraPositionVec.z-ufo.position.z)/follow+ufo.position.z);
@@ -1151,7 +1156,7 @@ function operation_method_1(delta, count) {
     cameraPositionVec.y,
     cameraPositionVec.z,
   );
-  ufo.rotation.y += (0.01 / Math.PI) * speed * transferSpeed * fpsScale;
+  ufo.rotation.y += (0.01 / Math.PI) * speed * transferSpeed * logicFpsScale;
   ufo.position.y += Math.sin(count * 60) * 0.01 * speed * ufo_scale;
 
   camera.position.set(
@@ -1283,7 +1288,9 @@ function animate() {
   else return;
   const delta = clock.getDelta();
 
-  MeshWater.material.uniforms['time'].value += 1.0 / 120.0;
+  const frameScale = Math.min(Math.max(delta / frameInterval, 0.0001), 5);
+
+  MeshWater.material.uniforms['time'].value += (1.0 / 120.0) * frameScale;
 
   if (mixer) {
     mixer.update(delta);
@@ -1300,7 +1307,7 @@ function animate() {
       scare = true;
     } else {
       if (!currentlyAnimating) {
-        wait_time++;
+        wait_time += frameScale;
         if (wait_time > 5 * TARGET_FPS) {
           currentlyAnimating = true;
           playOnClick(6);
@@ -1321,7 +1328,7 @@ function animate() {
     neck.rotation.z = neck.rotation.z * 0.95;
     waist.rotation.z = waist.rotation.z * 0.95;
     if (!currentlyAnimating) {
-      wait_time++;
+      wait_time += frameScale;
       if (wait_time > 5 * TARGET_FPS) {
         currentlyAnimating = true;
         let anim = Math.floor(Math.random() * possibleAnims.length) + 0;
@@ -1339,21 +1346,19 @@ function animate() {
   }
 
   frameAccumulator += delta;
-  if (frameAccumulator > frameInterval) {
-    //stats.update();
-    meteorSystem.updateMeteorites(meteorites, 30, 6);
+  //stats.update();
+  meteorSystem.updateMeteorites(meteorites, 30, 5, frameScale);
 
-    starfieldSystem.update(ufo.position, count);
-    count += 0.0005 * fpsScale;
+  starfieldSystem.update(ufo.position, count);
+  count += 0.0005 * fpsScale * frameScale;
 
-    operation_method_1(delta, count);
+  operation_method_1(delta, count, frameScale);
 
-    all_obj4.children[1].position.y = -2.85 + 0.5 * Math.sin(count * 2);
+  all_obj4.children[1].position.y = -2.85 + 0.5 * Math.sin(count * 2);
 
-    renderer.render(scene, camera);
+  renderer.render(scene, camera);
 
-    frameAccumulator = frameAccumulator % frameInterval;
-  }
+  frameAccumulator = 0;
 }
 
 animate();

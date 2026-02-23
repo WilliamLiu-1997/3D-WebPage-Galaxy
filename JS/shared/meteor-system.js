@@ -1,7 +1,8 @@
 const DEFAULT_METEOR_CONFIG = {
-  trailEndSize: 1,
-  trailScaleFalloff: 0.994,
-  trailStepDivisor: 1,
+  trailEndSize: 2,
+  alphaTest: 0.05,
+  trailScaleFalloff: 0.997,
+  trailStepDivisor: 2.8,
 };
 
 function createMeteorPointTexture(THREE) {
@@ -33,7 +34,7 @@ function createMeteorPointTexture(THREE) {
   return texture;
 }
 
-function createMeteorPointsMaterial(THREE, pointTexture) {
+function createMeteorPointsMaterial(THREE, pointTexture, alphaTest) {
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
     size: 1,
@@ -41,7 +42,7 @@ function createMeteorPointsMaterial(THREE, pointTexture) {
     map: pointTexture,
     transparent: true,
     opacity: 1,
-    alphaTest: 0.05,
+    alphaTest: alphaTest,
     depthTest: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -78,11 +79,10 @@ export function createMeteorSystem({
   THREE,
   scene,
   meteorTemplate,
-  meteorHeadMaterial,
-  meteorTailMaterial,
   maxDistance,
   speed,
   trailEndSize = DEFAULT_METEOR_CONFIG.trailEndSize,
+  alphaTest = DEFAULT_METEOR_CONFIG.alphaTest,
   trailScaleFalloff = DEFAULT_METEOR_CONFIG.trailScaleFalloff,
   trailStepDivisor = DEFAULT_METEOR_CONFIG.trailStepDivisor,
 }) {
@@ -90,20 +90,18 @@ export function createMeteorSystem({
     !THREE ||
     !scene ||
     !meteorTemplate ||
-    !meteorHeadMaterial ||
-    !meteorTailMaterial ||
     !Number.isFinite(maxDistance) ||
     !Number.isFinite(speed)
   ) {
     return null;
   }
-  const meteorRenderOrder = Math.max(
-    meteorHeadMaterial.renderOrder ?? 0,
-    meteorTailMaterial.renderOrder ?? 0,
-  );
 
   const pointTexture = createMeteorPointTexture(THREE);
-  const meteorPointsMaterial = createMeteorPointsMaterial(THREE, pointTexture);
+  const meteorPointsMaterial = createMeteorPointsMaterial(
+    THREE,
+    pointTexture,
+    alphaTest,
+  );
 
   const maxDistanceSq = maxDistance * maxDistance;
   const minClosestDistance = maxDistance * 0.7;
@@ -205,9 +203,9 @@ export function createMeteorSystem({
         Math.max(0.1, fade * 0.8),
       );
 
-      x -= (size * velocity.x) / trailStepDivisor;
-      y -= (size * velocity.y) / trailStepDivisor;
-      z -= (size * velocity.z) / trailStepDivisor;
+      x -= (velocity.x * size) / trailStepDivisor;
+      y -= (velocity.y * size) / trailStepDivisor;
+      z -= (velocity.z * size) / trailStepDivisor;
       size *= adjustedTrailFalloff;
     }
 
@@ -231,7 +229,6 @@ export function createMeteorSystem({
     geometry.computeBoundingSphere();
 
     const meteorPoints = new THREE.Points(geometry, meteorPointsMaterial);
-    meteorPoints.renderOrder = meteorRenderOrder;
     meteorPoints.frustumCulled = false;
     meteorPoints.position.set(0, 0, 0);
     meteorObject3D.add(meteorPoints);
@@ -263,7 +260,7 @@ export function createMeteorSystem({
     }
   }
 
-  function moveMeteor(meteorEntry) {
+  function moveMeteor(meteorEntry, speedScale = 1) {
     const meteorObject = meteorEntry[0];
     const meteorVelocity = meteorEntry[1];
     const meteorLength = Number(meteorObject.userData.meteorLength) || 0;
@@ -275,11 +272,14 @@ export function createMeteorSystem({
       resetMeteor(meteorEntry);
       return false;
     }
-    meteorObject.position.addScaledVector(meteorVelocity, speed * 2);
+    meteorObject.position.addScaledVector(
+      meteorVelocity,
+      speed * 2 * Math.max(0, Number(speedScale) || 0),
+    );
     return false;
   }
 
-  function updateMeteorites(meteorites, maxCount, spawnSize) {
+  function updateMeteorites(meteorites, maxCount, spawnSize, speedScale = 1) {
     const targetCount = Math.max(0, Math.floor(Number(maxCount) || 0));
     const nextSpawnSize = Number(spawnSize) || 0;
 
@@ -303,7 +303,7 @@ export function createMeteorSystem({
     }
 
     for (let i = 0; i < meteorites.length; i++) {
-      moveMeteor(meteorites[i]);
+      moveMeteor(meteorites[i], speedScale);
     }
   }
 
