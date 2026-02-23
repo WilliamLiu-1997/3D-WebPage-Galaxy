@@ -109,43 +109,84 @@ export function createMeteorSystem({
   const minClosestDistanceSq = minClosestDistance * minClosestDistance;
   const maxClosestDistanceSq = maxClosestDistance * maxClosestDistance;
 
-  function createSpawnState() {
-    let x = 0;
-    let y = 0;
-    let z = 0;
-    do {
-      x = (Math.random() * 2 - 1) * maxDistance;
-      y = (Math.random() * 2 - 1) * maxDistance;
-      z = (Math.random() * 2 - 1) * maxDistance;
-    } while (
-      x * x + y * y + z * z > maxDistanceSq ||
-      x * x + y * y + z * z < minClosestDistanceSq
+  function sampleUnitVector() {
+    const z = Math.random() * 2 - 1;
+    const azimuth = Math.random() * Math.PI * 2;
+    const radial = Math.sqrt(Math.max(0, 1 - z * z));
+    return new THREE.Vector3(
+      radial * Math.cos(azimuth),
+      radial * Math.sin(azimuth),
+      z,
+    );
+  }
+
+  function samplePointInSphericalShell(minRadius, maxRadius) {
+    const minRadius3 = minRadius * minRadius * minRadius;
+    const maxRadius3 = maxRadius * maxRadius * maxRadius;
+    const radius = Math.cbrt(
+      Math.random() * (maxRadius3 - minRadius3) + minRadius3,
+    );
+    return sampleUnitVector().multiplyScalar(radius);
+  }
+
+  function sampleConstrainedVelocity(position) {
+    const radialDistance = position.length();
+    const radialDirection = position
+      .clone()
+      .divideScalar(Math.max(radialDistance, 1e-8));
+
+    const minMuAbs = Math.sqrt(
+      Math.max(0, 1 - maxClosestDistanceSq / (radialDistance * radialDistance)),
+    );
+    const maxMuAbs = Math.sqrt(
+      Math.max(0, 1 - minClosestDistanceSq / (radialDistance * radialDistance)),
     );
 
-    const velocity = new THREE.Vector3();
-    const originDistanceSq = x * x + y * y + z * z;
-    while (true) {
-      velocity
-        .set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
-        .normalize();
+    const inboundLength = Math.max(0, maxMuAbs - minMuAbs);
+    const outboundAllowed = radialDistance <= maxClosestDistance;
+    const outboundLength = outboundAllowed ? 1 : 0;
+    const totalLength = inboundLength + outboundLength;
 
-      const originDotVelocity =
-        x * velocity.x + y * velocity.y + z * velocity.z;
-      let closestDistanceSq = originDistanceSq;
-      if (originDotVelocity < 0) {
-        closestDistanceSq = Math.max(
-          0,
-          originDistanceSq - originDotVelocity * originDotVelocity,
-        );
-      }
-
-      if (
-        closestDistanceSq >= minClosestDistanceSq &&
-        closestDistanceSq <= maxClosestDistanceSq
-      ) {
-        break;
+    let mu = -maxMuAbs;
+    if (totalLength > 0) {
+      const pick = Math.random() * totalLength;
+      if (pick < inboundLength) {
+        mu = -(minMuAbs + Math.random() * inboundLength);
+      } else {
+        mu = Math.random();
       }
     }
+
+    const tangentMagnitude = Math.sqrt(Math.max(0, 1 - mu * mu));
+    const referenceAxis =
+      Math.abs(radialDirection.z) < 0.999
+        ? new THREE.Vector3(0, 0, 1)
+        : new THREE.Vector3(0, 1, 0);
+    const tangent1 = new THREE.Vector3()
+      .crossVectors(radialDirection, referenceAxis)
+      .normalize();
+    const tangent2 = new THREE.Vector3()
+      .crossVectors(radialDirection, tangent1)
+      .normalize();
+    const tangentAngle = Math.random() * Math.PI * 2;
+
+    return radialDirection
+      .clone()
+      .multiplyScalar(mu)
+      .add(tangent1.multiplyScalar(Math.cos(tangentAngle) * tangentMagnitude))
+      .add(tangent2.multiplyScalar(Math.sin(tangentAngle) * tangentMagnitude))
+      .normalize();
+  }
+
+  function createSpawnState() {
+    const spawnPosition = samplePointInSphericalShell(
+      minClosestDistance,
+      maxDistance,
+    );
+    const x = spawnPosition.x;
+    const y = spawnPosition.y;
+    const z = spawnPosition.z;
+    const velocity = sampleConstrainedVelocity(spawnPosition);
 
     return {
       x,
