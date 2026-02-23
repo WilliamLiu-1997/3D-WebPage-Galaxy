@@ -95,10 +95,10 @@ const STAR_GROUP_SIZE = 50;
 const STAR_POINT_BASE_SIZE = 10;
 const STAR_MOVE_DIVISOR = 20;
 const STAR_COLOR_TINTS = [
-  [0.7, 0.7, 1.0],
-  [0.7, 0.7, 1.0],
-  [0.7, 0.7, 1.0],
-  [1.0, 1.0, 0.7],
+  [0.75, 0.75, 1.0],
+  [0.75, 0.75, 1.0],
+  [0.75, 0.75, 1.0],
+  [1.0, 1.0, 0.75],
 ];
 const STAR_FADE_START_DISTANCE = 1200;
 const STAR_FADE_END_DISTANCE = 1000;
@@ -241,16 +241,8 @@ const meteorSystem = createMeteorSystem({
   THREE,
   scene,
   meteorTemplate: meteorite_Object3D,
-  meteorHeadMaterial: material,
-  meteorHeadAltMaterial: materialr,
-  meteorTailMaterial: material1,
   maxDistance: METEOR_MAX_DISTANCE,
   speed: METEOR_SPEED,
-  sizeScaleMin: 0.7,
-  sizeScaleRange: 0.6,
-  centerDotMin: 0.82,
-  centerDotMax: 0.821,
-  trailStepDivisor: 2.5,
 });
 const waterGeometry = new THREE.CircleGeometry(5000, 100);
 
@@ -883,7 +875,8 @@ if (!isMobileDevice) {
   window.addEventListener('mousedown', onMouseClick, false);
 }
 
-function operation_method_1(delta) {
+function operation_method_1(delta, frameScale = 1) {
+  const logicFpsScale = fpsScale * frameScale;
   if (!ufo || !ufo.children || !ufo.children[10]) return;
   bounder_detect();
   if (hit_detect() && hit_frame < 490) {
@@ -897,7 +890,7 @@ function operation_method_1(delta) {
     hitFrame: hit_frame,
     rotatespeed,
     knockbackDivisor: 100000,
-    fpsScale,
+    fpsScale: logicFpsScale,
     speed,
   });
 
@@ -915,8 +908,9 @@ function operation_method_1(delta) {
   if (isContentHidden('content')) {
     esc = false;
   }
-  if (fast) maxSpeed = 0.12 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.002 * fpsScale, 0.05 * fpsScale);
+  if (fast) maxSpeed = 0.12 * logicFpsScale;
+  else
+    maxSpeed = Math.max(maxSpeed - 0.002 * logicFpsScale, 0.05 * logicFpsScale);
   const touchDrivenMove = isMobileDevice && touchControls.isMoveTouchActive();
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
@@ -933,7 +927,7 @@ function operation_method_1(delta) {
       moveLeft,
       moveRight,
       fast,
-      fpsScale,
+      fpsScale: logicFpsScale,
       speed,
     });
     // Mouse Move
@@ -959,7 +953,7 @@ function operation_method_1(delta) {
       downInput: down,
       angleX,
       angleY,
-      fpsScale,
+      fpsScale: logicFpsScale,
       ufoScale: ufo_scale,
       scaling,
       yawDivisor: 15,
@@ -979,7 +973,10 @@ function operation_method_1(delta) {
     safe_dis = 2 * ufo_scale;
     chasingFrame = 50;
     setUfoIndicatorColor({ ufo, color: 0xffff33 });
-    catchspeed = Math.min(catchspeed + 0.01 * fpsScale, 1.2 * fpsScale);
+    catchspeed = Math.min(
+      catchspeed + 0.01 * logicFpsScale,
+      1.2 * logicFpsScale,
+    );
 
     const distance =
       Math.sqrt(
@@ -1016,20 +1013,28 @@ function operation_method_1(delta) {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: true,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
-      transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: true,
+      });
+      transferSpeed = Math.min(transferSpeed + 1 * logicFpsScale, 10 / speed);
     } else {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: false,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
-      transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: false,
+      });
+      transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
       arrived -= 1;
     }
     if (chasing.distanceTo(vec.clone().set(0, 0, 0)) > 500)
@@ -1043,17 +1048,17 @@ function operation_method_1(delta) {
       cameraPositionVec.x += ((chasing.x * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.y += ((chasing.y * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.z += ((chasing.z * catchspeed) / 2500) * chasingFrame;
-      if (chasingFrame > 0) chasingFrame -= fpsScale;
+      if (chasingFrame > 0) chasingFrame -= logicFpsScale;
       else chasingFrame = 0;
     }
     ufo_starlight = stepUfoStarlight({
       ufo,
       ufoStarlight: ufo_starlight,
-      fpsScale,
+      fpsScale: logicFpsScale,
       increase: false,
     });
-    updateUfoIdleThrustEffect({ ufo, fpsScale });
-    transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+    updateUfoIdleThrustEffect({ ufo, fpsScale: logicFpsScale });
+    transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
   }
 
   const follow = 1;
@@ -1063,7 +1068,7 @@ function operation_method_1(delta) {
     cameraPositionVec.y,
     cameraPositionVec.z,
   );
-  ufo.rotation.y += (0.01 / Math.PI) * speed * transferSpeed * fpsScale;
+  ufo.rotation.y += (0.01 / Math.PI) * speed * transferSpeed * logicFpsScale;
   ufo.position.y += Math.sin(count * 60) * 0.01 * speed * ufo_scale;
 
   //camera.position.set(cameraPositionVec.x - cameraDirectionVec.x, cameraPositionVec.y - cameraDirectionVec.y + 0.6 * ufo_scale, cameraPositionVec.z - cameraDirectionVec.z);
@@ -1096,128 +1101,128 @@ function animate() {
   if (isLoadFinished(loadedItemCount, totalLoadItems)) hide_loading();
   else return;
   const delta = clock.getDelta();
-  MeshWater.material.uniforms['time'].value += 1.0 / 180.0;
+  const frameScale = Math.min(Math.max(delta / frameInterval, 0.0001), 5);
+  const logicFpsScale = fpsScale * frameScale;
+  MeshWater.material.uniforms['time'].value += (1.0 / 180.0) * frameScale;
   frameAccumulator += delta;
-  if (frameAccumulator > frameInterval) {
-    //stats.update();
-    meteorSystem.updateMeteorites(meteorites, 30, 6);
+  //stats.update();
+  meteorSystem.updateMeteorites(meteorites, 30, 5, frameScale);
 
-    //all_obj2.children[0].rotation.y -= 0.02
+  //all_obj2.children[0].rotation.y -= 0.02
 
-    starfieldSystem.update(ufo.position, count);
-    count += 0.0005 * fpsScale;
+  starfieldSystem.update(ufo.position, count);
+  count += 0.0005 * logicFpsScale;
 
-    operation_method_1(delta);
-    if (distance_to_protection >= 300) {
-      // all_obj3.children[0].material.color.r=0.7
-      // all_obj3.children[0].material.color.g=0.7
-      // all_obj3.children[0].material.color.b=1
-      // all_obj3.children[0].material.specular.r=0.7
-      // all_obj3.children[0].material.specular.g=0.7
-      // all_obj3.children[0].material.specular.b=1
-      all_obj3.children[0].material.color.r = 0.9;
-      all_obj3.children[0].material.color.g = 0.9;
-      all_obj3.children[0].material.color.b = 1;
-      all_obj3.children[0].material.opacity = 1;
-      all_obj3.children[1].material.uniforms['glowColor'].value =
-        shield_color_blue;
-      for (let i = 0; i < 5; i++) {
-        all_obj2.children[i].children[0].color.r = 0.9;
-        all_obj2.children[i].children[0].color.g = 0.92;
-        all_obj2.children[i].children[0].color.b = 1;
-        if (i == 2 || i == 3) {
-          all_obj2.children[i].children[0].intensity = 0.3;
-        } else {
-          all_obj2.children[i].children[0].intensity = 0.6;
-        }
-        all_obj2.children[i].children[1].material.color.r = 0.9;
-        all_obj2.children[i].children[1].material.color.g = 0.92;
-        all_obj2.children[i].children[1].material.color.b = 1;
-
-        all_obj2.children[i].children[1].material.emissive.r = 0.9;
-        all_obj2.children[i].children[1].material.emissive.g = 0.92;
-        all_obj2.children[i].children[1].material.emissive.b = 1;
+  operation_method_1(delta, frameScale);
+  if (distance_to_protection >= 300) {
+    // all_obj3.children[0].material.color.r=0.7
+    // all_obj3.children[0].material.color.g=0.7
+    // all_obj3.children[0].material.color.b=1
+    // all_obj3.children[0].material.specular.r=0.7
+    // all_obj3.children[0].material.specular.g=0.7
+    // all_obj3.children[0].material.specular.b=1
+    all_obj3.children[0].material.color.r = 0.9;
+    all_obj3.children[0].material.color.g = 0.9;
+    all_obj3.children[0].material.color.b = 1;
+    all_obj3.children[0].material.opacity = 1;
+    all_obj3.children[1].material.uniforms['glowColor'].value =
+      shield_color_blue;
+    for (let i = 0; i < 5; i++) {
+      all_obj2.children[i].children[0].color.r = 0.9;
+      all_obj2.children[i].children[0].color.g = 0.92;
+      all_obj2.children[i].children[0].color.b = 1;
+      if (i == 2 || i == 3) {
+        all_obj2.children[i].children[0].intensity = 0.3;
+      } else {
+        all_obj2.children[i].children[0].intensity = 0.6;
       }
-      city1.children[0].children[1].material.color.r = 0.33;
-      city1.children[0].children[1].material.emissive.r = 0.33;
-      // city1.children[0].children[2].material.color.r = 0.3
-      // city1.children[0].children[2].material.emissive.r = 0.3
-      env_light.color.r = 0.1 / 1.5;
-      city1.children[0].children[1].material.color.g = 0.63;
-      city1.children[0].children[1].material.emissive.g = 0.63;
-      // city1.children[0].children[2].material.color.g = 0.6
-      // city1.children[0].children[2].material.emissive.g = 0.6
-      env_light.color.g = 0.11 / 1.5;
-      city1.children[0].children[1].material.color.b = 0.7;
-      city1.children[0].children[1].material.emissive.b = 0.7;
-      // city1.children[0].children[2].material.color.b = 0.65
-      // city1.children[0].children[2].material.emissive.b = 0.65
-      env_light.color.b = 0.13 / 1.5;
-      // for(let i=5;i<10;i++)
-      // {
-      //   all_obj2.children[i].material.emissive.r=0.475
-      //   all_obj2.children[i].material.emissive.g=0.906
-      //   all_obj2.children[i].material.emissive.b=1
-      // }
-    } else {
-      // all_obj3.children[0].material.color.r=1
-      // all_obj3.children[0].material.color.g=0.3
-      // all_obj3.children[0].material.color.b=0.3
-      // all_obj3.children[0].material.specular.r=1
-      // all_obj3.children[0].material.specular.g=0
-      // all_obj3.children[0].material.specular.b=0
-      all_obj3.children[0].material.opacity =
-        Math.abs(Math.sin(count * 4000)) * 0.36 + 0.64;
-      all_obj3.children[0].material.color.r = 1;
-      all_obj3.children[0].material.color.g = 0.3;
-      all_obj3.children[0].material.color.b = 0.3;
-      all_obj3.children[1].material.uniforms['glowColor'].value =
-        shield_color_red;
-      const loop_red = Math.abs(Math.sin(count * 50)) * 0.6 + 0.2;
-      for (let i = 0; i < 5; i++) {
-        all_obj2.children[i].children[0].color.r = 1 * loop_red;
-        all_obj2.children[i].children[0].color.g = 0.2 * loop_red;
-        all_obj2.children[i].children[0].color.b = 0.2 * loop_red;
-        if (i == 2 || i == 3) {
-          all_obj2.children[i].children[0].intensity = 0.4;
-        } else {
-          all_obj2.children[i].children[0].intensity = 0.8;
-        }
+      all_obj2.children[i].children[1].material.color.r = 0.9;
+      all_obj2.children[i].children[1].material.color.g = 0.92;
+      all_obj2.children[i].children[1].material.color.b = 1;
 
-        all_obj2.children[i].children[1].material.color.r = 1 * loop_red;
-        all_obj2.children[i].children[1].material.color.g = 1 * loop_red;
-        all_obj2.children[i].children[1].material.color.b = 1 * loop_red;
-
-        all_obj2.children[i].children[1].material.emissive.r = 1 * loop_red;
-        all_obj2.children[i].children[1].material.emissive.g = 0.2 * loop_red;
-        all_obj2.children[i].children[1].material.emissive.b = 0.2 * loop_red;
-      }
-      city1.children[0].children[1].material.color.r = 0.75 * loop_red;
-      city1.children[0].children[1].material.emissive.r = 0.75 * loop_red;
-      // city1.children[0].children[2].material.color.r = 0.4 * loop_red
-      // city1.children[0].children[2].material.emissive.r = 0.4 * loop_red
-      env_light.color.r = 0.1 * loop_red;
-      city1.children[0].children[1].material.color.g = 0.15 * loop_red;
-      city1.children[0].children[1].material.emissive.g = 0.15 * loop_red;
-      // city1.children[0].children[2].material.color.g = 0.08 * loop_red
-      // city1.children[0].children[2].material.emissive.g = 0.08 * loop_red
-      env_light.color.g = 0.08 * loop_red;
-      city1.children[0].children[1].material.color.b = 0.15 * loop_red;
-      city1.children[0].children[1].material.emissive.b = 0.15 * loop_red;
-      // city1.children[0].children[2].material.color.b = 0.08 * loop_red
-      // city1.children[0].children[2].material.emissive.b = 0.08 * loop_red
-      env_light.color.b = 0.08 * loop_red;
-      // for(let i=5;i<10;i++)
-      // {
-      //   all_obj2.children[i].material.emissive.r=0
-      //   all_obj2.children[i].material.emissive.g=0
-      //   all_obj2.children[i].material.emissive.b=0
-      // }
+      all_obj2.children[i].children[1].material.emissive.r = 0.9;
+      all_obj2.children[i].children[1].material.emissive.g = 0.92;
+      all_obj2.children[i].children[1].material.emissive.b = 1;
     }
-    renderer.render(scene, camera);
+    city1.children[0].children[1].material.color.r = 0.33;
+    city1.children[0].children[1].material.emissive.r = 0.33;
+    // city1.children[0].children[2].material.color.r = 0.3
+    // city1.children[0].children[2].material.emissive.r = 0.3
+    env_light.color.r = 0.1 / 1.5;
+    city1.children[0].children[1].material.color.g = 0.63;
+    city1.children[0].children[1].material.emissive.g = 0.63;
+    // city1.children[0].children[2].material.color.g = 0.6
+    // city1.children[0].children[2].material.emissive.g = 0.6
+    env_light.color.g = 0.11 / 1.5;
+    city1.children[0].children[1].material.color.b = 0.7;
+    city1.children[0].children[1].material.emissive.b = 0.7;
+    // city1.children[0].children[2].material.color.b = 0.65
+    // city1.children[0].children[2].material.emissive.b = 0.65
+    env_light.color.b = 0.13 / 1.5;
+    // for(let i=5;i<10;i++)
+    // {
+    //   all_obj2.children[i].material.emissive.r=0.475
+    //   all_obj2.children[i].material.emissive.g=0.906
+    //   all_obj2.children[i].material.emissive.b=1
+    // }
+  } else {
+    // all_obj3.children[0].material.color.r=1
+    // all_obj3.children[0].material.color.g=0.3
+    // all_obj3.children[0].material.color.b=0.3
+    // all_obj3.children[0].material.specular.r=1
+    // all_obj3.children[0].material.specular.g=0
+    // all_obj3.children[0].material.specular.b=0
+    all_obj3.children[0].material.opacity =
+      Math.abs(Math.sin(count * 4000)) * 0.36 + 0.64;
+    all_obj3.children[0].material.color.r = 1;
+    all_obj3.children[0].material.color.g = 0.3;
+    all_obj3.children[0].material.color.b = 0.3;
+    all_obj3.children[1].material.uniforms['glowColor'].value =
+      shield_color_red;
+    const loop_red = Math.abs(Math.sin(count * 50)) * 0.6 + 0.2;
+    for (let i = 0; i < 5; i++) {
+      all_obj2.children[i].children[0].color.r = 1 * loop_red;
+      all_obj2.children[i].children[0].color.g = 0.2 * loop_red;
+      all_obj2.children[i].children[0].color.b = 0.2 * loop_red;
+      if (i == 2 || i == 3) {
+        all_obj2.children[i].children[0].intensity = 0.4;
+      } else {
+        all_obj2.children[i].children[0].intensity = 0.8;
+      }
 
-    frameAccumulator = frameAccumulator % frameInterval;
+      all_obj2.children[i].children[1].material.color.r = 1 * loop_red;
+      all_obj2.children[i].children[1].material.color.g = 1 * loop_red;
+      all_obj2.children[i].children[1].material.color.b = 1 * loop_red;
+
+      all_obj2.children[i].children[1].material.emissive.r = 1 * loop_red;
+      all_obj2.children[i].children[1].material.emissive.g = 0.2 * loop_red;
+      all_obj2.children[i].children[1].material.emissive.b = 0.2 * loop_red;
+    }
+    city1.children[0].children[1].material.color.r = 0.75 * loop_red;
+    city1.children[0].children[1].material.emissive.r = 0.75 * loop_red;
+    // city1.children[0].children[2].material.color.r = 0.4 * loop_red
+    // city1.children[0].children[2].material.emissive.r = 0.4 * loop_red
+    env_light.color.r = 0.1 * loop_red;
+    city1.children[0].children[1].material.color.g = 0.15 * loop_red;
+    city1.children[0].children[1].material.emissive.g = 0.15 * loop_red;
+    // city1.children[0].children[2].material.color.g = 0.08 * loop_red
+    // city1.children[0].children[2].material.emissive.g = 0.08 * loop_red
+    env_light.color.g = 0.08 * loop_red;
+    city1.children[0].children[1].material.color.b = 0.15 * loop_red;
+    city1.children[0].children[1].material.emissive.b = 0.15 * loop_red;
+    // city1.children[0].children[2].material.color.b = 0.08 * loop_red
+    // city1.children[0].children[2].material.emissive.b = 0.08 * loop_red
+    env_light.color.b = 0.08 * loop_red;
+    // for(let i=5;i<10;i++)
+    // {
+    //   all_obj2.children[i].material.emissive.r=0
+    //   all_obj2.children[i].material.emissive.g=0
+    //   all_obj2.children[i].material.emissive.b=0
+    // }
   }
+  renderer.render(scene, camera);
+
+  frameAccumulator = 0;
 }
 
 animate();

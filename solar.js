@@ -101,10 +101,10 @@ const STAR_GROUP_SIZE = 50;
 const STAR_POINT_BASE_SIZE = 10;
 const STAR_MOVE_DIVISOR = 20;
 const STAR_COLOR_TINTS = [
-  [0.7, 0.7, 1.0],
-  [0.7, 0.7, 1.0],
-  [0.7, 0.7, 1.0],
-  [1.0, 1.0, 0.7],
+  [0.75, 0.75, 1.0],
+  [0.75, 0.75, 1.0],
+  [0.75, 0.75, 1.0],
+  [1.0, 1.0, 0.75],
 ];
 const STAR_FADE_START_DISTANCE = 1000;
 const STAR_FADE_END_DISTANCE = 800;
@@ -713,16 +713,8 @@ function init() {
     THREE,
     scene,
     meteorTemplate: meteorite_Object3D,
-    meteorHeadMaterial: material,
-    meteorHeadAltMaterial: materialr,
-    meteorTailMaterial: material1,
     maxDistance: METEOR_MAX_DISTANCE,
     speed: METEOR_SPEED,
-    sizeScaleMin: 0.7,
-    sizeScaleRange: 1.0,
-    centerDotMin: 0.85,
-    centerDotMax: 0.851,
-    trailStepDivisor: 2.8,
   });
   const skyGeometry = new THREE.SphereGeometry(5000, 64, 64);
   const map = textureLoader.load('img/bg5.png');
@@ -1193,7 +1185,8 @@ if (!isMobileDevice) {
   window.addEventListener('mousedown', onMouseClick, false);
 }
 
-function operation_method_1(delta) {
+function operation_method_1(delta, frameScale = 1) {
+  const logicFpsScale = fpsScale * frameScale;
   if (!ufo || !ufo.children || !ufo.children[10]) return;
   if (bounder_detect() && hit_frame < 490) {
     hit_frame = 500;
@@ -1206,7 +1199,7 @@ function operation_method_1(delta) {
     hitFrame: hit_frame,
     rotatespeed,
     knockbackDivisor: 10000,
-    fpsScale,
+    fpsScale: logicFpsScale,
     speed,
   });
 
@@ -1224,8 +1217,9 @@ function operation_method_1(delta) {
   if (isContentHidden('content')) {
     esc = false;
   }
-  if (fast) maxSpeed = 1.5 * fpsScale;
-  else maxSpeed = Math.max(maxSpeed - 0.06 * fpsScale, 1.2 * fpsScale);
+  if (fast) maxSpeed = 1.5 * logicFpsScale;
+  else
+    maxSpeed = Math.max(maxSpeed - 0.06 * logicFpsScale, 1.2 * logicFpsScale);
   const touchDrivenMove = isMobileDevice && touchControls.isMoveTouchActive();
   const moveSpeedScale = touchDrivenMove
     ? Math.max(0.05, moveInputStrength)
@@ -1241,7 +1235,7 @@ function operation_method_1(delta) {
       moveLeft,
       moveRight,
       fast,
-      fpsScale,
+      fpsScale: logicFpsScale,
       speed,
     });
     // Mouse Move
@@ -1267,7 +1261,7 @@ function operation_method_1(delta) {
       downInput: down,
       angleX,
       angleY,
-      fpsScale,
+      fpsScale: logicFpsScale,
       ufoScale: ufo_scale,
       scaling,
       yawDivisor: 24,
@@ -1294,8 +1288,8 @@ function operation_method_1(delta) {
     chasingFrame = 50;
     setUfoIndicatorColor({ ufo, color: 0xffff33 });
     catchspeed = Math.min(
-      catchspeed + 0.01 * fpsScale,
-      1.2 * fpsScale * ufo_scale,
+      catchspeed + 0.01 * logicFpsScale,
+      1.2 * logicFpsScale * ufo_scale,
     );
     const delx = selected_object.object.position.x - cameraPositionVec.x;
     const dely = selected_object.object.position.y - cameraPositionVec.y;
@@ -1313,20 +1307,28 @@ function operation_method_1(delta) {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: true,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
-      transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: true,
+      });
+      transferSpeed = Math.min(transferSpeed + 1 * logicFpsScale, 10 / speed);
     } else {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: false,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
-      transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: false,
+      });
+      transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
       arrived -= 1;
     }
     if (selected_object.object.name == 'starlite3') {
@@ -1343,7 +1345,10 @@ function operation_method_1(delta) {
     safe_dis = 1 * ufo_scale;
     chasingFrame = 50;
     setUfoIndicatorColor({ ufo, color: 0xffff33 });
-    catchspeed = Math.min(catchspeed + 0.01 * fpsScale, 1.2 * fpsScale);
+    catchspeed = Math.min(
+      catchspeed + 0.01 * logicFpsScale,
+      1.2 * logicFpsScale,
+    );
     const delx =
       Math.max(-1500, Math.min(1500, selected_object.point.x)) -
       cameraPositionVec.x;
@@ -1364,20 +1369,28 @@ function operation_method_1(delta) {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: true,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: true });
-      transferSpeed = Math.min(transferSpeed + 1 * fpsScale, 10 / speed);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: true,
+      });
+      transferSpeed = Math.min(transferSpeed + 1 * logicFpsScale, 10 / speed);
     } else {
       ufo_starlight = stepUfoStarlight({
         ufo,
         ufoStarlight: ufo_starlight,
-        fpsScale,
+        fpsScale: logicFpsScale,
         increase: false,
       });
-      updateUfoFollowThrustEffect({ ufo, fpsScale, engaged: false });
-      transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+      updateUfoFollowThrustEffect({
+        ufo,
+        fpsScale: logicFpsScale,
+        engaged: false,
+      });
+      transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
       arrived -= 1;
     }
 
@@ -1390,17 +1403,17 @@ function operation_method_1(delta) {
       cameraPositionVec.x += ((chasing.x * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.y += ((chasing.y * catchspeed) / 2500) * chasingFrame;
       cameraPositionVec.z += ((chasing.z * catchspeed) / 2500) * chasingFrame;
-      if (chasingFrame > 0) chasingFrame -= fpsScale;
+      if (chasingFrame > 0) chasingFrame -= logicFpsScale;
       else chasingFrame = 0;
     }
     ufo_starlight = stepUfoStarlight({
       ufo,
       ufoStarlight: ufo_starlight,
-      fpsScale,
+      fpsScale: logicFpsScale,
       increase: false,
     });
-    updateUfoIdleThrustEffect({ ufo, fpsScale });
-    transferSpeed = Math.max(transferSpeed - 0.1 * fpsScale, 1);
+    updateUfoIdleThrustEffect({ ufo, fpsScale: logicFpsScale });
+    transferSpeed = Math.max(transferSpeed - 0.1 * logicFpsScale, 1);
   }
 
   const follow = 1;
@@ -1410,7 +1423,7 @@ function operation_method_1(delta) {
     cameraPositionVec.y,
     cameraPositionVec.z,
   );
-  ufo.rotation.y += (0.01 / Math.PI) * speed * transferSpeed * fpsScale;
+  ufo.rotation.y += (0.01 / Math.PI) * speed * transferSpeed * logicFpsScale;
   ufo.position.y += Math.sin(count * 60) * 0.01 * speed * ufo_scale;
 
   //camera.position.set(cameraPositionVec.x - cameraDirectionVec.x, cameraPositionVec.y - cameraDirectionVec.y + 0.6 * ufo_scale, cameraPositionVec.z - cameraDirectionVec.z);
@@ -1453,208 +1466,206 @@ function animate() {
   // customUniforms.bumpRepeat.value = controls.bumpRepeat;
   // customUniforms.noiseRepeat.value = controls.noiseRepeat;
   frameAccumulator += delta;
-  if (frameAccumulator > frameInterval) {
-    //stats.update();
-    if (selected_object && selected_object.object.name == 'star3') {
-      followFrame1 += 1;
-    } else {
-      followFrame1 = 0;
-    }
-    if (selected_object && selected_object.object.name == 'star4') {
-      followFrame2 += 1;
-    } else {
-      followFrame2 = 0;
-    }
-    if (selected_object && selected_object.object.name == 'star6') {
-      followFrame3 += 1;
-    } else {
-      followFrame3 = 0;
-    }
-    if (followFrame1 > TARGET_FPS * 5) {
-      goIslandWithFade();
-    } else if (followFrame2 > TARGET_FPS * 5) {
-      goAlienBaseWithFade();
-    } else if (followFrame3 > TARGET_FPS * 5) {
-      goLightningWithFade();
-    }
+  const frameScale = Math.min(Math.max(delta / frameInterval, 0.0001), 5);
+  const stepRotatespeed = rotatespeed * frameScale;
 
-    const rotate = angle * Math.PI * rotatespeed;
-
-    angle += 0.0005;
-    if (add_solar) {
-      sun.rotation.y -= ((0.005 / Math.PI) * rotatespeed) / 5;
-      const position1 = (2 * rotate) / 5;
-      star1.rotateOnWorldAxis(
-        vec.clone().set(-1, 1, 0).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 5,
-      );
-      star1.position.x = Math.sin(position1) * 180;
-      star1.position.z = Math.cos(position1) * 180;
-
-      const position2 = (1.8 * rotate) / 5;
-      star2.rotateOnWorldAxis(
-        vec.clone().set(0, 2, 0).normalize(),
-        ((0.02 / Math.PI) * rotatespeed) / 5,
-      );
-      star2.position.x = Math.sin(position2) * 240;
-      star2.position.z = Math.cos(position2) * 240;
-
-      const position3 = (1.5 * rotate) / 5;
-      star3.rotateOnWorldAxis(
-        vec.clone().set(0.2, 1, 0).normalize(),
-        ((0.04 / Math.PI) * rotatespeed) / 5,
-      );
-      star3.position.x = Math.sin(position3) * 320;
-      star3.position.z = Math.cos(position3) * 320;
-      const starliteposition3 = (10 * rotate) / 5;
-      starlite3.rotateOnWorldAxis(
-        vec.clone().set(0.1, 1, 0).normalize(),
-        ((0.4 / Math.PI) * rotatespeed) / 3 / 5,
-      );
-      starlite3.position.x =
-        Math.sin(starliteposition3 / 2) * 19 + star3.position.x;
-      starlite3.position.z =
-        Math.cos(starliteposition3 / 2) * 19 + star3.position.z;
-      starlite3.position.y =
-        Math.sin(starliteposition3 / 2) * 21 + star3.position.y;
-
-      const position4 = (0.85 * rotate) / 5;
-      star4.rotateOnWorldAxis(
-        vec.clone().set(0, 1, 0).normalize(),
-        ((0.06 / Math.PI) * rotatespeed) / 5,
-      );
-      star4.position.x = Math.sin(position4) * 780;
-      star4.position.z = Math.cos(position4) * 780;
-      ring4.rotateOnWorldAxis(
-        vec.clone().set(0, 1, 0).normalize(),
-        ((((0.7 * 0.0005) / Math.PI) * rotatespeed) / 5) * 10,
-      );
-      ring4.position.x = Math.sin(position4) * 780;
-      ring4.position.z = Math.cos(position4) * 780;
-
-      const position5 = (1.3 * rotate) / 5;
-      star5.rotateOnWorldAxis(
-        vec.clone().set(1, 4, 1).normalize(),
-        ((0.03 / Math.PI) * rotatespeed) / 5,
-      );
-      star5.position.x = Math.sin(position5) * 420;
-      star5.position.z = Math.cos(position5) * 420;
-
-      const position6 = (1.1 * rotate) / 5;
-      star6.rotateOnWorldAxis(
-        vec.clone().set(0, 5, 0).normalize(),
-        ((0.02 / Math.PI) * rotatespeed) / 5,
-      );
-      star6.position.x = Math.sin(position6) * 600;
-      star6.position.z = Math.cos(position6) * 600;
-      const starliteposition6 = (2 * rotate) / 5;
-      starlite6.rotateOnWorldAxis(
-        vec.clone().set(0.1, 1, 0.3).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 50,
-      );
-      starlite6.position.x =
-        Math.sin(starliteposition6) * 50 + star6.position.x;
-      starlite6.position.z =
-        Math.cos(starliteposition6) * 50 + star6.position.z;
-      starlite6.position.y =
-        Math.sin(starliteposition6) * 40 + star6.position.y;
-
-      starlite61.rotateOnWorldAxis(
-        vec.clone().set(0.5, 1, 0.2).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 50,
-      );
-      starlite61.position.x =
-        Math.sin(starliteposition6 * 2) * 40 + star6.position.x;
-      starlite61.position.z =
-        Math.cos(starliteposition6 * 2) * 40 + star6.position.z;
-      starlite61.position.y =
-        Math.sin(starliteposition6 * 2) * 35 + star6.position.y;
-
-      starlite62.rotateOnWorldAxis(
-        vec.clone().set(0.2, 1, 0.6).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 50,
-      );
-      starlite62.position.x =
-        Math.sin(starliteposition6 * 1.2) * 55 + star6.position.x;
-      starlite62.position.z =
-        Math.cos(starliteposition6 * 1.2) * 55 + star6.position.z;
-      starlite62.position.y =
-        Math.sin(starliteposition6 * 1.2) * 45 + star6.position.y;
-
-      starlite63.rotateOnWorldAxis(
-        vec.clone().set(0.1, 1, 0.5).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 50,
-      );
-      starlite63.position.x =
-        Math.sin(starliteposition6 * 1.5) * 60 + star6.position.x;
-      starlite63.position.z =
-        Math.cos(starliteposition6 * 1.5) * 60 + star6.position.z;
-      starlite63.position.y =
-        Math.sin(starliteposition6 * 1.5) * 50 + star6.position.y;
-
-      starlite64.rotateOnWorldAxis(
-        vec.clone().set(0.2, 1, 0.3).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 50,
-      );
-      starlite64.position.x =
-        Math.sin(starliteposition6 * 0.8) * 65 + star6.position.x;
-      starlite64.position.z =
-        Math.cos(starliteposition6 * 0.8) * 65 + star6.position.z;
-      starlite64.position.y =
-        Math.sin(starliteposition6 * 0.8) * 55 + star6.position.y;
-
-      starlite65.rotateOnWorldAxis(
-        vec.clone().set(0.6, 1, 0.3).normalize(),
-        ((0.2 / Math.PI) * rotatespeed) / 50,
-      );
-      starlite65.position.x =
-        Math.sin(starliteposition6 * 0.18) * 70 + star6.position.x;
-      starlite65.position.z =
-        Math.cos(starliteposition6 * 0.18) * 70 + star6.position.z;
-      starlite65.position.y =
-        Math.sin(starliteposition6 * 0.18) * 60 + star6.position.y;
-
-      const position7 = (0.7 * rotate) / 5;
-      star7.rotateOnWorldAxis(
-        vec.clone().set(0.5, 3, 1).normalize(),
-        ((0.015 / Math.PI) * rotatespeed) / 5,
-      );
-      star7.position.x = Math.sin(position7) * 900;
-      star7.position.z = Math.cos(position7) * 900;
-
-      const position8 = (0.4 * rotate) / 5;
-      star8.rotateOnWorldAxis(
-        vec.clone().set(0, 1, 0).normalize(),
-        ((0.1 / Math.PI) * rotatespeed) / 5,
-      );
-      star8.position.x = Math.sin(position8) * 1050;
-      star8.position.z = Math.cos(position8) * 1050;
-      ring8.rotateOnWorldAxis(
-        vec.clone().set(0, 1, 0).normalize(),
-        ((((0.2 * 0.0005) / Math.PI) * rotatespeed) / 5) * 10,
-      );
-      ring8.position.x = Math.sin(position7) * 900;
-      ring8.position.z = Math.cos(position7) * 900;
-
-      const position9 = (0.2 * rotate) / 5;
-      star9.rotateOnWorldAxis(
-        vec.clone().set(0, 10, 1).normalize(),
-        ((0.01 / Math.PI) * rotatespeed) / 5,
-      );
-      star9.position.x = Math.sin(position9) * 1200;
-      star9.position.z = Math.cos(position9) * 1200;
-    }
-
-    starfieldSystem.update(ufo.position, count);
-    meteorSystem.updateMeteorites(meteorites, 30, 6);
-    count += 0.0005 * fpsScale;
-
-    operation_method_1(delta);
-
-    renderer.render(scene, camera);
-
-    frameAccumulator = frameAccumulator % frameInterval;
+  //stats.update();
+  if (selected_object && selected_object.object.name == 'star3') {
+    followFrame1 += frameScale;
+  } else {
+    followFrame1 = 0;
   }
+  if (selected_object && selected_object.object.name == 'star4') {
+    followFrame2 += frameScale;
+  } else {
+    followFrame2 = 0;
+  }
+  if (selected_object && selected_object.object.name == 'star6') {
+    followFrame3 += frameScale;
+  } else {
+    followFrame3 = 0;
+  }
+  if (followFrame1 > TARGET_FPS * 5) {
+    goIslandWithFade();
+  } else if (followFrame2 > TARGET_FPS * 5) {
+    goAlienBaseWithFade();
+  } else if (followFrame3 > TARGET_FPS * 5) {
+    goLightningWithFade();
+  }
+
+  const rotate = angle * Math.PI * rotatespeed;
+
+  angle += 0.0005 * frameScale;
+  if (add_solar) {
+    sun.rotation.y -= ((0.005 / Math.PI) * stepRotatespeed) / 5;
+    const position1 = (2 * rotate) / 5;
+    star1.rotateOnWorldAxis(
+      vec.clone().set(-1, 1, 0).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star1.position.x = Math.sin(position1) * 180;
+    star1.position.z = Math.cos(position1) * 180;
+
+    const position2 = (1.8 * rotate) / 5;
+    star2.rotateOnWorldAxis(
+      vec.clone().set(0, 2, 0).normalize(),
+      ((0.02 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star2.position.x = Math.sin(position2) * 240;
+    star2.position.z = Math.cos(position2) * 240;
+
+    const position3 = (1.5 * rotate) / 5;
+    star3.rotateOnWorldAxis(
+      vec.clone().set(0.2, 1, 0).normalize(),
+      ((0.04 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star3.position.x = Math.sin(position3) * 320;
+    star3.position.z = Math.cos(position3) * 320;
+    const starliteposition3 = (10 * rotate) / 5;
+    starlite3.rotateOnWorldAxis(
+      vec.clone().set(0.1, 1, 0).normalize(),
+      ((0.4 / Math.PI) * stepRotatespeed) / 3 / 5,
+    );
+    starlite3.position.x =
+      Math.sin(starliteposition3 / 2) * 19 + star3.position.x;
+    starlite3.position.z =
+      Math.cos(starliteposition3 / 2) * 19 + star3.position.z;
+    starlite3.position.y =
+      Math.sin(starliteposition3 / 2) * 21 + star3.position.y;
+
+    const position4 = (0.85 * rotate) / 5;
+    star4.rotateOnWorldAxis(
+      vec.clone().set(0, 1, 0).normalize(),
+      ((0.06 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star4.position.x = Math.sin(position4) * 780;
+    star4.position.z = Math.cos(position4) * 780;
+    ring4.rotateOnWorldAxis(
+      vec.clone().set(0, 1, 0).normalize(),
+      ((((0.7 * 0.0005) / Math.PI) * stepRotatespeed) / 5) * 10,
+    );
+    ring4.position.x = Math.sin(position4) * 780;
+    ring4.position.z = Math.cos(position4) * 780;
+
+    const position5 = (1.3 * rotate) / 5;
+    star5.rotateOnWorldAxis(
+      vec.clone().set(1, 4, 1).normalize(),
+      ((0.03 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star5.position.x = Math.sin(position5) * 420;
+    star5.position.z = Math.cos(position5) * 420;
+
+    const position6 = (1.1 * rotate) / 5;
+    star6.rotateOnWorldAxis(
+      vec.clone().set(0, 5, 0).normalize(),
+      ((0.02 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star6.position.x = Math.sin(position6) * 600;
+    star6.position.z = Math.cos(position6) * 600;
+    const starliteposition6 = (2 * rotate) / 5;
+    starlite6.rotateOnWorldAxis(
+      vec.clone().set(0.1, 1, 0.3).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 50,
+    );
+    starlite6.position.x = Math.sin(starliteposition6) * 50 + star6.position.x;
+    starlite6.position.z = Math.cos(starliteposition6) * 50 + star6.position.z;
+    starlite6.position.y = Math.sin(starliteposition6) * 40 + star6.position.y;
+
+    starlite61.rotateOnWorldAxis(
+      vec.clone().set(0.5, 1, 0.2).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 50,
+    );
+    starlite61.position.x =
+      Math.sin(starliteposition6 * 2) * 40 + star6.position.x;
+    starlite61.position.z =
+      Math.cos(starliteposition6 * 2) * 40 + star6.position.z;
+    starlite61.position.y =
+      Math.sin(starliteposition6 * 2) * 35 + star6.position.y;
+
+    starlite62.rotateOnWorldAxis(
+      vec.clone().set(0.2, 1, 0.6).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 50,
+    );
+    starlite62.position.x =
+      Math.sin(starliteposition6 * 1.2) * 55 + star6.position.x;
+    starlite62.position.z =
+      Math.cos(starliteposition6 * 1.2) * 55 + star6.position.z;
+    starlite62.position.y =
+      Math.sin(starliteposition6 * 1.2) * 45 + star6.position.y;
+
+    starlite63.rotateOnWorldAxis(
+      vec.clone().set(0.1, 1, 0.5).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 50,
+    );
+    starlite63.position.x =
+      Math.sin(starliteposition6 * 1.5) * 60 + star6.position.x;
+    starlite63.position.z =
+      Math.cos(starliteposition6 * 1.5) * 60 + star6.position.z;
+    starlite63.position.y =
+      Math.sin(starliteposition6 * 1.5) * 50 + star6.position.y;
+
+    starlite64.rotateOnWorldAxis(
+      vec.clone().set(0.2, 1, 0.3).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 50,
+    );
+    starlite64.position.x =
+      Math.sin(starliteposition6 * 0.8) * 65 + star6.position.x;
+    starlite64.position.z =
+      Math.cos(starliteposition6 * 0.8) * 65 + star6.position.z;
+    starlite64.position.y =
+      Math.sin(starliteposition6 * 0.8) * 55 + star6.position.y;
+
+    starlite65.rotateOnWorldAxis(
+      vec.clone().set(0.6, 1, 0.3).normalize(),
+      ((0.2 / Math.PI) * stepRotatespeed) / 50,
+    );
+    starlite65.position.x =
+      Math.sin(starliteposition6 * 0.18) * 70 + star6.position.x;
+    starlite65.position.z =
+      Math.cos(starliteposition6 * 0.18) * 70 + star6.position.z;
+    starlite65.position.y =
+      Math.sin(starliteposition6 * 0.18) * 60 + star6.position.y;
+
+    const position7 = (0.7 * rotate) / 5;
+    star7.rotateOnWorldAxis(
+      vec.clone().set(0.5, 3, 1).normalize(),
+      ((0.015 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star7.position.x = Math.sin(position7) * 900;
+    star7.position.z = Math.cos(position7) * 900;
+
+    const position8 = (0.4 * rotate) / 5;
+    star8.rotateOnWorldAxis(
+      vec.clone().set(0, 1, 0).normalize(),
+      ((0.1 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star8.position.x = Math.sin(position8) * 1050;
+    star8.position.z = Math.cos(position8) * 1050;
+    ring8.rotateOnWorldAxis(
+      vec.clone().set(0, 1, 0).normalize(),
+      ((((0.2 * 0.0005) / Math.PI) * stepRotatespeed) / 5) * 10,
+    );
+    ring8.position.x = Math.sin(position7) * 900;
+    ring8.position.z = Math.cos(position7) * 900;
+
+    const position9 = (0.2 * rotate) / 5;
+    star9.rotateOnWorldAxis(
+      vec.clone().set(0, 10, 1).normalize(),
+      ((0.01 / Math.PI) * stepRotatespeed) / 5,
+    );
+    star9.position.x = Math.sin(position9) * 1200;
+    star9.position.z = Math.cos(position9) * 1200;
+  }
+
+  starfieldSystem.update(ufo.position, count);
+  meteorSystem.updateMeteorites(meteorites, 30, 5, frameScale);
+  count += 0.0005 * fpsScale * frameScale;
+
+  operation_method_1(delta, frameScale);
+
+  renderer.render(scene, camera);
+
+  frameAccumulator = 0;
 }
 
 animate();
