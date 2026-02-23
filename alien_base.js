@@ -33,6 +33,7 @@ import {
   updateUfoIdleThrustEffect,
   updateUfoThrustEffect,
 } from './JS/shared/ufo-control.js';
+import { prepareBvhRaycastTargets } from './JS/shared/raycast-bvh.js';
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -509,7 +510,7 @@ function init() {
       distanceDivisor: 10,
       decay: 0.75,
       castShadow: true,
-      shadowMapSize: 1024,
+      shadowMapSize: 512,
       shadowRadius: 3,
       shadowBias: -0.001,
     },
@@ -518,7 +519,7 @@ function init() {
       distanceDivisor: 10,
       decay: 0.95,
       castShadow: true,
-      shadowMapSize: 1024,
+      shadowMapSize: 512,
       shadowRadius: 3,
       shadowBias: -0.001,
     },
@@ -549,8 +550,8 @@ function init() {
   );
   light_white1.penumbra = 0.3;
   light_white1.castShadow = true;
-  light_white1.shadow.mapSize.width = 1024;
-  light_white1.shadow.mapSize.height = 1024;
+  light_white1.shadow.mapSize.width = 512;
+  light_white1.shadow.mapSize.height = 512;
   light_white1.shadow.camera.far = 700 * 1 /*ufo_scale/100*/;
   light_white1.shadow.camera.near = 5 * 1 /*ufo_scale/100*/;
   light_white1.shadowBias = -0.001;
@@ -792,6 +793,7 @@ function hit_detect() {
   distance_to_protection = 500;
   if (!hit_open) return false;
   const detect_obj = [all_obj3];
+  prepareBvhRaycastTargets(detect_obj);
   raycaster.near = 0.1;
   raycaster.far = 550;
   const local = vec

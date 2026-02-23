@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "three": "^0.132.0"
+    "three": "^0.132.0",
+    "three-mesh-bvh": "^0.5.10"
   },
   "devDependencies": {
     "vite": "^5.4.0"

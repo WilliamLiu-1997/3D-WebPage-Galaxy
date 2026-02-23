@@ -34,6 +34,7 @@ import {
   updateUfoIdleThrustEffect,
   updateUfoThrustEffect,
 } from './JS/shared/ufo-control.js';
+import { prepareBvhRaycastTargets } from './JS/shared/raycast-bvh.js';
 
 const textureLoader = new THREE.TextureLoader();
 const {
@@ -849,6 +850,7 @@ function hit_detect(count) {
     all_obj2.children[5],
     all_obj3,
   ];
+  prepareBvhRaycastTargets(detect_obj);
   raycaster.near = 0.1;
   raycaster.far = 0.5 * ufo_scale;
   const local = vec

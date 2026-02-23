@@ -1,3 +1,5 @@
+import { prepareBvhRaycastTargets } from './raycast-bvh.js';
+
 export function createFollowTargetFilter({
   excludedNames = ['ring', 'Sky'],
   excludedNamePrefixes = [],
@@ -26,6 +28,8 @@ export function pickFollowTargetFromScene({
   raycaster,
   isFollowTargetObject,
 }) {
+  prepareBvhRaycastTargets(scene.children);
+
   raycaster.setFromCamera(mouse, camera);
   raycaster.near = 0.1;
   raycaster.far = 10000;
